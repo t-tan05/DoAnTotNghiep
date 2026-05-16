@@ -1,0 +1,31 @@
+import { rateRequestSendResetCode } from "#config/rateLimit";
+import { 
+    forgotPasswordController, 
+    loginController, 
+    logoutController,
+    refreshTokenController, 
+    registerController, 
+    resendVerifyEmailController, 
+    resetPasswordController, 
+    verifyEmailController, 
+    verifyResetCodeController 
+} from "#controllers/auth.controller";
+import { VerifyToken } from "#middlewares/Auth";
+import { CheckRole } from "#middlewares/CheckRole";
+import { Validate } from "#middlewares/Validate";
+import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema, verifyEmailSchema } from "#validations/auth.validation";
+import { Router } from "express";
+
+const router = Router();
+
+router.post("/login", Validate(loginSchema), loginController);
+router.post("/register", Validate(registerSchema), registerController);
+router.post("/verify-email",Validate(verifyEmailSchema), verifyEmailController);
+router.post("/resend-verify-email", resendVerifyEmailController);
+router.post("/forgot-password", rateRequestSendResetCode, Validate(forgotPasswordSchema), forgotPasswordController);
+router.post("/verify-reset-code", verifyResetCodeController);
+router.patch("/reset-password", Validate(resetPasswordSchema), resetPasswordController);
+router.post("/refresh-token", refreshTokenController);
+router.post("/logout", VerifyToken, logoutController);
+
+export default router;

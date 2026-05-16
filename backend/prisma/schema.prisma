@@ -1,0 +1,439 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model addresses {
+  address_id    String   @id @db.VarChar(50)
+  user_id       String   @db.VarChar(50)
+  province      String   @db.VarChar(100)
+  street        String   @db.VarChar(255)
+  ward          String   @db.VarChar(100)
+  receiver_name String   @db.VarChar(100)
+  phone_number  String   @db.VarChar(20)
+  users         users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_address_user")
+  orders        orders[]
+
+  @@index([user_id], map: "fk_address_user")
+}
+
+model attribute_values {
+  attribute_value_id       String                     @id @db.VarChar(50)
+  attribute_id             String                     @db.VarChar(50)
+  value                    String                     @db.VarChar(100)
+  display_order            Int?                       @default(0)
+  product_attributes       product_attributes         @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attr_val_attr")
+  variant_attribute_values variant_attribute_values[]
+
+  @@index([attribute_id], map: "fk_attr_val_attr")
+}
+
+model blog_categories {
+  category_id   String       @id @db.VarChar(50)
+  category_name String       @unique(map: "category_name") @db.VarChar(100)
+  description   String?      @db.Text
+  created_at    DateTime?    @default(now()) @db.DateTime(0)
+  updated_at    DateTime?    @default(now()) @db.DateTime(0)
+  blog_posts    blog_posts[]
+}
+
+model blog_posts {
+  post_id         String             @id @db.VarChar(50)
+  title           String             @db.VarChar(255)
+  slug            String             @unique(map: "slug") @db.VarChar(255)
+  content         String             @db.LongText
+  author_id       String             @db.VarChar(50)
+  category_id     String?            @db.VarChar(50)
+  status          blog_posts_status? @default(DRAFT)
+  published_at    DateTime?          @db.DateTime(0)
+  created_at      DateTime?          @default(now()) @db.DateTime(0)
+  updated_at      DateTime?          @default(now()) @db.DateTime(0)
+  thumbnail_url   String?            @db.VarChar(255)
+  users           users              @relation(fields: [author_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_post_author")
+  blog_categories blog_categories?   @relation(fields: [category_id], references: [category_id], onUpdate: NoAction, map: "fk_post_category")
+
+  @@index([author_id], map: "fk_post_author")
+  @@index([category_id], map: "fk_post_category")
+}
+
+model brands {
+  brand_id    String     @id @db.VarChar(50)
+  brand_name  String     @unique(map: "brand_name") @db.VarChar(50)
+  description String?    @db.Text
+  products    products[]
+}
+
+model carts {
+  cart_id     String        @id @db.VarChar(50)
+  user_id     String        @db.VarChar(50)
+  created_at  DateTime      @default(now()) @db.DateTime(0)
+  updated_at  DateTime      @default(now()) @db.DateTime(0)
+  users       users         @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cart_user")
+  carts_items carts_items[]
+
+  @@index([user_id], map: "fk_cart_user")
+}
+
+model carts_items {
+  cart_item_id     String           @id @db.VarChar(50)
+  cart_id          String           @db.VarChar(50)
+  variant_id       String           @db.VarChar(50)
+  quantity         Int
+  price_at_add     Decimal          @db.Decimal(15, 2)
+  carts            carts            @relation(fields: [cart_id], references: [cart_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cartitem_cart")
+  product_variants product_variants @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cartitem_variant")
+
+  @@index([cart_id], map: "fk_cartitem_cart")
+  @@index([variant_id], map: "fk_cartitem_variant")
+}
+
+model categories {
+  category_id   String     @id @db.VarChar(50)
+  category_name String     @unique(map: "category_name") @db.VarChar(100)
+  description   String?    @db.Text
+  products      products[]
+}
+
+model devices {
+  device_id         String           @id @db.VarChar(50)
+  variant_id        String           @db.VarChar(50)
+  serial_number     String           @unique(map: "serial_number") @db.VarChar(100)
+  status            devices_status   @default(AVAILABLE)
+  order_detail_id   String?          @db.VarChar(50)
+  warranty_end_date DateTime?        @db.Date
+  sold_date         DateTime?        @db.Date
+  orders_details    orders_details?  @relation(fields: [order_detail_id], references: [order_detail_id], onUpdate: NoAction, map: "fk_device_orderdetail")
+  product_variants  product_variants @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_device_variant")
+  warranties        warranties[]
+
+  @@index([order_detail_id], map: "fk_device_orderdetail")
+  @@index([variant_id], map: "fk_device_variant")
+}
+
+model orders {
+  order_id                        String                @id @db.VarChar(50)
+  user_id                         String?               @db.VarChar(50)
+  employee_id                     String?               @db.VarChar(50)
+  order_date                      DateTime              @default(now()) @db.DateTime(0)
+  total_price                     Decimal               @db.Decimal(12, 2)
+  address_id                      String?               @db.VarChar(50)
+  status                          orders_status         @default(PENDING)
+  payment_method                  orders_payment_method
+  receiver_name                   String?               @db.VarChar(255)
+  receiver_phone                  String?               @db.VarChar(20)
+  addresses                       addresses?            @relation(fields: [address_id], references: [address_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_orders_address")
+  users_orders_employee_idTousers users?                @relation("orders_employee_idTousers", fields: [employee_id], references: [user_id], onUpdate: NoAction, map: "fk_orders_employee")
+  users_orders_user_idTousers     users?                @relation("orders_user_idTousers", fields: [user_id], references: [user_id], onUpdate: NoAction, map: "fk_orders_user")
+  orders_details                  orders_details[]
+  reviews                         reviews[]
+
+  @@index([address_id], map: "fk_orders_address")
+  @@index([employee_id], map: "fk_orders_employee")
+  @@index([user_id], map: "fk_orders_user")
+}
+
+model orders_details {
+  order_detail_id  String           @id @db.VarChar(50)
+  order_id         String           @db.VarChar(50)
+  variant_id       String           @db.VarChar(50)
+  quantity         Int
+  price            Decimal          @db.Decimal(10, 2)
+  devices          devices[]
+  orders           orders           @relation(fields: [order_id], references: [order_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_odetail_order")
+  product_variants product_variants @relation(fields: [variant_id], references: [variant_id], onUpdate: NoAction, map: "fk_odetail_variant")
+
+  @@index([order_id], map: "fk_odetail_order")
+  @@index([variant_id], map: "fk_odetail_variant")
+}
+
+model product_attributes {
+  attribute_id     String             @id @db.VarChar(50)
+  attribute_name   String             @unique(map: "attribute_name") @db.VarChar(50)
+  display_order    Int?               @default(0)
+  attribute_values attribute_values[]
+}
+
+model product_images {
+  image_id         BigInt            @id @default(autoincrement())
+  product_id       String            @db.VarChar(50)
+  variant_id       String?           @db.VarChar(50)
+  image_url        String            @db.VarChar(255)
+  public_id        String?           @db.VarChar(255)
+  is_default       Boolean?          @default(false)
+  products         products          @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_images_product")
+  product_variants product_variants? @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_images_variant")
+
+  @@index([product_id], map: "fk_product_images_product")
+  @@index([variant_id], map: "fk_product_images_variant")
+}
+
+model product_variant_specs {
+  spec_id          BigInt           @id @default(autoincrement())
+  variant_id       String           @db.VarChar(50)
+  spec_key         String           @db.VarChar(100)
+  spec_value       String           @db.VarChar(255)
+  display_order    Int?             @default(0)
+  product_variants product_variants @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_specs_variant")
+
+  @@index([variant_id], map: "fk_specs_variant")
+}
+
+model product_variants {
+  variant_id               String                     @id @db.VarChar(50)
+  product_id               String                     @db.VarChar(50)
+  sku                      String?                    @unique(map: "sku") @db.VarChar(100)
+  price                    Decimal                    @db.Decimal(15, 2)
+  quantity_in_stock        Int                        @default(0)
+  reserved_quantity        Int                        @default(0)
+  sold_quantity            Int                        @default(0)
+  image_url                String?                    @db.VarChar(255)
+  public_id                String?                    @db.VarChar(255)
+  created_at               DateTime?                  @default(now()) @db.DateTime(0)
+  updated_at               DateTime?                  @default(now()) @db.DateTime(0)
+  carts_items              carts_items[]
+  devices                  devices[]
+  orders_details           orders_details[]
+  product_images           product_images[]
+  product_variant_specs    product_variant_specs[]
+  products                 products                   @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_variant_product")
+  variant_attribute_values variant_attribute_values[]
+
+  @@index([product_id], map: "fk_variant_product")
+}
+
+model products {
+  product_id          String                @id @db.VarChar(50)
+  product_name        String                @unique(map: "product_name") @db.VarChar(255)
+  brand_id            String                @db.VarChar(50)
+  category_id         String                @db.VarChar(50)
+  description         String?               @db.Text
+  warranty_period     Int
+  created_at          DateTime?             @default(now()) @db.DateTime(0)
+  updated_at          DateTime?             @default(now()) @db.DateTime(0)
+  product_images      product_images[]
+  product_variants    product_variants[]
+  brands              brands                @relation(fields: [brand_id], references: [brand_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_brand")
+  categories          categories            @relation(fields: [category_id], references: [category_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_category")
+  products_promotions products_promotions[]
+  reviews             reviews[]
+  statistics_products statistics_products[]
+
+  @@index([brand_id], map: "fk_product_brand")
+  @@index([category_id], map: "fk_product_category")
+}
+
+model products_promotions {
+  product_id   String     @db.VarChar(50)
+  promotion_id String     @db.VarChar(50)
+  products     products   @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pp_product")
+  promotions   promotions @relation(fields: [promotion_id], references: [promotion_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pp_promotion")
+
+  @@id([product_id, promotion_id])
+  @@index([promotion_id], map: "fk_pp_promotion")
+}
+
+model promotions {
+  promotion_id        String                   @id @db.VarChar(50)
+  promotion_name      String                   @db.VarChar(100)
+  description         String?                  @db.Text
+  discount_type       promotions_discount_type @default(PERCENT)
+  discount_value      Decimal                  @db.Decimal(10, 2)
+  start_date          DateTime                 @db.DateTime(0)
+  end_date            DateTime                 @db.DateTime(0)
+  is_active           Boolean?                 @default(true)
+  products_promotions products_promotions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reviews {
+  review_id  BigInt   @id @default(autoincrement())
+  product_id String   @db.VarChar(50)
+  user_id    String   @db.VarChar(50)
+  rating     Int
+  comment    String   @db.Text
+  created_at DateTime @default(now()) @db.DateTime(0)
+  order_id   String   @db.VarChar(50)
+  products   products @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_review_product")
+  users      users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_review_user")
+  orders     orders   @relation(fields: [order_id], references: [order_id], onUpdate: NoAction, map: "fk_reviews_order")
+
+  @@unique([order_id, product_id], map: "uk_review_order_product")
+  @@index([product_id], map: "fk_review_product")
+  @@index([user_id], map: "fk_review_user")
+}
+
+model roles {
+  role_name   String        @id @db.VarChar(50)
+  description String?       @db.VarChar(100)
+  users_roles users_roles[]
+}
+
+model statistics {
+  stat_id             String                @id @db.VarChar(50)
+  stat_date           DateTime              @unique(map: "unique_stat_date") @db.Date
+  total_orders        Int?                  @default(0)
+  total_revenue       Decimal?              @default(0.00) @db.Decimal(15, 2)
+  total_profit        Decimal?              @default(0.00) @db.Decimal(15, 2)
+  total_products_sold Int?                  @default(0)
+  total_inventory     Int?                  @default(0)
+  created_at          DateTime?             @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(0)
+  statistics_products statistics_products[]
+
+  @@index([stat_date], map: "idx_statistics_stat_date")
+}
+
+model statistics_products {
+  stat_id       String     @db.VarChar(50)
+  product_id    String     @db.VarChar(50)
+  quantity_sold Int?       @default(0)
+  revenue       Decimal?   @default(0.00) @db.Decimal(15, 2)
+  profit        Decimal?   @default(0.00) @db.Decimal(15, 2)
+  products      products   @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_statistics_products_products")
+  statistics    statistics @relation(fields: [stat_id], references: [stat_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_statistics_products_statistics")
+
+  @@id([stat_id, product_id])
+  @@index([product_id], map: "idx_statistics_products_product")
+  @@index([stat_id], map: "idx_statistics_products_stat")
+}
+
+model users {
+  user_id                          String               @id @db.VarChar(50)
+  email                            String               @unique(map: "user_email_unique") @db.VarChar(100)
+  pass_word                        String               @db.VarChar(255)
+  name                             String               @db.VarChar(100)
+  verified                         Boolean?             @default(false)
+  verify_token                     String?              @db.VarChar(255)
+  reset_token                      String?              @db.VarChar(255)
+  reset_token_expire               DateTime?            @db.DateTime(0)
+  refreshToken                     String?              @db.Text
+  verify_token_expire              DateTime?            @db.DateTime(0)
+  status                           UserStatus           @default(ACTIVE)
+  locked_reason                    String?              @db.VarChar(255)
+  locked_at                        DateTime?            @db.DateTime(0)
+  addresses                        addresses[]
+  blog_posts                       blog_posts[]
+  carts                            carts[]
+  orders_orders_employee_idTousers orders[]             @relation("orders_employee_idTousers")
+  orders_orders_user_idTousers     orders[]             @relation("orders_user_idTousers")
+  reviews                          reviews[]
+  users_roles                      users_roles[]
+  warranties                       warranties[]
+  warranty_processes               warranty_processes[]
+
+  @@index([name], map: "idx_user_name")
+}
+
+model users_roles {
+  user_id   String @db.VarChar(50)
+  role_name String @db.VarChar(50)
+  roles     roles  @relation(fields: [role_name], references: [role_name], onDelete: Cascade, onUpdate: NoAction, map: "fk_userroles_role")
+  users     users  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_userroles_user")
+
+  @@id([user_id, role_name])
+  @@index([role_name], map: "fk_userroles_role")
+}
+
+model variant_attribute_values {
+  variant_id         String           @db.VarChar(50)
+  attribute_value_id String           @db.VarChar(50)
+  attribute_values   attribute_values @relation(fields: [attribute_value_id], references: [attribute_value_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vav_value")
+  product_variants   product_variants @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vav_variant")
+
+  @@id([variant_id, attribute_value_id])
+  @@index([attribute_value_id], map: "fk_vav_value")
+}
+
+model warranties {
+  warranty_id          String               @id @db.VarChar(50)
+  device_id            String               @db.VarChar(50)
+  customer_id          String               @db.VarChar(50)
+  received_date        DateTime             @db.Date
+  expected_return_date DateTime?            @db.Date
+  return_date          DateTime?            @db.Date
+  issue_description    String               @db.Text
+  repair_actions       String?              @db.Text
+  accessory_changed    String?              @db.VarChar(255)
+  status               warranties_status    @default(RECEIVED)
+  note                 String?              @db.Text
+  created_at           DateTime?            @default(now()) @db.DateTime(0)
+  updated_at           DateTime?            @default(now()) @db.DateTime(0)
+  users                users                @relation(fields: [customer_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_warranty_customer")
+  devices              devices              @relation(fields: [device_id], references: [device_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_warranty_device")
+  warranty_processes   warranty_processes[]
+
+  @@index([device_id], map: "fk_warranty_device")
+  @@index([customer_id], map: "idx_warranty_customer")
+  @@index([status], map: "idx_warranty_status")
+}
+
+model warranty_processes {
+  process_id  String     @id @db.VarChar(36)
+  warranty_id String     @db.VarChar(36)
+  employee_id String     @db.VarChar(36)
+  action      String     @db.VarChar(30)
+  note        String?    @db.Text
+  created_at  DateTime?  @default(now()) @db.DateTime(0)
+  users       users      @relation(fields: [employee_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_process_employee")
+  warranties  warranties @relation(fields: [warranty_id], references: [warranty_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_process_warranty")
+
+  @@index([employee_id], map: "idx_process_employee")
+  @@index([warranty_id], map: "idx_process_warranty")
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum devices_status {
+  AVAILABLE
+  RESERVED
+  SOLD
+  RETURNED
+  REPAIRING
+}
+
+enum promotions_discount_type {
+  PERCENT
+  FIXED
+}
+
+enum blog_posts_status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum orders_status {
+  PENDING
+  PAID
+  PAYMENT_FAILED
+  CONFIRMED
+  SHIPPED
+  DELIVERY_FAILED
+  COMPLETED
+  CANCELLED
+  RETURNED
+  REFUNDED
+}
+
+enum orders_payment_method {
+  COD
+  CREDIT_CARD
+  BANK_TRANSFER
+  CASH
+  VNPAY
+}
+
+enum warranties_status {
+  RECEIVED
+  IN_PROGRESS
+  COMPLETED
+  RETURNED
+  CANCELLED
+}
