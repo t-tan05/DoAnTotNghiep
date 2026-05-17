@@ -1,4 +1,4 @@
-import { getAllUsers, findUserById, updateUserById } from "#models/user.model";
+import { getAllUsers, findUserById, updateUserById, deleteUserById } from "#models/user.model";
 import AppError from "#utils/AppError";
 
 //Hàm lấy tất cả tài khoản dành cho ADMIN
@@ -67,4 +67,13 @@ export const unlockUserService = async(userId: string) => {
     });
 
     return {unlockUser};
+}
+
+//Hàm xóa tài khoản user
+export const delUserService = async(userId: string) => {
+    const existedUser = await findUserById(userId);
+
+    if(!existedUser) throw new AppError("Người dùng không tồn tại", 404);
+
+    await deleteUserById(existedUser.user_id);
 }

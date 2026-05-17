@@ -1,6 +1,6 @@
 import { CatchAsync } from "#utils/CatchAsync";
 import { Request, Response } from "express";
-import { getAllUsersService, lockUserService, profileService, unlockUserService, updateProfileService } from "#services/user.service";
+import { delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updateProfileService } from "#services/user.service";
 import AppError from "#utils/AppError";
 
 interface AuthRequest extends Request {
@@ -72,6 +72,19 @@ export const unlockUserController = CatchAsync(async(req: Request, res: Response
         success: true,
         message: "Mở khóa tài khoản thành công",
         ...data,
+    });
+});
+
+export const delUserController = CatchAsync(async(req: Request, res: Response) => {
+    const userId = req.params.userId as string;
+
+    if(!userId) throw new AppError("Thiếu userId", 400);
+
+    await delUserService(userId);
+
+    res.status(200).json({
+        success: true,
+        message: "Xóa tài khoản thành công",
     });
 });
 

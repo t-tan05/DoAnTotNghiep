@@ -121,3 +121,11 @@ export const getAllUsers = async() => {
         },
     });
 };
+
+export const deleteUserById = async(userId: string)  => {
+    return await prisma.users.delete({
+        where: {
+            user_id: userId,
+        }
+    });
+};
