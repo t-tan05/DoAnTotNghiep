@@ -1,4 +1,4 @@
-import { createCategoryService, getAllCategoriesService, getCategoryByIdService } from "#services/category.service";
+import { createCategoryService, getAllCategoriesService, getCategoryByIdService, updateCategoryService } from "#services/category.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { Request, Response } from "express";
 
@@ -38,3 +38,15 @@ export const getCategoryByIdController = CatchAsync(async(req: Request, res: Res
     });
 });
 
+export const updateCategoryController = CatchAsync(async(req: Request, res: Response) => {
+    const categoryId = req.params.categoryId as string;
+    const {categoryName, description} = req.body;
+
+    const data = await updateCategoryService(categoryId, categoryName, description);
+
+    res.status(200).json({
+        success: true,
+        message: "Cập nhật thành công",
+        ...data,
+    });
+});
