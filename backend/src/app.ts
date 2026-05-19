@@ -10,6 +10,7 @@ import { globalErrorHandler } from "#middlewares/ErrorHandler";
 import authRoute from "#routes/auth.route";
 import roleRoute from "#routes/role.route";
 import userRoute from "#routes/user.route";
+import categoryRoute from "#routes/category.route";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use("/api/auth", authRoute);
 app.use("/api/roles", roleRoute);
 app.use("/api/users", userRoute);
+app.use("/api/categories", categoryRoute);
 
 app.use(globalErrorHandler);
 

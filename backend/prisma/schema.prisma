@@ -61,10 +61,11 @@ model blog_posts {
 }
 
 model brands {
-  brand_id    String     @id @db.VarChar(50)
-  brand_name  String     @unique(map: "brand_name") @db.VarChar(50)
-  description String?    @db.Text
-  products    products[]
+  brand_id        String     @id @db.VarChar(50)
+  brand_name      String     @unique(map: "brand_name") @db.VarChar(50)
+  description     String?    @db.Text
+  normalized_name String?    @unique(map: "normalized_name") @db.VarChar(255)
+  products        products[]
 }
 
 model carts {
@@ -92,10 +93,11 @@ model carts_items {
 }
 
 model categories {
-  category_id   String     @id @db.VarChar(50)
-  category_name String     @unique(map: "category_name") @db.VarChar(100)
-  description   String?    @db.Text
-  products      products[]
+  category_id     String     @id @db.VarChar(50)
+  category_name   String     @unique(map: "category_name") @db.VarChar(100)
+  description     String?    @db.Text
+  normalized_name String?    @unique(map: "normalized_name") @db.VarChar(255)
+  products        products[]
 }
 
 model devices {
