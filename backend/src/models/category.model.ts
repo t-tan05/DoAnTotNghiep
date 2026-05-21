@@ -9,14 +9,6 @@ export const findCategoryById = async(categoryId: string) => {
     });
 };
 
-export const findCategoryByName = async(categoryName: string) => {
-    return prisma.categories.findUnique({
-        where: {
-            category_name: categoryName,
-        },
-    });
-};
-
 export const findCategoryByNormalizeName = async(normalizeName: string) => {
     return prisma.categories.findUnique({
         where: {

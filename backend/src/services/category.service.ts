@@ -1,4 +1,4 @@
-import { createCategory, findCategoryById, findCategoryByNormalizeName, getAllCategories, updateCategory } from "#models/category.models";
+import { createCategory, findCategoryById, findCategoryByNormalizeName, getAllCategories, updateCategory } from "#models/category.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";

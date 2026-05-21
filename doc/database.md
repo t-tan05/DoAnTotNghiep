@@ -49,7 +49,7 @@
 *   `order_date`: Ngày đặt hàng.
 *   `total_price`: Tổng giá trị đơn hàng.
 *   `address_id`: ID địa chỉ giao hàng (FK tới `addresses`).
-*   `status`: Trạng thái đơn hàng (PENDING, PAID, PAYMENT_FAILED, CONFIRMED, SHIPPED, COMPLETED, CANCELLED).
+*   `status`: Trạng thái đơn hàng (PENDING, PAID, PAYMENT_FAILED, CONFIRMED, SHIPPED, DELIVERY_FAILED, COMPLETED, CANCELLED, RETURNED, REFUNDED).
 *   `payment_method`: Phương thức thanh toán (COD, CREDIT_CARD, BANK_TRANSFER, CASH, VNPAY).
 *   `receiver_name`: Tên người nhận hàng (nếu khác với thông tin địa chỉ).
 *   `receiver_phone`: Số điện thoại người nhận hàng (nếu khác với thông tin địa chỉ).
@@ -103,6 +103,18 @@
 *   `public_id`: Public ID của hình ảnh.
 *   `created_at`: Thời gian tạo biến thể.
 *   `updated_at`: Thời gian cập nhật biến thể.
+
+## Bảng `inventory_transactions`
+*   `transaction_id`: ID duy nhất của giao dịch kho.
+*   `variant_id`: ID của biến thể sản phẩm bị thay đổi tồn kho (FK tới `product_variants`).
+*   `order_id`: ID đơn hàng liên quan đến giao dịch kho, nếu có (FK tới `orders`, nullable).
+*   `type`: Loại giao dịch kho (IMPORT, RESERVE, RELEASE, SOLD, ADJUST).
+*   `quantity`: Số lượng thay đổi trong giao dịch.
+*   `before_quantity`: Số lượng tồn kho trước khi thay đổi.
+*   `after_quantity`: Số lượng tồn kho sau khi thay đổi.
+*   `note`: Ghi chú nghiệp vụ của giao dịch kho.
+*   `created_by`: ID người dùng/nhân viên tạo giao dịch, nếu có (FK tới `users`, nullable).
+*   `created_at`: Thời gian tạo giao dịch kho.
 
 ## Bảng `variant_attribute_values`
 *   `variant_id`: ID của biến thể sản phẩm (FK tới `product_variants`).
@@ -221,3 +233,8 @@
 *   `created_at`: Thời gian tạo bài viết.
 *   `updated_at`: Thời gian cập nhật bài viết.
 *   `thumbnail_url`: URL ảnh thumbnail của bài viết.
+
+## Trigger quản lý kho
+*   `trg_orders_details_after_insert`: Tự động trừ `quantity_in_stock`, tăng `sold_quantity` trong `product_variants` khi thêm chi tiết đơn hàng, đồng thời ghi một dòng `SOLD` vào `inventory_transactions` với số lượng trước và sau khi trừ kho.
+*   `trg_orders_after_update`: Khi trạng thái đơn hàng chuyển sang nhóm hoàn kho (`CANCELLED`, `RETURNED`, `REFUNDED`, `DELIVERY_FAILED`, `PAYMENT_FAILED`), hệ thống tự hoàn kho và ghi giao dịch `RELEASE`. Khi đơn hàng chuyển ngược từ nhóm hoàn kho sang trạng thái xử lý/bán, hệ thống tự trừ kho lại và ghi giao dịch `SOLD`.
+*   Các trigger này giúp lịch sử kho được ghi nhận tự động ở tầng database, không cần xử lý thủ công ở tầng application.

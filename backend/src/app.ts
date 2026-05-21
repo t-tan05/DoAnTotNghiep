@@ -6,11 +6,12 @@ import redisClient from "#config/redis";
 import { limiter } from "#config/rateLimit";
 import { globalErrorHandler } from "#middlewares/ErrorHandler";
 
-//Route
+//Router
 import authRoute from "#routes/auth.route";
 import roleRoute from "#routes/role.route";
 import userRoute from "#routes/user.route";
 import categoryRoute from "#routes/category.route";
+import brandRoute from "#routes/brand.route";
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/roles", roleRoute);
 app.use("/api/users", userRoute);
 app.use("/api/categories", categoryRoute);
+app.use("/api/brands", brandRoute);
 
 app.use(globalErrorHandler);
 

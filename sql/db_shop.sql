@@ -1,4 +1,4 @@
-CREATE DATABASE  IF NOT EXISTS `tech_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+CREATE DATABASE IF NOT EXISTS `tech_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `tech_db`;
 -- MySQL dump 10.13  Distrib 8.0.42, for Win64 (x86_64)
 --
@@ -9,7 +9,7 @@ USE `tech_db`;
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -45,9 +45,11 @@ DROP TABLE IF EXISTS `brands`;
 CREATE TABLE `brands` (
   `brand_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `brand_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalize_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`brand_id`),
-  UNIQUE KEY `brand_name` (`brand_name`)
+  UNIQUE KEY `brand_name` (`brand_name`),
+  UNIQUE KEY `normalize_name` (`normalize_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -106,9 +108,11 @@ DROP TABLE IF EXISTS `categories`;
 CREATE TABLE `categories` (
   `category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalize_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`category_id`),
-  UNIQUE KEY `category_name` (`category_name`)
+  UNIQUE KEY `category_name` (`category_name`),
+  UNIQUE KEY `normalize_name` (`normalize_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -503,11 +507,11 @@ CREATE TABLE `users` (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `verified` tinyint(1) DEFAULT '0',
   `status` enum('ACTIVE', 'LOCKED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE',
-  `locked_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT Null,
+  `locked_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `locked_at` datetime DEFAULT NULL,
   `refreshToken` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `verify_token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `verify_token_expire` datetime DEFAULT Null,
+  `verify_token_expire` datetime DEFAULT NULL,
   `reset_token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `reset_token_expire` datetime DEFAULT NULL,
   PRIMARY KEY (`user_id`),
@@ -581,6 +585,38 @@ CREATE TABLE `warranty_processes` (
   KEY `idx_process_employee` (`employee_id`),
   CONSTRAINT `fk_process_employee` FOREIGN KEY (`employee_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_process_warranty` FOREIGN KEY (`warranty_id`) REFERENCES `warranties` (`warranty_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `inventory_transactions`;
+CREATE TABLE `inventory_transactions` (
+  `transaction_id`  varchar(50)   NOT NULL,
+  `variant_id`      varchar(50)   NOT NULL,
+  `order_id`        varchar(50)   DEFAULT NULL,
+  `type`            enum('IMPORT','RESERVE','RELEASE','SOLD','ADJUST') NOT NULL,
+  `quantity`        int           NOT NULL,
+  `before_quantity` int           DEFAULT NULL,
+  `after_quantity`  int           DEFAULT NULL,
+  `note`            varchar(255)  DEFAULT NULL,
+  `created_by`      varchar(50)   DEFAULT NULL,
+  `created_at`      datetime      DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (`transaction_id`),
+
+  KEY `fk_inventory_variant` (`variant_id`),
+  KEY `fk_inventory_order`   (`order_id`),
+  KEY `fk_inventory_creator` (`created_by`),
+  KEY `idx_inv_created_at`   (`created_at`),
+  KEY `idx_inv_type`         (`type`),
+
+  CONSTRAINT `fk_inventory_variant` FOREIGN KEY (`variant_id`)
+    REFERENCES `product_variants`(`variant_id`) ON DELETE CASCADE,
+
+  CONSTRAINT `fk_inventory_order` FOREIGN KEY (`order_id`)
+    REFERENCES `orders`(`order_id`) ON DELETE SET NULL,
+
+  CONSTRAINT `fk_inventory_creator` FOREIGN KEY (`created_by`)
+    REFERENCES `users`(`user_id`) ON DELETE SET NULL
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -679,12 +715,42 @@ CREATE TRIGGER trg_orders_details_after_insert
 AFTER INSERT ON orders_details
 FOR EACH ROW
 BEGIN
+    DECLARE before_qty INT;
+
+    SELECT quantity_in_stock
+    INTO before_qty
+    FROM product_variants
+    WHERE variant_id = NEW.variant_id;
+
     -- Trừ kho và tăng số lượng đã bán
     -- Nếu việc trừ kho làm quantity_in_stock < 0, trigger của bảng product_variants sẽ chặn lại
     UPDATE product_variants 
     SET quantity_in_stock = quantity_in_stock - NEW.quantity,
         sold_quantity = sold_quantity + NEW.quantity
     WHERE variant_id = NEW.variant_id;
+
+    INSERT INTO inventory_transactions (
+        transaction_id,
+        variant_id,
+        order_id,
+        type,
+        quantity,
+        before_quantity,
+        after_quantity,
+        note,
+        created_by
+    )
+    VALUES (
+        UUID(),
+        NEW.variant_id,
+        NEW.order_id,
+        'SOLD',
+        NEW.quantity,
+        before_qty,
+        before_qty - NEW.quantity,
+        CONCAT('Auto stock deduction for order detail ', NEW.order_detail_id),
+        NULL
+    );
 END //
 
 CREATE TRIGGER trg_orders_details_after_delete
@@ -717,6 +783,31 @@ BEGIN
             pv.sold_quantity = pv.sold_quantity - od.quantity
         WHERE od.order_id = NEW.order_id;
 
+        INSERT INTO inventory_transactions (
+            transaction_id,
+            variant_id,
+            order_id,
+            type,
+            quantity,
+            before_quantity,
+            after_quantity,
+            note,
+            created_by
+        )
+        SELECT
+            UUID(),
+            od.variant_id,
+            NEW.order_id,
+            'RELEASE',
+            od.quantity,
+            pv.quantity_in_stock - od.quantity,
+            pv.quantity_in_stock,
+            CONCAT('Auto stock release when order status changed from ', OLD.status, ' to ', NEW.status),
+            NEW.employee_id
+        FROM orders_details od
+        JOIN product_variants pv ON pv.variant_id = od.variant_id
+        WHERE od.order_id = NEW.order_id;
+
         -- Giải phóng số Serial của thiết bị
         UPDATE devices 
         SET status = 'AVAILABLE', 
@@ -732,6 +823,31 @@ BEGIN
         JOIN orders_details od ON pv.variant_id = od.variant_id
         SET pv.quantity_in_stock = pv.quantity_in_stock - od.quantity,
             pv.sold_quantity = pv.sold_quantity + od.quantity
+        WHERE od.order_id = NEW.order_id;
+
+        INSERT INTO inventory_transactions (
+            transaction_id,
+            variant_id,
+            order_id,
+            type,
+            quantity,
+            before_quantity,
+            after_quantity,
+            note,
+            created_by
+        )
+        SELECT
+            UUID(),
+            od.variant_id,
+            NEW.order_id,
+            'SOLD',
+            od.quantity,
+            pv.quantity_in_stock + od.quantity,
+            pv.quantity_in_stock,
+            CONCAT('Auto stock deduction when order status changed from ', OLD.status, ' to ', NEW.status),
+            NEW.employee_id
+        FROM orders_details od
+        JOIN product_variants pv ON pv.variant_id = od.variant_id
         WHERE od.order_id = NEW.order_id;
     END IF;
 END //
@@ -775,6 +891,7 @@ BEGIN
 END //
 
 -- Thủ tục và Event tự động hủy đơn hàng
+DROP PROCEDURE IF EXISTS sp_cancel_expired_orders //
 CREATE PROCEDURE sp_cancel_expired_orders()
 BEGIN
     UPDATE orders
@@ -783,6 +900,7 @@ BEGIN
       AND order_date < NOW() - INTERVAL 24 HOUR;
 END //
 
+DROP EVENT IF EXISTS evt_auto_cancel_pending_orders //
 CREATE EVENT evt_auto_cancel_pending_orders
 ON SCHEDULE EVERY 1 HOUR
 STARTS CURRENT_TIMESTAMP

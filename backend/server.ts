@@ -29,6 +29,16 @@ const seedAdmin = async() => {
         const hashPassword = await bcrypt.hash(password, 10);
     
         const user = await prisma.$transaction(async(tx) => {
+            await tx.roles.upsert({
+                where: {
+                    role_name: "ADMIN",
+                },
+                update: {},
+                create: {
+                    role_name: "ADMIN",
+                    description: "Quản trị viên hệ thống",
+                },
+            });
             const admin = await tx.users.create({
                 data: {
                     user_id: userId,
