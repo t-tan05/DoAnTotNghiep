@@ -26,6 +26,7 @@ model attribute_values {
   attribute_id             String                     @db.VarChar(50)
   value                    String                     @db.VarChar(100)
   display_order            Int?                       @default(0)
+  normalized_value         String                     @unique(map: "uk_normalized_value") @db.VarChar(100)
   product_attributes       product_attributes         @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attr_val_attr")
   variant_attribute_values variant_attribute_values[]
 
@@ -61,11 +62,11 @@ model blog_posts {
 }
 
 model brands {
-  brand_id       String     @id @db.VarChar(50)
-  brand_name     String     @unique(map: "brand_name") @db.VarChar(50)
-  normalize_name String     @unique(map: "normalize_name") @db.VarChar(50)
-  description    String?    @db.Text
-  products       products[]
+  brand_id        String     @id @db.VarChar(50)
+  brand_name      String     @unique(map: "brand_name") @db.VarChar(50)
+  normalized_name String     @unique(map: "normalized_name") @db.VarChar(50)
+  description     String?    @db.Text
+  products        products[]
 }
 
 model carts {
@@ -93,11 +94,11 @@ model carts_items {
 }
 
 model categories {
-  category_id    String     @id @db.VarChar(50)
-  category_name  String     @unique(map: "category_name") @db.VarChar(100)
-  normalize_name String     @unique(map: "normalize_name") @db.VarChar(50)
-  description    String?    @db.Text
-  products       products[]
+  category_id     String     @id @db.VarChar(50)
+  category_name   String     @unique(map: "category_name") @db.VarChar(100)
+  normalized_name String     @unique(map: "normalized_name") @db.VarChar(50)
+  description     String?    @db.Text
+  products        products[]
 }
 
 model devices {
@@ -157,6 +158,7 @@ model product_attributes {
   attribute_id     String             @id @db.VarChar(50)
   attribute_name   String             @unique(map: "attribute_name") @db.VarChar(50)
   display_order    Int?               @default(0)
+  normalized_name  String             @unique(map: "uk_normalized_name") @db.VarChar(50)
   attribute_values attribute_values[]
 }
 
@@ -211,7 +213,8 @@ model product_variants {
 
 model products {
   product_id          String                @id @db.VarChar(50)
-  product_name        String                @unique(map: "product_name") @db.VarChar(255)
+  product_name        String                @db.VarChar(255)
+  normalized_name     String                @unique(map: "uq_products_normalized_name") @db.VarChar(255)
   brand_id            String                @db.VarChar(50)
   category_id         String                @db.VarChar(50)
   description         String?               @db.Text
@@ -228,6 +231,8 @@ model products {
 
   @@index([brand_id], map: "fk_product_brand")
   @@index([category_id], map: "fk_product_category")
+  @@index([category_id, brand_id], map: "idx_products_category_brand")
+  @@index([created_at], map: "idx_products_created_at")
 }
 
 model products_promotions {

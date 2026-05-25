@@ -1,0 +1,83 @@
+import { forgotPasswordService, loginService, logoutService, refreshTokenService, registerService, resendVerifyEmailService, resetPasswordService, verifyEmailService, verifyResetCodeService } from "#services/auth.service";
+import AppError from "#utils/AppError";
+import { CatchAsync } from "#utils/CatchAsync";
+export const loginController = CatchAsync(async (req, res) => {
+    const { email, password } = req.body;
+    const data = await loginService(email, password);
+    res.status(200).json({
+        success: true,
+        message: "Đăng nhập thành công",
+        ...data,
+    });
+});
+export const registerController = CatchAsync(async (req, res) => {
+    const { name, email, password, confirmPassword } = req.body;
+    const data = await registerService(name, email, password, confirmPassword);
+    res.status(201).json({
+        success: true,
+        message: "Đăng ký thành công, vui lòng kiểm tra email để xác thực tài khoản",
+        ...data,
+    });
+});
+export const verifyEmailController = CatchAsync(async (req, res) => {
+    const { email, verifyToken } = req.body;
+    await verifyEmailService(email, verifyToken);
+    res.status(200).json({
+        success: true,
+        message: "Xác thực email thành công",
+    });
+});
+export const resendVerifyEmailController = CatchAsync(async (req, res) => {
+    const { email } = req.body;
+    await resendVerifyEmailService(email);
+    res.status(200).json({
+        success: true,
+        message: "Gửi lại mã xác thực thành công",
+    });
+});
+export const forgotPasswordController = CatchAsync(async (req, res) => {
+    const { email } = req.body;
+    await forgotPasswordService(email);
+    res.status(200).json({
+        success: true,
+        message: "Mã xác nhận đổi mật khẩu đã được gửi về email. Vui lòng kiểm tra email của bạn",
+    });
+});
+export const verifyResetCodeController = CatchAsync(async (req, res) => {
+    const { email, resetCode } = req.body;
+    if (await verifyResetCodeService(email, resetCode)) {
+        res.status(200).json({
+            success: true,
+            message: "Mã xác nhận hợp lệ",
+        });
+    }
+});
+export const resetPasswordController = CatchAsync(async (req, res) => {
+    const { email, resetCode, newPassword, confirmPassword } = req.body;
+    await resetPasswordService(email, resetCode, newPassword, confirmPassword);
+    res.status(200).json({
+        success: true,
+        message: "Đổi mật khẩu thành công",
+    });
+});
+export const refreshTokenController = CatchAsync(async (req, res) => {
+    const { refreshToken } = req.body;
+    const data = await refreshTokenService(refreshToken);
+    res.status(200).json({
+        success: true,
+        message: "Làm mới token thành công",
+        ...data,
+    });
+});
+export const logoutController = CatchAsync(async (req, res) => {
+    const userId = req.user.user_id;
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer "))
+        throw new AppError("Bạn chưa đăng nhập", 401);
+    const token = authHeader.split(" ")[1];
+    await logoutService(userId, token);
+    res.status(200).json({
+        success: true,
+        message: "Logout thành công",
+    });
+});

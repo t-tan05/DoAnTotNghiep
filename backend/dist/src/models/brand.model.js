@@ -1,32 +1,27 @@
-import prisma from "#config/prisma"
-import { Prisma } from "@prisma/client";
-
-export const findBrandById = async(brandId: string) => {
+import prisma from "#config/prisma";
+export const findBrandById = async (brandId) => {
     return await prisma.brands.findUnique({
         where: {
             brand_id: brandId,
         },
     });
 };
-
-export const getAllBrand = async() => {
+export const getAllBrand = async () => {
     return await prisma.brands.findMany({
         orderBy: {
             brand_name: "asc"
         },
     });
 };
-
-export const findBrandByNormalizeName = async(nomarlizeName: string) => {
+export const findBrandByNormalizeName = async (nomarlizeName) => {
     return await prisma.brands.findUnique({
         where: {
             normalized_name: nomarlizeName,
         },
     });
 };
-
-export const createBrand = async(brandId: string, brandName: string, normalizeName: string, description?: string) => {
-    return await prisma.brands.create({
+export const createBrand = async (brandId, brandName, normalizeName, description) => {
+    return prisma.brands.create({
         data: {
             brand_id: brandId,
             brand_name: brandName,
@@ -35,9 +30,8 @@ export const createBrand = async(brandId: string, brandName: string, normalizeNa
         },
     });
 };
-
-export const updateBrand = async(brandId: string, data: Prisma.brandsUpdateInput) => {
-    return await prisma.brands.update({
+export const updateBrand = async (brandId, data) => {
+    return prisma.brands.update({
         where: {
             brand_id: brandId,
         },

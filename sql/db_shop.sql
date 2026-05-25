@@ -45,11 +45,11 @@ DROP TABLE IF EXISTS `brands`;
 CREATE TABLE `brands` (
   `brand_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `brand_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `normalize_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`brand_id`),
   UNIQUE KEY `brand_name` (`brand_name`),
-  UNIQUE KEY `normalize_name` (`normalize_name`)
+  UNIQUE KEY `normalized_name` (`normalized_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -108,11 +108,11 @@ DROP TABLE IF EXISTS `categories`;
 CREATE TABLE `categories` (
   `category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `normalize_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`category_id`),
   UNIQUE KEY `category_name` (`category_name`),
-  UNIQUE KEY `normalize_name` (`normalize_name`)
+  UNIQUE KEY `normalized_name` (`normalized_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -231,6 +231,7 @@ DROP TABLE IF EXISTS `products`;
 CREATE TABLE `products` (
   `product_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `product_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `brand_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -238,9 +239,14 @@ CREATE TABLE `products` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`product_id`),
-  UNIQUE KEY `product_name` (`product_name`),
+
+  UNIQUE KEY `uq_products_normalized_name` (`normalized_name`),
+
   KEY `fk_product_brand` (`brand_id`),
   KEY `fk_product_category` (`category_id`),
+  KEY `idx_products_category_brand` (`category_id`, `brand_id`),
+  KEY `idx_products_created_at` (`created_at`),
+
   CONSTRAINT `fk_product_brand` FOREIGN KEY (`brand_id`) REFERENCES `brands` (`brand_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_product_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`category_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -255,9 +261,11 @@ DROP TABLE IF EXISTS `product_attributes`;
 CREATE TABLE `product_attributes` (
   `attribute_id` varchar(50) NOT NULL,
   `attribute_name` varchar(50) NOT NULL,
-  `display_order` int DEFAULT '0',
+  `normalized_name` varchar(50) NOT NULL,
+  `display_order` int DEFAULT 0,
   PRIMARY KEY (`attribute_id`),
-  UNIQUE KEY `attribute_name` (`attribute_name`)
+  UNIQUE KEY `uk_attribute_name` (`attribute_name`),
+  UNIQUE KEY `uk_normalized_name` (`normalized_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -269,9 +277,11 @@ CREATE TABLE `attribute_values` (
   `attribute_value_id` varchar(50) NOT NULL,
   `attribute_id` varchar(50) NOT NULL,
   `value` varchar(100) NOT NULL,
+  `normalized_value` varchar(100) NOT NULL,
   `display_order` int DEFAULT '0',
   PRIMARY KEY (`attribute_value_id`),
   KEY `fk_attr_val_attr` (`attribute_id`),
+  UNIQUE KEY `uk_normalized_value` (`normalized_value`),
   CONSTRAINT `fk_attr_val_attr` FOREIGN KEY (`attribute_id`) REFERENCES `product_attributes` (`attribute_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
