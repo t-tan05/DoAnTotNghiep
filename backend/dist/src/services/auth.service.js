@@ -82,6 +82,7 @@ export const loginService = async (email, password) => {
     const accessToken = signAccessToken(payload);
     //Tạo refreshToken
     const refreshToken = signRefreshToken(payload);
+    //Mã hóa refreshToken trước khi lưu vào db
     const hashRefreshToken = hashToken(refreshToken);
     //Lưu refreshToken cho user
     await updateUserById(user.user_id, {
@@ -95,6 +96,7 @@ export const registerService = async (name, email, password, confirmPassword) =>
     //Kiểm tra xem email đã tồn tại chưa. Nếu tồn tại thì báo lỗi
     if (isExisted)
         throw new AppError("Email đã tồn tại!", 409);
+    //So sánh password và confirmPassword có giống nhau không
     if (password !== confirmPassword)
         throw new AppError("Mật khẩu xác nhận không đúng", 400);
     //Mã hóa Password
@@ -103,12 +105,13 @@ export const registerService = async (name, email, password, confirmPassword) =>
     const userId = crypto.randomUUID();
     //Tạo mã xác thực cho email
     const verifyToken = generateVerifyCode();
+    //Tạo giời gian hiệu lực cho mã xác thực
     const verifyTokenExpire = new Date(Date.now() + 10 * 60 * 1000);
     //mã hóa verifyToken trước khi lưu vào db
     const hashVerifyToken = hashToken(verifyToken);
     //Tạo user mới 
     const user = await createUserWithRole(userId, name, email, hashPassword, hashVerifyToken, verifyTokenExpire, "CUSTOMER");
-    //gửi mail OTP
+    //gửi mã OPT đến gmail đăng ký
     await sendVerifyEmail(email, verifyToken);
     return { user };
 };

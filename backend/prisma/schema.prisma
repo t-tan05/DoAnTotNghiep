@@ -25,8 +25,8 @@ model attribute_values {
   attribute_value_id       String                     @id @db.VarChar(50)
   attribute_id             String                     @db.VarChar(50)
   value                    String                     @db.VarChar(100)
-  display_order            Int?                       @default(0)
   normalized_value         String                     @unique(map: "uk_normalized_value") @db.VarChar(100)
+  display_order            Int?                       @default(0)
   product_attributes       product_attributes         @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attr_val_attr")
   variant_attribute_values variant_attribute_values[]
 
@@ -126,6 +126,7 @@ model orders {
   address_id                      String?                  @db.VarChar(50)
   status                          orders_status            @default(PENDING)
   payment_method                  orders_payment_method
+  payment_status                  orders_payment_status    @default(UNPAID)
   receiver_name                   String?                  @db.VarChar(255)
   receiver_phone                  String?                  @db.VarChar(20)
   inventory_transactions          inventory_transactions[]
@@ -133,11 +134,16 @@ model orders {
   users_orders_employee_idTousers users?                   @relation("orders_employee_idTousers", fields: [employee_id], references: [user_id], onUpdate: NoAction, map: "fk_orders_employee")
   users_orders_user_idTousers     users?                   @relation("orders_user_idTousers", fields: [user_id], references: [user_id], onUpdate: NoAction, map: "fk_orders_user")
   orders_details                  orders_details[]
+  payment_transactions            payment_transactions[]
   reviews                         reviews[]
 
   @@index([address_id], map: "fk_orders_address")
   @@index([employee_id], map: "fk_orders_employee")
   @@index([user_id], map: "fk_orders_user")
+  @@index([order_date], map: "idx_orders_order_date")
+  @@index([payment_method], map: "idx_orders_payment_method")
+  @@index([payment_status], map: "idx_orders_payment_status")
+  @@index([status], map: "idx_orders_status")
 }
 
 model orders_details {
@@ -156,9 +162,9 @@ model orders_details {
 
 model product_attributes {
   attribute_id     String             @id @db.VarChar(50)
-  attribute_name   String             @unique(map: "attribute_name") @db.VarChar(50)
-  display_order    Int?               @default(0)
+  attribute_name   String             @unique(map: "uk_attribute_name") @db.VarChar(50)
   normalized_name  String             @unique(map: "uk_normalized_name") @db.VarChar(50)
+  display_order    Int?               @default(0)
   attribute_values attribute_values[]
 }
 
@@ -417,6 +423,27 @@ model inventory_transactions {
   @@index([type], map: "idx_inv_type")
 }
 
+model payment_transactions {
+  transaction_id    String                              @id @db.VarChar(50)
+  order_id          String                              @db.VarChar(50)
+  payment_method    payment_transactions_payment_method
+  amount            Decimal                             @db.Decimal(12, 2)
+  status            payment_transactions_status         @default(PENDING)
+  transaction_code  String?                             @db.VarChar(100)
+  provider          String?                             @db.VarChar(50)
+  provider_response String?                             @db.Text
+  paid_at           DateTime?                           @db.DateTime(0)
+  created_at        DateTime?                           @default(now()) @db.DateTime(0)
+  updated_at        DateTime?                           @default(now()) @db.DateTime(0)
+  orders            orders                              @relation(fields: [order_id], references: [order_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_order")
+
+  @@index([created_at], map: "idx_payment_created_at")
+  @@index([payment_method], map: "idx_payment_method")
+  @@index([order_id], map: "idx_payment_order")
+  @@index([status], map: "idx_payment_status")
+  @@index([transaction_code], map: "idx_payment_transaction_code")
+}
+
 enum UserStatus {
   ACTIVE
   LOCKED
@@ -441,27 +468,6 @@ enum blog_posts_status {
   ARCHIVED
 }
 
-enum orders_status {
-  PENDING
-  PAID
-  PAYMENT_FAILED
-  CONFIRMED
-  SHIPPED
-  DELIVERY_FAILED
-  COMPLETED
-  CANCELLED
-  RETURNED
-  REFUNDED
-}
-
-enum orders_payment_method {
-  COD
-  CREDIT_CARD
-  BANK_TRANSFER
-  CASH
-  VNPAY
-}
-
 enum warranties_status {
   RECEIVED
   IN_PROGRESS
@@ -476,4 +482,46 @@ enum inventory_transactions_type {
   RELEASE
   SOLD
   ADJUST
+}
+
+enum payment_transactions_payment_method {
+  COD
+  VNPAY
+  MOMO
+  ZALOPAY
+  BANK_TRANSFER
+}
+
+enum payment_transactions_status {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum orders_status {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERY_FAILED
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+enum orders_payment_method {
+  COD
+  VNPAY
+  MOMO
+  ZALOPAY
+  BANK_TRANSFER
+}
+
+enum orders_payment_status {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }

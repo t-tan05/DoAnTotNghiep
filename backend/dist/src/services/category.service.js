@@ -31,7 +31,7 @@ export const updateCategoryService = async (categoryId, categoryName, descriptio
     const displayName = categoryName.trim();
     const normalizeName = normalizeText(categoryName);
     const existedCategory = await findCategoryByNormalizeName(normalizeName);
-    if (existedCategory && category.category_id !== categoryId)
+    if (existedCategory && existedCategory.category_id !== categoryId)
         throw new AppError("Tên danh mục đã tồn tại", 409);
     const updCategory = await updateCategory(categoryId, {
         category_name: displayName,

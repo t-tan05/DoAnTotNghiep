@@ -152,28 +152,112 @@ DROP TABLE IF EXISTS `orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `orders` (
-  `order_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `order_id` varchar(50) NOT NULL,
+  `user_id` varchar(50) DEFAULT NULL,
+  `employee_id` varchar(50) DEFAULT NULL,
   `order_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `total_price` decimal(12,2) NOT NULL,
-  `address_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('PENDING','PAID','PAYMENT_FAILED','CONFIRMED','SHIPPED','DELIVERY_FAILED','COMPLETED','CANCELLED', 'RETURNED', 'REFUNDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING',
-  `payment_method` enum('COD','CREDIT_CARD','BANK_TRANSFER','CASH','VNPAY') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `receiver_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `receiver_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address_id` varchar(50) DEFAULT NULL,
+
+  `status` enum(
+    'PENDING',
+    'CONFIRMED',
+    'SHIPPED',
+    'DELIVERY_FAILED',
+    'COMPLETED',
+    'CANCELLED',
+    'RETURNED'
+  ) NOT NULL DEFAULT 'PENDING',
+
+  `payment_method` enum(
+    'COD',
+    'VNPAY',
+    'MOMO',
+    'ZALOPAY',
+    'BANK_TRANSFER'
+  ) NOT NULL,
+
+  `payment_status` enum(
+    'UNPAID',
+    'PENDING',
+    'PAID',
+    'FAILED',
+    'REFUNDED'
+  ) NOT NULL DEFAULT 'UNPAID',
+
+  `receiver_name` varchar(255) DEFAULT NULL,
+  `receiver_phone` varchar(20) DEFAULT NULL,
+
   PRIMARY KEY (`order_id`),
+
   KEY `fk_orders_user` (`user_id`),
   KEY `fk_orders_employee` (`employee_id`),
   KEY `fk_orders_address` (`address_id`),
-  CONSTRAINT `fk_orders_address` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`address_id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_orders_employee` FOREIGN KEY (`employee_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
+  KEY `idx_orders_status` (`status`),
+  KEY `idx_orders_payment_status` (`payment_status`),
+  KEY `idx_orders_payment_method` (`payment_method`),
+  KEY `idx_orders_order_date` (`order_date`),
+
+  CONSTRAINT `fk_orders_address`
+    FOREIGN KEY (`address_id`)
+    REFERENCES `addresses` (`address_id`)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT `fk_orders_employee`
+    FOREIGN KEY (`employee_id`)
+    REFERENCES `users` (`user_id`)
+    ON DELETE SET NULL,
+
+  CONSTRAINT `fk_orders_user`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `users` (`user_id`)
+    ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Data for table `orders` (removed for brevity, as it's not part of schema changes)
---
+DROP TABLE IF EXISTS `payment_transactions`;
+CREATE TABLE `payment_transactions` (
+  `transaction_id` varchar(50) NOT NULL,
+  `order_id` varchar(50) NOT NULL,
+
+  `payment_method` enum(
+    'COD',
+    'VNPAY',
+    'MOMO',
+    'ZALOPAY',
+    'BANK_TRANSFER'
+  ) NOT NULL,
+
+  `amount` decimal(12,2) NOT NULL,
+
+  `status` enum(
+    'PENDING',
+    'SUCCESS',
+    'FAILED',
+    'CANCELLED',
+    'REFUNDED'
+  ) NOT NULL DEFAULT 'PENDING',
+
+  `transaction_code` varchar(100) DEFAULT NULL,
+  `provider` varchar(50) DEFAULT NULL,
+  `provider_response` text DEFAULT NULL,
+
+  `paid_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (`transaction_id`),
+
+  KEY `idx_payment_order` (`order_id`),
+  KEY `idx_payment_status` (`status`),
+  KEY `idx_payment_method` (`payment_method`),
+  KEY `idx_payment_created_at` (`created_at`),
+  KEY `idx_payment_transaction_code` (`transaction_code`),
+
+  CONSTRAINT `fk_payment_order`
+    FOREIGN KEY (`order_id`)
+    REFERENCES `orders` (`order_id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Table structure for table `orders_details`
@@ -699,7 +783,7 @@ BEGIN
     SELECT status INTO ord_status FROM orders WHERE order_id = NEW.order_id;
 
     -- Chỉ bù trừ kho nếu đơn hàng đang ở trạng thái giữ hàng
-    IF ord_status NOT IN ('CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERY_FAILED', 'PAYMENT_FAILED') THEN
+    IF ord_status NOT IN ('CANCELLED', 'RETURNED', 'DELIVERY_FAILED') THEN
         IF OLD.variant_id = NEW.variant_id THEN
             -- Cùng sản phẩm, cập nhật chênh lệch số lượng
             UPDATE product_variants 
@@ -771,7 +855,7 @@ BEGIN
     SELECT status INTO ord_status FROM orders WHERE order_id = OLD.order_id;
     
     -- Hoàn kho khi xóa dòng sản phẩm, trừ khi đơn hàng đã thuộc nhóm hoàn kho
-    IF ord_status NOT IN ('CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERY_FAILED', 'PAYMENT_FAILED') THEN
+    IF ord_status NOT IN ('CANCELLED', 'RETURNED', 'DELIVERY_FAILED') THEN
         UPDATE product_variants 
         SET quantity_in_stock = quantity_in_stock + OLD.quantity,
             sold_quantity = sold_quantity - OLD.quantity
@@ -785,8 +869,8 @@ AFTER UPDATE ON orders
 FOR EACH ROW
 BEGIN
     -- Chuyển sang các trạng thái hoàn kho
-    IF OLD.status NOT IN ('CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERY_FAILED', 'PAYMENT_FAILED') 
-       AND NEW.status IN ('CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERY_FAILED', 'PAYMENT_FAILED') THEN
+    IF OLD.status NOT IN ('CANCELLED', 'RETURNED', 'DELIVERY_FAILED') 
+       AND NEW.status IN ('CANCELLED', 'RETURNED', 'DELIVERY_FAILED') THEN
         UPDATE product_variants pv
         JOIN orders_details od ON pv.variant_id = od.variant_id
         SET pv.quantity_in_stock = pv.quantity_in_stock + od.quantity,
@@ -827,8 +911,8 @@ BEGIN
         WHERE order_detail_id IN (SELECT order_detail_id FROM orders_details WHERE order_id = NEW.order_id);
 
     -- Chuyển ngược lại trạng thái đang xử lý (Trừ lại kho)
-    ELSEIF OLD.status IN ('CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERY_FAILED', 'PAYMENT_FAILED') 
-           AND NEW.status NOT IN ('CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERY_FAILED', 'PAYMENT_FAILED') THEN
+    ELSEIF OLD.status IN ('CANCELLED', 'RETURNED', 'DELIVERY_FAILED') 
+           AND NEW.status NOT IN ('CANCELLED', 'RETURNED', 'DELIVERY_FAILED') THEN
         UPDATE product_variants pv
         JOIN orders_details od ON pv.variant_id = od.variant_id
         SET pv.quantity_in_stock = pv.quantity_in_stock - od.quantity,

@@ -32,7 +32,7 @@ export const createProductService = async (data, files, createdBy) => {
         const existedSku = await findVariantBySku(variant?.sku);
         if (existedSku)
             throw new AppError(`SKU ${variant?.sku} đã tồn tại`, 409);
-        allAttributeValueIds.push(...variant?.attributeValueIds);
+        allAttributeValueIds.push(...(variant?.attributeValueIds ?? []));
     }
     const uniqueAttributeValueIds = [...new Set(allAttributeValueIds)];
     const existedAttributeValues = await findAttributeValuesByIds(uniqueAttributeValueIds);
@@ -55,6 +55,7 @@ export const createProductService = async (data, files, createdBy) => {
     const productVariantSpecData = [];
     const imageData = [];
     const uploadedPublicIds = [];
+    const matchedImageFieldnames = new Set();
     try {
         for (let index = 0; index < data?.variants.length; index++) {
             const variant = data?.variants[index];
@@ -70,7 +71,7 @@ export const createProductService = async (data, files, createdBy) => {
                 image_url: variant?.imageUrl ?? null,
                 public_id: variant?.publicId ?? null,
             });
-            for (const attributeValueId of variant?.attributeValueIds) {
+            for (const attributeValueId of variant?.attributeValueIds ?? []) {
                 variantAttributeData.push({
                     variant_id: variantId,
                     attribute_value_id: attributeValueId
@@ -98,6 +99,7 @@ export const createProductService = async (data, files, createdBy) => {
             const variantImages = files.filter((file) => {
                 return file.fieldname.startsWith(`variant_${index}_image`);
             });
+            variantImages.forEach((file) => matchedImageFieldnames.add(file.fieldname));
             for (let i = 0; i < variantImages.length; i++) {
                 const uploadResult = await uploadImageToCloudinary(variantImages[i], "DoAnTotNghiep/products");
                 uploadedPublicIds.push(uploadResult.public_id);
@@ -109,6 +111,12 @@ export const createProductService = async (data, files, createdBy) => {
                     is_default: i === 0,
                 });
             }
+        }
+        const unmatchedFileFieldnames = files
+            .map((file) => file.fieldname)
+            .filter((fieldname) => !matchedImageFieldnames.has(fieldname));
+        if (unmatchedFileFieldnames.length > 0) {
+            throw new AppError(`TÃªn field áº£nh khÃ´ng há»£p lá»‡: ${unmatchedFileFieldnames.join(", ")}. Äá»‹nh dáº¡ng Ä‘Ãºng lÃ  variant_{index}_image_{number}, vÃ­ dá»¥ variant_0_image_0`, 400);
         }
         const newProduct = await createProduct(productData, productVariantData, inventoryData, variantAttributeData, productVariantSpecData, imageData);
         return { newProduct };

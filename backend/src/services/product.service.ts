@@ -72,6 +72,7 @@ export const createProductService = async(data: any, files: Express.Multer.File[
     const productVariantSpecData = [];
     const imageData = [];
     const uploadedPublicIds: string[] = [];
+    const matchedImageFieldnames = new Set<string>();
 
     try{
         for(let index = 0; index < data?.variants.length; index++){
@@ -123,6 +124,8 @@ export const createProductService = async(data: any, files: Express.Multer.File[
                 return file.fieldname.startsWith(`variant_${index}_image`);
             });
 
+            variantImages.forEach((file) => matchedImageFieldnames.add(file.fieldname));
+
             for(let i = 0; i < variantImages.length; i++){
                 const uploadResult = await uploadImageToCloudinary(
                     variantImages[i],
@@ -140,6 +143,18 @@ export const createProductService = async(data: any, files: Express.Multer.File[
                 });
             }
         }
+
+        const unmatchedFileFieldnames = files
+            .map((file) => file.fieldname)
+            .filter((fieldname) => !matchedImageFieldnames.has(fieldname));
+
+        if(unmatchedFileFieldnames.length > 0){
+            throw new AppError(
+                `Tên field ảnh không hợp lệ: ${unmatchedFileFieldnames.join(", ")}. Định dạng đúng là variant_{index}_image_{number}, ví dụ variant_0_image_0`,
+                400
+            );
+        }
+
         const newProduct = await createProduct(
             productData, 
             productVariantData,

@@ -1,6 +1,6 @@
 import prisma from "#config/prisma";
 export const findVariantBySku = async (sku) => {
-    return prisma.product_variants.findUnique({
+    return await prisma.product_variants.findUnique({
         where: {
             sku,
         },

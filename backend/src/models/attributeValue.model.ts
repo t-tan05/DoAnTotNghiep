@@ -61,3 +61,10 @@ export const updateAttributeValue = async(attributeValueId: string, data: Prisma
     });
 };
 
+export const deleteAttributeValue = async(attributeValueId: string) => {
+    return await prisma.attribute_values.delete({
+        where: {
+            attribute_value_id: attributeValueId,
+        },
+    });
+};

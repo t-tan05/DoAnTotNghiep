@@ -21,7 +21,7 @@ export const findBrandByNormalizeName = async (nomarlizeName) => {
     });
 };
 export const createBrand = async (brandId, brandName, normalizeName, description) => {
-    return prisma.brands.create({
+    return await prisma.brands.create({
         data: {
             brand_id: brandId,
             brand_name: brandName,
@@ -31,7 +31,7 @@ export const createBrand = async (brandId, brandName, normalizeName, description
     });
 };
 export const updateBrand = async (brandId, data) => {
-    return prisma.brands.update({
+    return await prisma.brands.update({
         where: {
             brand_id: brandId,
         },

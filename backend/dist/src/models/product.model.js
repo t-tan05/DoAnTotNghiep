@@ -19,7 +19,7 @@ export const findProductByNormalizeName = async (normalizedName) => {
     });
 };
 export const createProduct = async (productData, productVariantData, inventoryData, variantAttributeData, productVariantSpecData, imageData) => {
-    return prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
         const newProduct = await tx.products.create({
             data: productData
         });

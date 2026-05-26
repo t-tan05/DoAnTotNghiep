@@ -30,7 +30,7 @@ export const updateBrandService = async (brandId, brandName, description) => {
     const displayName = brandName.trim();
     const normalizeName = normalizeText(displayName);
     const existedBrand = await findBrandByNormalizeName(normalizeName);
-    if (existedBrand && brand.brand_id !== brandId)
+    if (existedBrand && existedBrand.brand_id !== brandId)
         throw new AppError("Tên thương hiệu đã tồn tại", 409);
     const updBrand = await updateBrand(brandId, {
         brand_name: displayName,

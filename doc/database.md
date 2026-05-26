@@ -1,240 +1,325 @@
-# Tổng quan các field trong database
+# Tổng quan database `tech_db`
 
+Tài liệu này mô tả các bảng chính trong file [`db_shop.sql`](../sql/db_shop.sql). Schema dùng MySQL/InnoDB, charset `utf8mb4`, khóa chính phần lớn là `varchar(50)`.
+
+## Nhận xét về `orders` và `payment_transactions`
+
+Thiết kế mới tách rõ 2 luồng:
+
+- `orders.status`: trạng thái xử lý/giao hàng của đơn.
+- `orders.payment_status`: trạng thái thanh toán tổng hợp của đơn.
+- `payment_transactions.status`: trạng thái từng giao dịch thanh toán cụ thể.
+
+Cách tách này phù hợp hơn so với việc nhét các trạng thái như `PAID`, `PAYMENT_FAILED`, `REFUNDED` vào `orders.status`.
+
+Các điểm cần lưu ý:
+
+- `payment_transactions` đang hợp lý cho cổng thanh toán vì có `transaction_code`, `provider`, `provider_response`, `paid_at`, `created_at`, `updated_at`.
+- `orders.payment_status` nên được đồng bộ từ giao dịch mới nhất/thành công trong `payment_transactions` ở tầng service hoặc trigger riêng nếu muốn xử lý tại database.
+- Trigger quản lý kho đang dùng nhóm hoàn kho khớp enum `orders.status`: `CANCELLED`, `RETURNED`, `DELIVERY_FAILED`.
+- Prisma schema hiện chưa khớp SQL mới: còn enum cũ của `orders_status`, `orders_payment_method`, thiếu `orders.payment_status` và thiếu model `payment_transactions`.
+- `orders.address_id` là FK tới `addresses`. Nếu địa chỉ người dùng bị sửa sau khi đặt hàng, lịch sử đơn có thể bị ảnh hưởng. Nên cân nhắc lưu snapshot địa chỉ giao hàng trực tiếp trong `orders` hoặc bảng riêng cho địa chỉ đơn hàng.
 
 ## Bảng `addresses`
-*   `address_id`: ID duy nhất của địa chỉ.
-*   `user_id`: ID của người dùng sở hữu địa chỉ (FK tới `users`).
-*   `province`: Tỉnh/Thành phố.
-*   `street`: Tên đường, số nhà.
-*   `ward`: Phường/Xã.
-*   `receiver_name`: Tên người nhận.
-*   `phone_number`: Số điện thoại người nhận.
+
+- `address_id`: ID duy nhất của địa chỉ.
+- `user_id`: Người dùng sở hữu địa chỉ, FK tới `users.user_id`, xóa user thì xóa địa chỉ.
+- `province`: Tỉnh/Thành phố.
+- `street`: Số nhà, tên đường.
+- `ward`: Phường/Xã.
+- `receiver_name`: Tên người nhận.
+- `phone_number`: Số điện thoại người nhận.
 
 ## Bảng `brands`
-*   `brand_id`: ID duy nhất của thương hiệu.
-*   `brand_name`: Tên thương hiệu (UNIQUE).
-*   `description`: Mô tả thương hiệu.
 
-## Bảng `carts`
-*   `cart_id`: ID duy nhất của giỏ hàng.
-*   `user_id`: ID của người dùng sở hữu giỏ hàng (FK tới `users`).
-*   `created_at`: Thời gian tạo giỏ hàng.
-*   `updated_at`: Thời gian cập nhật giỏ hàng.
-
-## Bảng `carts_items`
-*   `cart_item_id`: ID duy nhất của mục trong giỏ hàng.
-*   `cart_id`: ID của giỏ hàng (FK tới `carts`).
-*   `variant_id`: ID của biến thể sản phẩm (FK tới `product_variants`).
-*   `quantity`: Số lượng sản phẩm trong mục.
-*   `price_at_add`: Giá của sản phẩm tại thời điểm thêm vào giỏ hàng.
+- `brand_id`: ID thương hiệu.
+- `brand_name`: Tên thương hiệu, unique.
+- `normalized_name`: Tên đã chuẩn hóa, unique.
+- `description`: Mô tả thương hiệu.
 
 ## Bảng `categories`
-*   `category_id`: ID duy nhất của danh mục.
-*   `category_name`: Tên danh mục (UNIQUE).
-*   `description`: Mô tả danh mục.
 
-## Bảng `devices`
-*   `device_id`: ID duy nhất của thiết bị (serial number của sản phẩm vật lý).
-*   `variant_id`: ID của biến thể sản phẩm mà thiết bị này thuộc về (FK tới `product_variants`).
-*   `serial_number`: Số serial duy nhất của thiết bị (UNIQUE).
-*   `status`: Trạng thái của thiết bị (AVAILABLE, RESERVED, SOLD, RETURNED, REPAIRING).
-*   `order_detail_id`: ID chi tiết đơn hàng nếu thiết bị đã được bán (FK tới `orders_details`).
-*   `warranty_end_date`: Ngày hết hạn bảo hành.
-*   `sold_date`: Ngày bán thiết bị.
-
-## Bảng `orders`
-*   `order_id`: ID duy nhất của đơn hàng.
-*   `user_id`: ID của người dùng đặt hàng (FK tới `users`).
-*   `employee_id`: ID của nhân viên xử lý đơn hàng (FK tới `users`).
-*   `order_date`: Ngày đặt hàng.
-*   `total_price`: Tổng giá trị đơn hàng.
-*   `address_id`: ID địa chỉ giao hàng (FK tới `addresses`).
-*   `status`: Trạng thái đơn hàng (PENDING, PAID, PAYMENT_FAILED, CONFIRMED, SHIPPED, DELIVERY_FAILED, COMPLETED, CANCELLED, RETURNED, REFUNDED).
-*   `payment_method`: Phương thức thanh toán (COD, CREDIT_CARD, BANK_TRANSFER, CASH, VNPAY).
-*   `receiver_name`: Tên người nhận hàng (nếu khác với thông tin địa chỉ).
-*   `receiver_phone`: Số điện thoại người nhận hàng (nếu khác với thông tin địa chỉ).
-
-## Bảng `orders_details`
-*   `order_detail_id`: ID duy nhất của chi tiết đơn hàng.
-*   `order_id`: ID của đơn hàng (FK tới `orders`).
-*   `variant_id`: ID của biến thể sản phẩm (FK tới `product_variants`).
-*   `quantity`: Số lượng sản phẩm trong chi tiết đơn hàng.
-*   `price`: Giá của sản phẩm tại thời điểm đặt hàng.
-
-## Bảng `product_images`
-*   `image_id`: ID duy nhất của hình ảnh (AUTO_INCREMENT).
-*   `product_id`: ID của sản phẩm (FK tới `products`).
-*   `variant_id`: ID của biến thể sản phẩm (FK tới `product_variants`, NULLABLE nếu là ảnh chung).
-*   `image_url`: URL của hình ảnh.
-*   `public_id`: Public ID của hình ảnh trên dịch vụ lưu trữ (ví dụ: Cloudinary).
-*   `is_default`: Đánh dấu hình ảnh mặc định cho sản phẩm.
-
-## Bảng `products`
-*   `product_id`: ID duy nhất của sản phẩm.
-*   `product_name`: Tên sản phẩm (UNIQUE).
-*   `brand_id`: ID của thương hiệu (FK tới `brands`).
-*   `category_id`: ID của danh mục (FK tới `categories`).
-*   `description`: Mô tả sản phẩm.
-*   `warranty_period`: Thời gian bảo hành (tháng).
-*   `created_at`: Thời gian tạo sản phẩm.
-*   `updated_at`: Thời gian cập nhật sản phẩm.
-
-## Bảng `product_attributes`
-*   `attribute_id`: ID duy nhất của loại thuộc tính (ví dụ: "Color", "RAM").
-*   `attribute_name`: Tên loại thuộc tính (UNIQUE).
-*   `display_order`: Thứ tự hiển thị.
-
-## Bảng `attribute_values`
-*   `attribute_value_id`: ID duy nhất của giá trị thuộc tính (ví dụ: "Đen", "8GB").
-*   `attribute_id`: ID của loại thuộc tính (FK tới `product_attributes`).
-*   `value`: Giá trị cụ thể của thuộc tính.
-*   `hex_code`: Mã màu (nếu là thuộc tính màu sắc).
-*   `display_order`: Thứ tự hiển thị.
-
-## Bảng `product_variants`
-*   `variant_id`: ID duy nhất của biến thể sản phẩm (SKU).
-*   `product_id`: ID của sản phẩm gốc (FK tới `products`).
-*   `sku`: Mã SKU (UNIQUE, NULLABLE).
-*   `price`: Giá của biến thể sản phẩm.
-*   `quantity_in_stock`: Số lượng tồn kho.
-*   `reserved_quantity`: Số lượng đang được đặt trước.
-*   `sold_quantity`: Số lượng đã bán.
-*   `image_url`: URL hình ảnh đại diện cho biến thể.
-*   `public_id`: Public ID của hình ảnh.
-*   `created_at`: Thời gian tạo biến thể.
-*   `updated_at`: Thời gian cập nhật biến thể.
-
-## Bảng `inventory_transactions`
-*   `transaction_id`: ID duy nhất của giao dịch kho.
-*   `variant_id`: ID của biến thể sản phẩm bị thay đổi tồn kho (FK tới `product_variants`).
-*   `order_id`: ID đơn hàng liên quan đến giao dịch kho, nếu có (FK tới `orders`, nullable).
-*   `type`: Loại giao dịch kho (IMPORT, RESERVE, RELEASE, SOLD, ADJUST).
-*   `quantity`: Số lượng thay đổi trong giao dịch.
-*   `before_quantity`: Số lượng tồn kho trước khi thay đổi.
-*   `after_quantity`: Số lượng tồn kho sau khi thay đổi.
-*   `note`: Ghi chú nghiệp vụ của giao dịch kho.
-*   `created_by`: ID người dùng/nhân viên tạo giao dịch, nếu có (FK tới `users`, nullable).
-*   `created_at`: Thời gian tạo giao dịch kho.
-
-## Bảng `variant_attribute_values`
-*   `variant_id`: ID của biến thể sản phẩm (FK tới `product_variants`).
-*   `attribute_value_id`: ID của giá trị thuộc tính (FK tới `attribute_values`).
-
-## Bảng `product_variant_specs`
-*   `spec_id`: ID duy nhất của thông số (AUTO_INCREMENT).
-*   `variant_id`: ID của biến thể sản phẩm (FK tới `product_variants`).
-*   `spec_key`: Tên thông số (ví dụ: "DPI", "Thời lượng pin", "Kiểu Switch", "Cảm biến").
-*   `spec_value`: Giá trị của thông số (ví dụ: "16000", "50 giờ", "Mechanical Blue", "PixArt 3395").
-*   `display_order`: Thứ tự hiển thị thông số.
-
-## Bảng `products_promotions`
-*   `product_id`: ID của sản phẩm (FK tới `products`).
-*   `promotion_id`: ID của khuyến mãi (FK tới `promotions`).
-
-## Bảng `promotions`
-*   `promotion_id`: ID duy nhất của khuyến mãi.
-*   `promotion_name`: Tên khuyến mãi.
-*   `description`: Mô tả khuyến mãi.
-*   `discount_type`: Loại giảm giá (PERCENT, FIXED).
-*   `discount_value`: Giá trị giảm giá.
-*   `start_date`: Ngày bắt đầu khuyến mãi.
-*   `end_date`: Ngày kết thúc khuyến mãi.
-*   `is_active`: Trạng thái hoạt động của khuyến mãi.
-
-## Bảng `reviews`
-*   `review_id`: ID duy nhất của đánh giá (AUTO_INCREMENT).
-*   `product_id`: ID của sản phẩm (FK tới `products`).
-*   `user_id`: ID của người dùng đánh giá (FK tới `users`).
-*   `rating`: Điểm đánh giá (1-5).
-*   `comment`: Nội dung đánh giá.
-*   `created_at`: Thời gian tạo đánh giá.
-*   `order_id`: ID của đơn hàng liên quan đến đánh giá (FK tới `orders`).
-
-## Bảng `roles`
-*   `role_name`: Tên vai trò (ADMIN, EMPLOYEE, USER) (PK).
-*   `description`: Mô tả vai trò.
-
-## Bảng `statistics`
-*   `stat_id`: ID duy nhất của thống kê.
-*   `stat_date`: Ngày thống kê (UNIQUE).
-*   `total_orders`: Tổng số đơn hàng.
-*   `total_revenue`: Tổng doanh thu.
-*   `total_profit`: Tổng lợi nhuận.
-*   `total_products_sold`: Tổng số sản phẩm đã bán.
-*   `total_inventory`: Tổng số tồn kho.
-*   `created_at`: Thời gian tạo thống kê.
-*   `updated_at`: Thời gian cập nhật thống kê.
-
-## Bảng `statistics_products`
-*   `stat_id`: ID của thống kê (FK tới `statistics`).
-*   `product_id`: ID của sản phẩm (FK tới `products`).
-*   `quantity_sold`: Số lượng đã bán của sản phẩm trong ngày thống kê.
-*   `revenue`: Doanh thu từ sản phẩm trong ngày thống kê.
-*   `profit`: Lợi nhuận từ sản phẩm trong ngày thống kê.
+- `category_id`: ID danh mục.
+- `category_name`: Tên danh mục, unique.
+- `normalized_name`: Tên đã chuẩn hóa, unique.
+- `description`: Mô tả danh mục.
 
 ## Bảng `users`
-*   `user_id`: ID duy nhất của người dùng.
-*   `email`: Email người dùng (UNIQUE).
-*   `pass_word`: Mật khẩu đã mã hóa.
-*   `name`: Tên người dùng.
-*   `refreshToken`: Mã refresh token.
-*   `verified`: Trạng thái xác thực email.
-*   `status`: Trạng thái của tài khoản.
-*   `locked_reason`: Lý do lock tài khoản.
-*   `locked_at`: Thời gian lock tài khoản.
-*   `verify_token`: Token xác thực email.
-*   `verify_token_expire`:Thời gian xác thực token.
-*   `reset_token`: Token đặt lại mật khẩu.
-*   `reset_token_expire`: Thời gian hết hạn của token đặt lại mật khẩu.
+
+- `user_id`: ID người dùng.
+- `email`: Email đăng nhập, unique.
+- `pass_word`: Mật khẩu đã mã hóa.
+- `name`: Tên người dùng.
+- `verified`: Trạng thái xác thực email.
+- `status`: Trạng thái tài khoản: `ACTIVE`, `LOCKED`.
+- `locked_reason`: Lý do khóa tài khoản.
+- `locked_at`: Thời điểm khóa tài khoản.
+- `refreshToken`: Refresh token hiện tại.
+- `verify_token`: Token xác thực email.
+- `verify_token_expire`: Thời điểm hết hạn token xác thực.
+- `reset_token`: Token đặt lại mật khẩu.
+- `reset_token_expire`: Thời điểm hết hạn token đặt lại mật khẩu.
+
+## Bảng `roles`
+
+- `role_name`: Tên vai trò, PK.
+- `description`: Mô tả vai trò.
 
 ## Bảng `users_roles`
-*   `user_id`: ID của người dùng (FK tới `users`).
-*   `role_name`: Tên vai trò (FK tới `roles`).
+
+- `user_id`: FK tới `users.user_id`.
+- `role_name`: FK tới `roles.role_name`.
+- Khóa chính kép: `user_id`, `role_name`.
+
+## Bảng `carts`
+
+- `cart_id`: ID giỏ hàng.
+- `user_id`: Người dùng sở hữu giỏ hàng, FK tới `users.user_id`.
+- `created_at`: Thời điểm tạo.
+- `updated_at`: Thời điểm cập nhật.
+
+## Bảng `carts_items`
+
+- `cart_item_id`: ID dòng sản phẩm trong giỏ.
+- `cart_id`: FK tới `carts.cart_id`.
+- `variant_id`: FK tới `product_variants.variant_id`.
+- `quantity`: Số lượng.
+- `price_at_add`: Giá sản phẩm tại thời điểm thêm vào giỏ.
+
+## Bảng `products`
+
+- `product_id`: ID sản phẩm.
+- `product_name`: Tên sản phẩm.
+- `normalized_name`: Tên đã chuẩn hóa, unique.
+- `brand_id`: FK tới `brands.brand_id`.
+- `category_id`: FK tới `categories.category_id`.
+- `description`: Mô tả sản phẩm.
+- `warranty_period`: Thời hạn bảo hành.
+- `created_at`: Thời điểm tạo.
+- `updated_at`: Thời điểm cập nhật.
+
+## Bảng `product_attributes`
+
+- `attribute_id`: ID thuộc tính.
+- `attribute_name`: Tên thuộc tính, unique.
+- `normalized_name`: Tên thuộc tính đã chuẩn hóa, unique.
+- `display_order`: Thứ tự hiển thị.
+
+## Bảng `attribute_values`
+
+- `attribute_value_id`: ID giá trị thuộc tính.
+- `attribute_id`: FK tới `product_attributes.attribute_id`.
+- `value`: Giá trị hiển thị.
+- `normalized_value`: Giá trị đã chuẩn hóa, unique.
+- `display_order`: Thứ tự hiển thị.
+
+## Bảng `product_variants`
+
+- `variant_id`: ID biến thể sản phẩm.
+- `product_id`: FK tới `products.product_id`.
+- `sku`: Mã SKU, unique, nullable.
+- `price`: Giá bán của biến thể.
+- `quantity_in_stock`: Số lượng tồn kho.
+- `reserved_quantity`: Số lượng đang giữ/chờ xử lý.
+- `sold_quantity`: Số lượng đã bán.
+- `image_url`: Ảnh đại diện biến thể.
+- `public_id`: Public ID ảnh.
+- `created_at`: Thời điểm tạo.
+- `updated_at`: Thời điểm cập nhật.
+
+## Bảng `variant_attribute_values`
+
+- `variant_id`: FK tới `product_variants.variant_id`.
+- `attribute_value_id`: FK tới `attribute_values.attribute_value_id`.
+- Khóa chính kép: `variant_id`, `attribute_value_id`.
+
+## Bảng `product_variant_specs`
+
+- `spec_id`: ID thông số, tự tăng.
+- `variant_id`: FK tới `product_variants.variant_id`.
+- `spec_key`: Tên thông số.
+- `spec_value`: Giá trị thông số.
+- `display_order`: Thứ tự hiển thị.
+
+## Bảng `product_images`
+
+- `image_id`: ID ảnh, tự tăng.
+- `product_id`: FK tới `products.product_id`.
+- `variant_id`: FK tới `product_variants.variant_id`, nullable nếu là ảnh chung của sản phẩm.
+- `image_url`: URL ảnh.
+- `public_id`: Public ID ảnh.
+- `is_default`: Đánh dấu ảnh mặc định.
+
+## Bảng `orders`
+
+- `order_id`: ID đơn hàng.
+- `user_id`: Người đặt hàng, FK tới `users.user_id`, nullable; khi xóa user thì set null.
+- `employee_id`: Nhân viên xử lý đơn, FK tới `users.user_id`, nullable; khi xóa user thì set null.
+- `order_date`: Thời điểm đặt hàng.
+- `total_price`: Tổng giá trị đơn hàng.
+- `address_id`: Địa chỉ giao hàng, FK tới `addresses.address_id`, nullable; đang dùng `ON DELETE RESTRICT`.
+- `status`: Trạng thái xử lý đơn hàng: `PENDING`, `CONFIRMED`, `SHIPPED`, `DELIVERY_FAILED`, `COMPLETED`, `CANCELLED`, `RETURNED`.
+- `payment_method`: Phương thức thanh toán: `COD`, `VNPAY`, `MOMO`, `ZALOPAY`, `BANK_TRANSFER`.
+- `payment_status`: Trạng thái thanh toán của đơn: `UNPAID`, `PENDING`, `PAID`, `FAILED`, `REFUNDED`.
+- `receiver_name`: Tên người nhận tại thời điểm đặt hàng.
+- `receiver_phone`: Số điện thoại người nhận tại thời điểm đặt hàng.
+
+## Bảng `payment_transactions`
+
+- `transaction_id`: ID giao dịch thanh toán.
+- `order_id`: FK tới `orders.order_id`; xóa đơn thì xóa giao dịch.
+- `payment_method`: Phương thức thanh toán của giao dịch: `COD`, `VNPAY`, `MOMO`, `ZALOPAY`, `BANK_TRANSFER`.
+- `amount`: Số tiền giao dịch.
+- `status`: Trạng thái giao dịch: `PENDING`, `SUCCESS`, `FAILED`, `CANCELLED`, `REFUNDED`.
+- `transaction_code`: Mã giao dịch từ cổng thanh toán hoặc ngân hàng.
+- `provider`: Nhà cung cấp/cổng thanh toán.
+- `provider_response`: Raw response hoặc payload trả về từ provider.
+- `paid_at`: Thời điểm thanh toán thành công.
+- `created_at`: Thời điểm tạo giao dịch.
+- `updated_at`: Thời điểm cập nhật giao dịch.
+
+## Bảng `orders_details`
+
+- `order_detail_id`: ID chi tiết đơn hàng.
+- `order_id`: FK tới `orders.order_id`.
+- `variant_id`: FK tới `product_variants.variant_id`.
+- `quantity`: Số lượng mua.
+- `price`: Giá bán tại thời điểm đặt hàng.
+
+## Bảng `devices`
+
+- `device_id`: ID thiết bị vật lý.
+- `variant_id`: FK tới `product_variants.variant_id`.
+- `serial_number`: Số serial, unique.
+- `status`: Trạng thái thiết bị: `AVAILABLE`, `RESERVED`, `SOLD`, `RETURNED`, `REPAIRING`.
+- `order_detail_id`: FK tới `orders_details.order_detail_id`, nullable.
+- `warranty_end_date`: Ngày hết hạn bảo hành.
+- `sold_date`: Ngày bán.
+
+## Bảng `inventory_transactions`
+
+- `transaction_id`: ID giao dịch kho.
+- `variant_id`: FK tới `product_variants.variant_id`.
+- `order_id`: FK tới `orders.order_id`, nullable; xóa đơn thì set null.
+- `type`: Loại giao dịch kho: `IMPORT`, `RESERVE`, `RELEASE`, `SOLD`, `ADJUST`.
+- `quantity`: Số lượng thay đổi.
+- `before_quantity`: Số lượng tồn trước thay đổi.
+- `after_quantity`: Số lượng tồn sau thay đổi.
+- `note`: Ghi chú nghiệp vụ.
+- `created_by`: FK tới `users.user_id`, nullable.
+- `created_at`: Thời điểm tạo giao dịch kho.
+
+## Bảng `promotions`
+
+- `promotion_id`: ID khuyến mãi.
+- `promotion_name`: Tên khuyến mãi.
+- `description`: Mô tả.
+- `discount_type`: Loại giảm giá: `PERCENT`, `FIXED`.
+- `discount_value`: Giá trị giảm.
+- `start_date`: Thời điểm bắt đầu.
+- `end_date`: Thời điểm kết thúc.
+- `is_active`: Trạng thái hoạt động.
+
+## Bảng `products_promotions`
+
+- `product_id`: FK tới `products.product_id`.
+- `promotion_id`: FK tới `promotions.promotion_id`.
+- Khóa chính kép: `product_id`, `promotion_id`.
+
+## Bảng `reviews`
+
+- `review_id`: ID đánh giá, tự tăng.
+- `product_id`: FK tới `products.product_id`.
+- `user_id`: FK tới `users.user_id`.
+- `rating`: Điểm đánh giá.
+- `comment`: Nội dung đánh giá.
+- `created_at`: Thời điểm tạo đánh giá.
+- `order_id`: FK tới `orders.order_id`.
+- Có unique key `order_id`, `product_id` để mỗi sản phẩm trong một đơn chỉ được đánh giá một lần.
+
+## Bảng `statistics`
+
+- `stat_id`: ID thống kê.
+- `stat_date`: Ngày thống kê, unique.
+- `total_orders`: Tổng số đơn hàng.
+- `total_revenue`: Tổng doanh thu.
+- `total_profit`: Tổng lợi nhuận.
+- `total_products_sold`: Tổng số sản phẩm đã bán.
+- `total_inventory`: Tổng tồn kho.
+- `created_at`: Thời điểm tạo.
+- `updated_at`: Thời điểm cập nhật.
+
+## Bảng `statistics_products`
+
+- `stat_id`: FK tới `statistics.stat_id`.
+- `product_id`: FK tới `products.product_id`.
+- `quantity_sold`: Số lượng đã bán.
+- `revenue`: Doanh thu.
+- `profit`: Lợi nhuận.
+- Khóa chính kép: `stat_id`, `product_id`.
 
 ## Bảng `warranties`
-*   `warranty_id`: ID duy nhất của phiếu bảo hành.
-*   `device_id`: ID của thiết bị được bảo hành (FK tới `devices`).
-*   `customer_id`: ID của khách hàng (FK tới `users`).
-*   `received_date`: Ngày nhận thiết bị bảo hành.
-*   `expected_return_date`: Ngày dự kiến trả thiết bị.
-*   `return_date`: Ngày trả thiết bị thực tế.
-*   `issue_description`: Mô tả lỗi.
-*   `repair_actions`: Các hành động sửa chữa đã thực hiện.
-*   `accessory_changed`: Các phụ kiện đã thay thế.
-*   `status`: Trạng thái bảo hành (RECEIVED, IN_PROGRESS, COMPLETED, RETURNED, CANCELLED).
-*   `note`: Ghi chú.
-*   `created_at`: Thời gian tạo phiếu bảo hành.
-*   `updated_at`: Thời gian cập nhật phiếu bảo hành.
+
+- `warranty_id`: ID phiếu bảo hành.
+- `device_id`: FK tới `devices.device_id`.
+- `customer_id`: FK tới `users.user_id`.
+- `received_date`: Ngày nhận bảo hành.
+- `expected_return_date`: Ngày dự kiến trả.
+- `return_date`: Ngày trả thực tế.
+- `issue_description`: Mô tả lỗi.
+- `repair_actions`: Hành động sửa chữa.
+- `accessory_changed`: Phụ kiện đã thay.
+- `status`: Trạng thái bảo hành: `RECEIVED`, `IN_PROGRESS`, `COMPLETED`, `RETURNED`, `CANCELLED`.
+- `note`: Ghi chú.
+- `created_at`: Thời điểm tạo.
+- `updated_at`: Thời điểm cập nhật.
 
 ## Bảng `warranty_processes`
-*   `process_id`: ID duy nhất của quy trình bảo hành.
-*   `warranty_id`: ID của phiếu bảo hành (FK tới `warranties`).
-*   `employee_id`: ID của nhân viên thực hiện (FK tới `users`).
-*   `action`: Hành động đã thực hiện (ví dụ: "Kiểm tra", "Sửa chữa").
-*   `note`: Ghi chú về hành động.
-*   `created_at`: Thời gian thực hiện hành động.
+
+- `process_id`: ID bước xử lý bảo hành.
+- `warranty_id`: FK tới `warranties.warranty_id`.
+- `employee_id`: FK tới `users.user_id`.
+- `action`: Hành động đã thực hiện.
+- `note`: Ghi chú.
+- `created_at`: Thời điểm tạo.
 
 ## Bảng `blog_categories`
-*   `category_id`: ID duy nhất của danh mục blog.
-*   `category_name`: Tên danh mục blog (UNIQUE).
-*   `description`: Mô tả danh mục blog.
-*   `created_at`: Thời gian tạo.
-*   `updated_at`: Thời gian cập nhật.
+
+- `category_id`: ID danh mục blog.
+- `category_name`: Tên danh mục blog, unique.
+- `description`: Mô tả.
+- `created_at`: Thời điểm tạo.
+- `updated_at`: Thời điểm cập nhật.
 
 ## Bảng `blog_posts`
-*   `post_id`: ID duy nhất của bài viết blog.
-*   `title`: Tiêu đề bài viết.
-*   `slug`: Slug của bài viết (UNIQUE, dùng cho URL).
-*   `content`: Nội dung bài viết (LONGTEXT).
-*   `author_id`: ID của tác giả (FK tới `users`).
-*   `category_id`: ID của danh mục blog (FK tới `blog_categories`, NULLABLE).
-*   `status`: Trạng thái bài viết (DRAFT, PUBLISHED, ARCHIVED).
-*   `published_at`: Thời gian xuất bản bài viết.
-*   `created_at`: Thời gian tạo bài viết.
-*   `updated_at`: Thời gian cập nhật bài viết.
-*   `thumbnail_url`: URL ảnh thumbnail của bài viết.
 
-## Trigger quản lý kho
-*   `trg_orders_details_after_insert`: Tự động trừ `quantity_in_stock`, tăng `sold_quantity` trong `product_variants` khi thêm chi tiết đơn hàng, đồng thời ghi một dòng `SOLD` vào `inventory_transactions` với số lượng trước và sau khi trừ kho.
-*   `trg_orders_after_update`: Khi trạng thái đơn hàng chuyển sang nhóm hoàn kho (`CANCELLED`, `RETURNED`, `REFUNDED`, `DELIVERY_FAILED`, `PAYMENT_FAILED`), hệ thống tự hoàn kho và ghi giao dịch `RELEASE`. Khi đơn hàng chuyển ngược từ nhóm hoàn kho sang trạng thái xử lý/bán, hệ thống tự trừ kho lại và ghi giao dịch `SOLD`.
-*   Các trigger này giúp lịch sử kho được ghi nhận tự động ở tầng database, không cần xử lý thủ công ở tầng application.
+- `post_id`: ID bài viết.
+- `title`: Tiêu đề.
+- `slug`: Slug URL, unique.
+- `content`: Nội dung bài viết.
+- `author_id`: FK tới `users.user_id`.
+- `category_id`: FK tới `blog_categories.category_id`, nullable.
+- `status`: Trạng thái bài viết: `DRAFT`, `PUBLISHED`, `ARCHIVED`.
+- `published_at`: Thời điểm xuất bản.
+- `created_at`: Thời điểm tạo.
+- `updated_at`: Thời điểm cập nhật.
+- `thumbnail_url`: URL ảnh thumbnail.
+
+## Trigger và tự động hóa
+
+- `trg_product_variants_before_insert`, `trg_product_variants_before_update`: Chặn giá và tồn kho âm.
+- `trg_orders_details_before_insert`, `trg_orders_details_before_update`: Chặn số lượng đặt hàng nhỏ hơn hoặc bằng 0.
+- `trg_orders_details_after_insert`: Khi thêm chi tiết đơn hàng, tự trừ `quantity_in_stock`, tăng `sold_quantity` và ghi giao dịch kho `SOLD`.
+- `trg_orders_details_after_update`: Khi sửa chi tiết đơn hàng, tự bù/trừ tồn kho theo chênh lệch nếu đơn chưa thuộc nhóm hoàn kho.
+- `trg_orders_details_after_delete`: Khi xóa chi tiết đơn hàng, tự hoàn kho nếu đơn chưa thuộc nhóm hoàn kho.
+- `trg_orders_after_update`: Khi đơn chuyển sang trạng thái hoàn kho, tự cộng lại tồn kho, giảm `sold_quantity`, ghi giao dịch `RELEASE` và giải phóng serial thiết bị.
+- `trg_carts_items_before_insert`, `trg_carts_items_before_update`: Chặn số lượng trong giỏ hàng nhỏ hơn hoặc bằng 0.
+- `trg_promotions_before_insert`, `trg_promotions_before_update`: Chặn giá trị khuyến mãi âm.
+- `sp_cancel_expired_orders`: Tự hủy đơn `PENDING` quá 24 giờ.
+- `evt_auto_cancel_pending_orders`: Chạy `sp_cancel_expired_orders` mỗi giờ.
+
+## Gợi ý chỉnh tiếp
+
+- Cập nhật `backend/prisma/schema.prisma` bằng introspection hoặc sửa tay để khớp `db_shop.sql`.
+- Cân nhắc thêm ràng buộc/check logic cho `orders.total_price >= 0`, `payment_transactions.amount >= 0`.
+- Cân nhắc unique/index cho `payment_transactions.transaction_code` nếu mỗi mã giao dịch từ provider phải là duy nhất.
