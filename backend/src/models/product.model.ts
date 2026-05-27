@@ -4,8 +4,6 @@ import { createProductVariantTransaction } from "./productVariant.model.js";
 import { createInventoryTransaction } from "./inventory.model.js";
 import { createProductImageTransaction } from "./productImage.model.js";
 
-
-
 export const findProductByNormalizeName = async(normalizedName: string) => {
     return await prisma.products.findUnique({
         where: {
@@ -62,4 +60,144 @@ export const createProduct = async(
     });
 };
 
+export const findProductById = async(productId: string) => {
+    return await prisma.products.findUnique({
+        where: {
+            product_id: productId,
+        },
+        select: {
+            product_id: true,
+            product_name: true,
+            description: true,
+            warranty_period: true,
+            created_at: true,
+            updated_at: true,
+
+            brands: {
+                select: {
+                    brand_id: true,
+                    brand_name: true
+                }
+            },
+
+            categories: {
+                select: {
+                    category_id: true,
+                    category_name: true
+                }
+            },
+
+            product_variants: {
+                select: {
+                    variant_id: true,
+                    sku: true,
+                    price: true,
+                    quantity_in_stock: true,
+                    reserved_quantity: true,
+                    sold_quantity: true,
+
+                    product_images: {
+                        select: {
+                            image_id: true,
+                            image_url: true,
+                            is_default: true
+                        }
+                    },
+
+                    variant_attribute_values: {
+                        select: {
+                            attribute_values: {
+                                select: {
+                                    attribute_value_id: true,
+                                    value: true,
+                                    product_attributes: {
+                                        select: {
+                                            attribute_id: true,
+                                            attribute_name: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+
+                    product_variant_specs: {
+                        select: {
+                            spec_key: true,
+                            spec_value: true,
+                            display_order: true
+                        },
+                        orderBy: {
+                            display_order: "asc"
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+export const getAllProducts = async() => {
+    return await prisma.products.findMany({
+        select: {
+            product_id: true,
+            product_name: true,
+            description: true,
+            warranty_period: true,
+            created_at: true,
+            brands: {
+                select: {
+                    brand_id: true,
+                    brand_name: true,
+                }
+            },
+            categories: {
+                select: {
+                    category_id: true,
+                    category_name: true,
+                }
+            },
+            product_variants: {
+                select: {
+                    variant_id: true,
+                    sku: true,
+                    price: true,
+                    quantity_in_stock: true,
+
+                    product_images: {
+                        select: {
+                            image_url: true,
+                            is_default: true,
+                        },
+                        where: {
+                            is_default: true
+                        },
+                        take: 1
+                    }
+                }
+            }
+
+        },
+        orderBy: {
+            created_at: "desc",
+        },
+    });
+};
+
+export const updateProduct = async(productId: string, data: Prisma.productsUncheckedUpdateInput) => {
+    return await prisma.products.update({
+        where: {
+            product_id: productId,
+        },
+        data
+    });
+};
+
+export const deleteProduct =async(productId: string) => {
+    return await prisma.products.delete({
+        where: {
+            product_id: productId
+        },
+    });
+};
 

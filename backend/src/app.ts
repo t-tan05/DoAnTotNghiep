@@ -28,6 +28,11 @@ app.use(cors({
 
 app.use(limiter);
 
+//convert bigint sang string
+(BigInt.prototype as any).toJSON = function(){
+    return this.toString();
+};
+
 app.use(express.json());
 
 app.use("/api/auth", authRoute);

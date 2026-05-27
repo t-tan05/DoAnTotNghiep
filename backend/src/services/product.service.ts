@@ -1,7 +1,7 @@
 import { findAttributeValuesByIds } from "#models/attributeValue.model";
 import { findBrandById } from "#models/brand.model";
 import { findCategoryById } from "#models/category.model";
-import { createProduct, findProductByNormalizeName } from "#models/product.model"
+import { createProduct, findProductById, findProductByNormalizeName, getAllProducts, updateProduct } from "#models/product.model"
 import { findVariantBySku } from "#models/productVariant.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
@@ -17,15 +17,18 @@ export const createProductService = async(data: any, files: Express.Multer.File[
     //Tên được chuẩn hóa
     const nomarlizedName = normalizeText(displayName);
 
+    //Kiểm tra tên sản phẩm đã tồn tại chưa
     const existedProduct = await findProductByNormalizeName(nomarlizedName);
     if(existedProduct) throw new AppError("Tên sản phẩm đã tồn tại", 409);
 
     const brand = await findBrandById(data?.brandId);
 
+    //Kiểm tra brand có tồn tại không
     if(!brand) throw new AppError("Thương hiệu không tồn tại", 404);
 
     const category = await findCategoryById(data?.categoryId);
 
+    //Kiểm tra category có tồn tại không
     if(!category) throw new AppError("Danh mục không tồn tại", 404);
 
     const skuSet = new Set<string>();
@@ -172,4 +175,43 @@ export const createProductService = async(data: any, files: Express.Multer.File[
 
         throw error;
     }
+};
+
+export const getProductDetailService = async(productId: string) => {
+    const product = await findProductById(productId);
+
+    if(!product) throw new AppError("Không tìm thấy sản phẩm", 404);
+
+    return {product};
+};
+
+export const getAllProductsService = async() => {
+    const products = await getAllProducts();
+
+    return {products};
+};
+
+export const updateProductService = async(productId: string, data: any) => {
+    const product = await findProductById(productId);
+ 
+    if(!product) throw new AppError("Không tìm thấy sản phẩm", 404);
+
+    const normalizedName = normalizeText(data?.productName);
+
+    const existedProduct = await findProductByNormalizeName(normalizedName);
+
+    if(existedProduct && existedProduct.product_id !== data?.productId){
+        throw new AppError("Tên sản phẩm đã tồn tại", 409);
+    }
+
+    const updProduct = await updateProduct(productId, {
+        product_name: data?.productName,
+        normalized_name: normalizedName,
+        brand_id: data?.brandId,
+        category_id: data?.categoryId,
+        description: data?.description,
+        warranty_period: data?.warrantyPeriod
+    });
+
+    return {updProduct};
 }
