@@ -3,6 +3,8 @@ import { Prisma } from "@prisma/client";
 import { createProductVariantTransaction } from "./productVariant.model.js";
 import { createInventoryTransaction } from "./inventory.model.js";
 import { createProductImageTransaction } from "./productImage.model.js";
+import { createVariantAttributeTransaction } from "./variantAttributeValue.model.js";
+import { createProductVariantSpecTransaction } from "./productVariantSpec.model.js";
 
 export const findProductByNormalizeName = async(normalizedName: string) => {
     return await prisma.products.findUnique({
@@ -37,15 +39,11 @@ export const createProduct = async(
         await createProductVariantTransaction(tx, productVariantData);
 
         if(variantAttributeData.length > 0){
-            await tx.variant_attribute_values.createMany({
-                data: variantAttributeData,
-            });
+            await createVariantAttributeTransaction(tx, variantAttributeData);
         }
 
         if(productVariantSpecData.length > 0){
-            await tx.product_variant_specs.createMany({
-                data: productVariantSpecData,
-            });
+            await createProductVariantSpecTransaction(tx, productVariantSpecData);
         }
 
         if(imageData.length > 0){

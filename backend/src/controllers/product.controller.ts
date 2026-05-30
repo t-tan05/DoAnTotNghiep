@@ -11,17 +11,17 @@ export const createProductController = CatchAsync(async(req: AuthRequest, res: R
     
     const files = (req.files as Express.Multer.File[]) ?? [];
 
-    const result = await createProductService(
+    const data = await createProductService(
         req.body,
         files,
         userId,
     );
 
-    return res.status(201).json({
+    res.status(201).json({
         success: true,
         message: "Tạo sản phẩm thành công",
         data: {
-            ...result,
+            ...data,
         },
     });
 });

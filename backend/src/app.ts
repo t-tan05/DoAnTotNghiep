@@ -15,6 +15,8 @@ import brandRoute from "#routes/brand.route";
 import productRoute from "#routes/product.route";
 import productAttributeRoute from "#routes/productAttribute.route";
 import attributeValueRoute from "#routes/attributeValue.route";
+import productVariantRoute from "#routes/productVariant.route";
+import productImageRoute from "#routes/productImage.route";
 
 const app = express();
 
@@ -43,6 +45,8 @@ app.use("/api/brands", brandRoute);
 app.use("/api/products/", productRoute);
 app.use("/api/product-attributes", productAttributeRoute);
 app.use("/api/attribute-values", attributeValueRoute);
+app.use("/api/product-variants", productVariantRoute);
+app.use("/api/product-images", productImageRoute);
 
 app.use(globalErrorHandler);
 
