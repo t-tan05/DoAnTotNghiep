@@ -1,4 +1,5 @@
-import { createCategory, findCategoryById, findCategoryByNormalizeName, getAllCategories, updateCategory } from "#models/category.model";
+import { createCategory, deleteCategoryById, findCategoryById, findCategoryByNormalizeName, getAllCategories, updateCategory } from "#models/category.model";
+import { findProductByCategoryId } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
@@ -12,7 +13,7 @@ export const createCategoryService = async(categoryName: string, description?: s
 
     const existedCategory = await findCategoryByNormalizeName(normalizeName);
 
-    if(existedCategory) throw new AppError("Danh mục đã tồn tại", 409);
+    if(existedCategory) throw new AppError("Danh mục sản phẩm đã tồn tại", 409);
 
     const categoryId = crypto.randomUUID();
 
@@ -30,7 +31,7 @@ export const getAllCategoriesService = async() => {
 export const getCategoryByIdService = async(categoryId: string) => {
     const category = await findCategoryById(categoryId);
 
-    if(!category) throw new AppError("Không tìm thấy danh mục", 404);
+    if(!category) throw new AppError("Không tìm thấy danh mục sản phẩm", 404);
 
     return {category};
 };
@@ -38,7 +39,7 @@ export const getCategoryByIdService = async(categoryId: string) => {
 export const updateCategoryService = async(categoryId: string, categoryName: string, description?: string) => {
     const category = await findCategoryById(categoryId);
 
-    if(!category) throw new AppError("Không tìm thấy danh mục", 404);
+    if(!category) throw new AppError("Không tìm thấy danh mục sản phẩm", 404);
 
     const displayName = categoryName.trim();
 
@@ -46,7 +47,7 @@ export const updateCategoryService = async(categoryId: string, categoryName: str
 
     const existedCategory = await findCategoryByNormalizeName(normalizeName);
 
-    if(existedCategory && existedCategory.category_id !== categoryId) throw new AppError("Tên danh mục đã tồn tại", 409);
+    if(existedCategory && existedCategory.category_id !== categoryId) throw new AppError("Tên danh mục sản phẩm đã tồn tại", 409);
 
     const updCategory = await updateCategory(categoryId, {
         category_name: displayName,
@@ -56,4 +57,18 @@ export const updateCategoryService = async(categoryId: string, categoryName: str
 
     return {updCategory};
 };
+
+export const deleteCategoryService = async(categoryId: string) => {
+    const category = await findCategoryById(categoryId);
+
+    if(!category) throw new AppError("Không tìm thấy danh mục sản phẩm", 404);
+
+    const existedCategoryInProduct = await findProductByCategoryId(categoryId);
+
+    if(existedCategoryInProduct) throw new AppError("Không thể xóa vì danh mục sản phẩm này đang được sử dụng", 409);
+
+    const delCategory = await deleteCategoryById(categoryId);
+
+    return {delCategory};
+}
 

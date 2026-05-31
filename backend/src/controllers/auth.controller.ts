@@ -25,7 +25,9 @@ export const loginController = CatchAsync(async(req: Request, res: Response) => 
     res.status(200).json({
         success: true,
         message: "Đăng nhập thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 
@@ -37,7 +39,9 @@ export const registerController = CatchAsync(async(req: Request, res: Response) 
     res.status(201).json({
         success: true,
         message: "Đăng ký thành công, vui lòng kiểm tra email để xác thực tài khoản",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 
@@ -105,7 +109,9 @@ export const refreshTokenController = CatchAsync(async(req: Request, res: Respon
     res.status(200).json({
         success: true,
         message: "Làm mới token thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 

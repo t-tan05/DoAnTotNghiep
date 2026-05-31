@@ -160,6 +160,16 @@ export const updateProductVariantService = async(
     }
 
     if(data.attributeValueIds){
+        const attributeValueSet = new Set<string>();
+    
+        //Kiểm tra request có gửi mã giá trị thuộc tính trùng nhau không
+        for(const id of data?.attributeValueIds){
+            if(attributeValueSet.has(id)){
+                throw new AppError(`Mã giá trị thuôc tính ${id} bị trùng trong request`, 400);
+            }
+            attributeValueSet.add(id);
+        }
+
         const existedAttributeValue = await findAttributeValuesByIds(data.attributeValueIds);
 
         if(existedAttributeValue.length !== data?.attributeValueIds.length){

@@ -44,3 +44,11 @@ export const updateBrand = async(brandId: string, data: Prisma.brandsUpdateInput
         data,
     });
 };
+
+export const deleteBrandById = async(brandId: string) => {
+    return await prisma.brands.delete({
+        where: {
+            brand_id: brandId,
+        },
+    });
+};

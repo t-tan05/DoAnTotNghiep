@@ -199,3 +199,25 @@ export const deleteProduct =async(productId: string) => {
     });
 };
 
+export const findProductByCategoryId = async(categoryId: string) => {
+    return await prisma.products.findFirst({
+        where: {
+            categories: {
+                category_id: categoryId,
+            },
+        },
+    });
+};
+
+export const findProductByBrandId = async(brandId: string) => {
+    return await prisma.products.findFirst({
+        where: {
+            brands: {
+                brand_id: brandId,
+            },
+        },
+    });
+};
+
+
+

@@ -28,8 +28,6 @@ export const deleteRoleService = async(roleName: string) => {
 
     if(!existedRole) throw new AppError(`Không tìm thấy ${roleUpperCase} để xóa`, 404);
 
-    
-
     const delRole = await deleteRoleByRoleName(roleUpperCase);
 
     return {delRole};

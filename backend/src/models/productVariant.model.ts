@@ -18,6 +18,45 @@ export const findProductVariantById = async(variantId: string) => {
         where: {
             variant_id: variantId,
         },
+        select: {
+            variant_id: true,
+            product_id: true,
+            sku: true,
+            price: true,
+            quantity_in_stock: true,
+            reserved_quantity: true,
+            sold_quantity: true,
+            image_url: true,
+            public_id: true,
+            product_images: {
+                select: {
+                    image_id: true,
+                    image_url: true,
+                    is_default: true,
+                }
+            },
+            product_variant_specs: {
+                select: {
+                    spec_key: true,
+                    spec_value: true,
+                }
+            },
+            variant_attribute_values: {
+                select: {
+                    attribute_values: {
+                        select: {
+                            product_attributes: {
+                                select: {
+                                    attribute_id: true,
+                                    attribute_name: true
+                                }
+                            },
+                            value: true,
+                        }
+                    }
+                }
+            }
+        }
     });
 };
 
