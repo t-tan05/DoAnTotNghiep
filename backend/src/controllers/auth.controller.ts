@@ -1,3 +1,4 @@
+import { refreshTokenCookieOptions } from "#config/cookie";
 import { 
     forgotPasswordService, 
     loginService, 
@@ -22,11 +23,13 @@ export const loginController = CatchAsync(async(req: Request, res: Response) => 
 
     const data = await loginService(email, password);
 
+    res.cookie("refreshToken", data.refreshToken, refreshTokenCookieOptions);
+
     res.status(200).json({
         success: true,
         message: "Đăng nhập thành công",
         data: {
-            ...data,
+            accessToken: data.accessToken,
         }
     });
 });
@@ -102,7 +105,9 @@ export const resetPasswordController = CatchAsync(async(req: Request, res: Respo
 });
 
 export const refreshTokenController = CatchAsync(async(req: Request, res: Response) => {
-    const {refreshToken} = req.body;
+    const refreshToken = req.cookies?.refreshToken;
+
+    if(!refreshToken) throw new AppError("Refresh token không tồn tại", 401);
 
     const data = await refreshTokenService(refreshToken);
 
@@ -124,6 +129,11 @@ export const logoutController = CatchAsync(async(req: AuthRequest, res: Response
     const token = authHeader.split(" ")[1];
 
     await logoutService(userId, token);
+
+    //clear cookie
+    res.clearCookie("refreshToken", {
+        path: "/api/auth",
+    });
 
     res.status(200).json({
         success: true,

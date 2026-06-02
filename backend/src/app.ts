@@ -5,6 +5,7 @@ import morgan from "morgan";
 import redisClient from "#config/redis";
 import { limiter } from "#config/rateLimit";
 import { globalErrorHandler } from "#middlewares/ErrorHandler";
+import cookieParser from "cookie-parser";
 
 //Router
 import authRoute from "#routes/auth.route";
@@ -36,6 +37,7 @@ app.use(limiter);
 };
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/auth", authRoute);
 app.use("/api/roles", roleRoute);

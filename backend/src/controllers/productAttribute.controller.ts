@@ -62,7 +62,7 @@ export const deleteProductAttributeController = CatchAsync(async(req: Request, r
     const data = await deleteProductAttributeService(attributeId);
 
     res.status(200).json({
-        sucees: true,
+        success: true,
         message: "Đã xóa thuộc tính sản phẩm thành công",
         data: {
             ...data,

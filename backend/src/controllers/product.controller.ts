@@ -44,7 +44,7 @@ export const getAllProductsController = CatchAsync(async(req: Request, res: Resp
     const data = await getAllProductsService();
 
     res.status(200).json({
-        suceess: true,
+        success: true,
         message: "Lấy danh sách sản phẩm thành công",
         data: {
             ...data
