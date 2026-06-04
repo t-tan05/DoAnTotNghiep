@@ -11,7 +11,7 @@ export type RegisterPayload = {
 };
 
 export type VerifyEmailPayload = {
-    emai: string;
+    email: string;
     verifyToken: string;
 };
 
@@ -29,4 +29,13 @@ export type ResetPasswordPayload = {
     resetCode: string;
     newPassword: string;
     confirmPassword: string;
+};
+
+export type AuthUser = {
+    user_id: string;
+    name: string;
+    email: string;
+    verified: boolean;
+    status: string;
+    roles?: Array<string>;
 };
