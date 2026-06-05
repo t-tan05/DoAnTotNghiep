@@ -72,7 +72,7 @@ export function AuthProvider({children}:AuthProviderProps) {
         }finally{
             localStorage.removeItem("accessToken");
             setUser(null);
-            navigate("/login");
+            navigate("/");
         }
     }
 

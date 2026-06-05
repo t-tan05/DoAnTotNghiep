@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { heroSlides } from "./hero-slider.data";
-import { Link } from "react-router-dom";
-import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const AUTO_PLAY_DELAY = 4000;
@@ -33,8 +31,8 @@ export default function HeroSlider() {
 
     return(
         <section className="relative overflow-hidden bg-white">
-            <div className="relative mx-auto max-w-7xl">
-                <div className="relative aspect-[2464/920] overflow-hidden rounded-none md:rounded-xl">
+            <div className="relative mx-auto w-full max-w-7xl">
+                <div className="relative h-[420px] overflow-hidden md:aspect-[16/9] md:h-auto lg:aspect-[2464/920] lg:rounded-xl">
                     {heroSlides.map((slide, index) => (
                         <div 
                             key={slide.id}
@@ -43,23 +41,20 @@ export default function HeroSlider() {
                                 index === currentIndex ? "opacity-100" : "pointer-events-none opacity-0",
                             ].join(" ")}
                         >
-                            <img src={slide.image} alt="Banner" className="h-full w-full object-cover"/>
+                            <picture className="block h-full w-full">
+                                <source media="(max-width: 767px" srcSet={slide.image.mobile}/>
+                                <source media="(max-width: 1023px" srcSet={slide.image.tablet}/>
 
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="max-w-xl px-8 text-white md:px-12">
-                                    <Button>
-                                        <Link to={slide.href} >Xem sản phẩm</Link>
-                                    </Button>
-                                </div>
-                            </div>
-                            
+                                <img src={slide.image.desktop} alt="Banner" className="h-full w-full object-cover"/>
+
+                            </picture>
                         </div>
                     ))}
 
                     <button
                         type="button"
                         onClick={goToPrevious}
-                        className="absolute left-4 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow transition hover:bg-white cursor-pointer"
+                        className="absolute left-2 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow transition hover:bg-white md:left-4 md:size-10 lg:size-11"
                         aria-label="Ảnh trước"
                     >
                         <ChevronLeft className="size-6" />
@@ -68,13 +63,13 @@ export default function HeroSlider() {
                     <button
                         type="button"
                         onClick={goToNext}
-                        className="absolute right-4 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow transition hover:bg-white cursor-pointer"
+                        className="absolute right-2 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow transition hover:bg-white md:right-4 md:size-10 lg:size-11"
                         aria-label="Ảnh tiếp theo"
                     >
                         <ChevronRight className="size-6" />
                     </button>
 
-                    <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+                    <div className="absolute bottom-5 left-1/2 z-10 hidden -translate-x-1/2 gap-2 md:flex">
                         {heroSlides.map((slide, index) => (
                             <button
                                 key={slide.id}

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 export default function Footer() {
   return (
     <footer className="border-t bg-[#1D5D9B] text-white">
-      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-4">
+      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-5">
         <div>
           <img
             src="/assets/logo.jpg"
@@ -45,6 +45,11 @@ export default function Footer() {
             <li>Chính sách đổi trả</li>
             <li>Chính sách giao hàng</li>
           </ul>
+        </div>
+
+        <div>
+          <h3 className="font-semibold">Mạng xã hội</h3>
+          
         </div>
       </div>
 
