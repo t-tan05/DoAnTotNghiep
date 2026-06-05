@@ -11,12 +11,16 @@ import { Route, Routes } from "react-router-dom";
 import GuestRoute from "./GuestRoute";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
+import PublicLayout from "@/components/layout/PublicLayout";
 
 
 export default function AppRoute() {
     return (
         <Routes>
-            <Route path="/" element={<HomePage/>}/>
+            <Route element={<PublicLayout />} >
+                <Route index path="/" element={<HomePage/>}/>
+                <Route path="/gioi-thieu" element={<div>Gioi thieu</div>} />
+            </Route>
 
             <Route element={<GuestRoute/>}>
                 <Route path="/login" element={<LoginPage/>}/>
