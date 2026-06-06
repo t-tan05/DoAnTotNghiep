@@ -1,4 +1,4 @@
-import { createCategoryService, getAllCategoriesService, getCategoryByIdService, updateCategoryService } from "#services/category.service";
+import { createCategoryService, deleteCategoryService, getAllCategoriesService, getCategoryByIdService, updateCategoryService } from "#services/category.service";
 import { CatchAsync } from "#utils/CatchAsync";
 export const createCategoryController = CatchAsync(async (req, res) => {
     const { categoryName, description } = req.body;
@@ -6,7 +6,9 @@ export const createCategoryController = CatchAsync(async (req, res) => {
     res.status(201).json({
         success: true,
         message: "Tạo danh mục thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const getAllCategoriesController = CatchAsync(async (req, res) => {
@@ -25,7 +27,9 @@ export const getCategoryByIdController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Tìm danh mục thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const updateCategoryController = CatchAsync(async (req, res) => {
@@ -35,6 +39,19 @@ export const updateCategoryController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Cập nhật thành công",
-        ...data,
+        data: {
+            ...data,
+        }
+    });
+});
+export const deleteCategoryController = CatchAsync(async (req, res) => {
+    const categoryId = req.params.categoryId;
+    const data = await deleteCategoryService(categoryId);
+    res.status(200).json({
+        success: true,
+        message: "Xóa danh mục sản phẩm thành công",
+        data: {
+            ...data,
+        },
     });
 });

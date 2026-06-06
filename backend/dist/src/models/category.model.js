@@ -39,4 +39,9 @@ export const updateCategory = async (categoryId, data) => {
     });
 };
 export const deleteCategoryById = async (categoryId) => {
+    return await prisma.categories.delete({
+        where: {
+            category_id: categoryId,
+        },
+    });
 };

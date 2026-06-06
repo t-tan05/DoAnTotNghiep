@@ -1,4 +1,4 @@
-import { createBrandService, getAllBrandsService, getBrandByIdService, updateBrandService } from "#services/brand.service";
+import { createBrandService, deleteBrandService, getAllBrandsService, getBrandByIdService, updateBrandService } from "#services/brand.service";
 import { CatchAsync } from "#utils/CatchAsync";
 export const createBrandController = CatchAsync(async (req, res) => {
     const { brandName, description } = req.body;
@@ -6,7 +6,9 @@ export const createBrandController = CatchAsync(async (req, res) => {
     res.status(201).json({
         success: true,
         message: "Tạo thương hiệu thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const getAllBrandsController = CatchAsync(async (req, res) => {
@@ -25,7 +27,9 @@ export const getBrandByIdController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Tìm thương hiệu thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const updateBrandController = CatchAsync(async (req, res) => {
@@ -35,6 +39,19 @@ export const updateBrandController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Cập nhật thành công",
-        ...data,
+        data: {
+            ...data,
+        }
+    });
+});
+export const deleteBrandController = CatchAsync(async (req, res) => {
+    const brandId = req.params.brandId;
+    const data = await deleteBrandService(brandId);
+    res.status(200).json({
+        success: true,
+        message: "Xóa thương hiệu sản phẩm thành công",
+        data: {
+            ...data,
+        },
     });
 });

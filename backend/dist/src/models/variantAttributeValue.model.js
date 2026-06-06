@@ -6,3 +6,15 @@ export const existAttributeValueByAttributeValueId = async (attributeValueId) =>
         },
     });
 };
+export const createVariantAttributeTransaction = async (tx, data) => {
+    return await tx.variant_attribute_values.createMany({
+        data,
+    });
+};
+export const deleteVariantAttributeTransaction = async (tx, variantId) => {
+    await tx.variant_attribute_values.deleteMany({
+        where: {
+            variant_id: variantId,
+        }
+    });
+};

@@ -1,13 +1,17 @@
+import { refreshTokenCookieOptions } from "#config/cookie";
 import { forgotPasswordService, loginService, logoutService, refreshTokenService, registerService, resendVerifyEmailService, resetPasswordService, verifyEmailService, verifyResetCodeService } from "#services/auth.service";
 import AppError from "#utils/AppError";
 import { CatchAsync } from "#utils/CatchAsync";
 export const loginController = CatchAsync(async (req, res) => {
     const { email, password } = req.body;
     const data = await loginService(email, password);
+    res.cookie("refreshToken", data.refreshToken, refreshTokenCookieOptions);
     res.status(200).json({
         success: true,
         message: "Đăng nhập thành công",
-        ...data,
+        data: {
+            accessToken: data.accessToken,
+        }
     });
 });
 export const registerController = CatchAsync(async (req, res) => {
@@ -16,7 +20,9 @@ export const registerController = CatchAsync(async (req, res) => {
     res.status(201).json({
         success: true,
         message: "Đăng ký thành công, vui lòng kiểm tra email để xác thực tài khoản",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const verifyEmailController = CatchAsync(async (req, res) => {
@@ -61,12 +67,16 @@ export const resetPasswordController = CatchAsync(async (req, res) => {
     });
 });
 export const refreshTokenController = CatchAsync(async (req, res) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken)
+        throw new AppError("Refresh token không tồn tại", 401);
     const data = await refreshTokenService(refreshToken);
     res.status(200).json({
         success: true,
         message: "Làm mới token thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const logoutController = CatchAsync(async (req, res) => {
@@ -76,6 +86,10 @@ export const logoutController = CatchAsync(async (req, res) => {
         throw new AppError("Bạn chưa đăng nhập", 401);
     const token = authHeader.split(" ")[1];
     await logoutService(userId, token);
+    //clear cookie
+    res.clearCookie("refreshToken", {
+        path: "/api/auth",
+    });
     res.status(200).json({
         success: true,
         message: "Logout thành công",

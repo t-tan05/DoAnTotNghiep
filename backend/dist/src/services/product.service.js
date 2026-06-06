@@ -1,8 +1,8 @@
 import { findAttributeValuesByIds } from "#models/attributeValue.model";
 import { findBrandById } from "#models/brand.model";
 import { findCategoryById } from "#models/category.model";
-import { createProduct, findProductByNormalizeName } from "#models/product.model";
-import { findVariantBySku } from "#models/productVariant.model";
+import { createProduct, findProductById, findProductByNormalizeName, getAllProducts, updateProduct } from "#models/product.model";
+import { findProductVariantBySku } from "#models/productVariant.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
@@ -13,13 +13,16 @@ export const createProductService = async (data, files, createdBy) => {
     const displayName = data?.productName;
     //Tên được chuẩn hóa
     const nomarlizedName = normalizeText(displayName);
+    //Kiểm tra tên sản phẩm đã tồn tại chưa
     const existedProduct = await findProductByNormalizeName(nomarlizedName);
     if (existedProduct)
         throw new AppError("Tên sản phẩm đã tồn tại", 409);
     const brand = await findBrandById(data?.brandId);
+    //Kiểm tra brand có tồn tại không
     if (!brand)
         throw new AppError("Thương hiệu không tồn tại", 404);
     const category = await findCategoryById(data?.categoryId);
+    //Kiểm tra category có tồn tại không
     if (!category)
         throw new AppError("Danh mục không tồn tại", 404);
     const skuSet = new Set();
@@ -29,7 +32,7 @@ export const createProductService = async (data, files, createdBy) => {
             throw new AppError(`SKU ${variant?.sku} bị trùng trong request`, 400);
         }
         skuSet.add(variant?.sku);
-        const existedSku = await findVariantBySku(variant?.sku);
+        const existedSku = await findProductVariantBySku(variant?.sku);
         if (existedSku)
             throw new AppError(`SKU ${variant?.sku} đã tồn tại`, 409);
         allAttributeValueIds.push(...(variant?.attributeValueIds ?? []));
@@ -116,7 +119,7 @@ export const createProductService = async (data, files, createdBy) => {
             .map((file) => file.fieldname)
             .filter((fieldname) => !matchedImageFieldnames.has(fieldname));
         if (unmatchedFileFieldnames.length > 0) {
-            throw new AppError(`TÃªn field áº£nh khÃ´ng há»£p lá»‡: ${unmatchedFileFieldnames.join(", ")}. Äá»‹nh dáº¡ng Ä‘Ãºng lÃ  variant_{index}_image_{number}, vÃ­ dá»¥ variant_0_image_0`, 400);
+            throw new AppError(`Tên field ảnh không hợp lệ: ${unmatchedFileFieldnames.join(", ")}. Định dạng đúng là variant_{index}_image_{number}, ví dụ variant_0_image_0`, 400);
         }
         const newProduct = await createProduct(productData, productVariantData, inventoryData, variantAttributeData, productVariantSpecData, imageData);
         return { newProduct };
@@ -125,4 +128,33 @@ export const createProductService = async (data, files, createdBy) => {
         await Promise.allSettled(uploadedPublicIds.map((publicId) => deleteImageFromCloudinary(publicId)));
         throw error;
     }
+};
+export const getProductDetailService = async (productId) => {
+    const product = await findProductById(productId);
+    if (!product)
+        throw new AppError("Không tìm thấy sản phẩm", 404);
+    return { product };
+};
+export const getAllProductsService = async () => {
+    const products = await getAllProducts();
+    return { products };
+};
+export const updateProductService = async (productId, data) => {
+    const product = await findProductById(productId);
+    if (!product)
+        throw new AppError("Không tìm thấy sản phẩm", 404);
+    const normalizedName = normalizeText(data?.productName);
+    const existedProduct = await findProductByNormalizeName(normalizedName);
+    if (existedProduct && existedProduct.product_id !== data?.productId) {
+        throw new AppError("Tên sản phẩm đã tồn tại", 409);
+    }
+    const updProduct = await updateProduct(productId, {
+        product_name: data?.productName,
+        normalized_name: normalizedName,
+        brand_id: data?.brandId,
+        category_id: data?.categoryId,
+        description: data?.description,
+        warranty_period: data?.warrantyPeriod
+    });
+    return { updProduct };
 };

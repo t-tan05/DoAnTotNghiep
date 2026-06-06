@@ -7,7 +7,9 @@ export const createRoleController = CatchAsync(async (req, res) => {
     res.status(201).json({
         success: true,
         message: "Tạo role thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const deleteRoleController = CatchAsync(async (req, res) => {
@@ -18,7 +20,9 @@ export const deleteRoleController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Xóa role thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const getAllRolesController = CatchAsync(async (req, res) => {

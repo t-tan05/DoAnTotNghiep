@@ -32,7 +32,7 @@ export default function HeroSlider() {
     return(
         <section className="relative overflow-hidden bg-white">
             <div className="relative mx-auto w-full max-w-7xl">
-                <div className="relative h-[420px] overflow-hidden md:aspect-[16/9] md:h-auto lg:aspect-[2464/920] lg:rounded-xl">
+                <div className="relative aspect-[5/6] overflow-hidden md:aspect-[16/9] lg:aspect-[2464/920] lg:rounded-xl">
                     {heroSlides.map((slide, index) => (
                         <div 
                             key={slide.id}

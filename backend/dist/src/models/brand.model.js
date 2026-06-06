@@ -38,3 +38,10 @@ export const updateBrand = async (brandId, data) => {
         data,
     });
 };
+export const deleteBrandById = async (brandId) => {
+    return await prisma.brands.delete({
+        where: {
+            brand_id: brandId,
+        },
+    });
+};

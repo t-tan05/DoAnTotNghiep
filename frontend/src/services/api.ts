@@ -5,7 +5,7 @@ import axios, {
 
 import type { BackendError, BackendSuccess, RetryConfig } from "../types/api.type.ts";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:3000/api`;
 
 export const api = axios.create({
     baseURL: API_URL,

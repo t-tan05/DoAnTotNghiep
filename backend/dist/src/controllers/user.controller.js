@@ -17,7 +17,9 @@ export const profileController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Thông tin cá nhân",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const updateProfileController = CatchAsync(async (req, res) => {
@@ -27,7 +29,9 @@ export const updateProfileController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Đã cập nhật thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const lockUserController = CatchAsync(async (req, res) => {
@@ -39,7 +43,9 @@ export const lockUserController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Khóa tài khoản thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const unlockUserController = CatchAsync(async (req, res) => {
@@ -50,7 +56,9 @@ export const unlockUserController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Mở khóa tài khoản thành công",
-        ...data,
+        data: {
+            ...data,
+        }
     });
 });
 export const delUserController = CatchAsync(async (req, res) => {
