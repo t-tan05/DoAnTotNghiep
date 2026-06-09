@@ -60,7 +60,7 @@ export default function UserDropdown() {
                         </div>
 
                         <Link
-                            to="/profile"
+                            to="/account"
                             onClick={() => setOpen(false)}
                             className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
                         >

@@ -1,6 +1,6 @@
-import SpinnerButton from "@/components/common/SpinnerButton";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, Outlet } from "react-router-dom";
+import PageLoading from "@/components/common/PageLoading";
 
 export default function ProtectedRoute(){
     const {loading, isAuthenticated} = useAuth();
@@ -8,7 +8,7 @@ export default function ProtectedRoute(){
     if(loading){
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <SpinnerButton loading loadingText="Đang tải..." disabled/>
+                <PageLoading variant="plain" text="Đang tải..."/>
             </div>
         )
     }

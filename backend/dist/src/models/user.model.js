@@ -26,6 +26,27 @@ export const findUserById = async (userId) => {
         },
     });
 };
+export const findUserByIdForChangePassword = async (userId) => {
+    return await prisma.users.findUnique({
+        where: {
+            user_id: userId,
+        },
+        select: {
+            user_id: true,
+            name: true,
+            email: true,
+            pass_word: true,
+            verified: true,
+            refreshToken: true,
+            status: true,
+            users_roles: {
+                select: {
+                    role_name: true,
+                },
+            },
+        }
+    });
+};
 export const getRolesById = async (userId) => {
     return await prisma.users_roles.findMany({
         where: {

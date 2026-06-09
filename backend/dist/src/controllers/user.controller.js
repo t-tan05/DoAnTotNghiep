@@ -1,5 +1,5 @@
 import { CatchAsync } from "#utils/CatchAsync";
-import { delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updateProfileService } from "#services/user.service";
+import { delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updatePasswordService, updateProfileService } from "#services/user.service";
 import AppError from "#utils/AppError";
 export const getAllUsersController = CatchAsync(async (req, res) => {
     const data = await getAllUsersService();
@@ -69,5 +69,14 @@ export const delUserController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Xóa tài khoản thành công",
+    });
+});
+export const updatePasswordController = CatchAsync(async (req, res) => {
+    const userId = req.user.user_id;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    await updatePasswordService(userId, currentPassword, newPassword, confirmPassword);
+    res.status(200).json({
+        success: true,
+        message: "Thay đổi mật khẩu thành công",
     });
 });

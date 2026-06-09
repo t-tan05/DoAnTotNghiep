@@ -30,6 +30,28 @@ export const findUserById = async(userId: string) => {
     });
 };
 
+export const findUserByIdForChangePassword = async(userId: string) => {
+    return await prisma.users.findUnique({
+        where: {
+            user_id: userId,
+        },
+        select: {
+            user_id: true,
+            name: true,
+            email: true,
+            pass_word: true,
+            verified: true,
+            refreshToken: true,
+            status: true,
+            users_roles: {
+                select: {
+                    role_name: true,
+                },
+            },
+        }
+    })
+}
+
 export const getRolesById = async(userId: string) => {
     return await prisma.users_roles.findMany({
         where: {

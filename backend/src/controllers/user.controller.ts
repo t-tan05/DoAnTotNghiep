@@ -1,6 +1,6 @@
 import { CatchAsync } from "#utils/CatchAsync";
 import { Request, Response } from "express";
-import { delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updateProfileService } from "#services/user.service";
+import { delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updatePasswordService, updateProfileService } from "#services/user.service";
 import AppError from "#utils/AppError";
 
 interface AuthRequest extends Request {
@@ -96,3 +96,15 @@ export const delUserController = CatchAsync(async(req: Request, res: Response) =
     });
 });
 
+export const updatePasswordController = CatchAsync(async(req: AuthRequest, res: Response) => {
+    const userId = req.user.user_id;
+
+    const {currentPassword, newPassword, confirmPassword} = req.body;
+
+    await updatePasswordService(userId, currentPassword, newPassword, confirmPassword);
+
+    res.status(200).json({
+        success: true,
+        message: "Thay đổi mật khẩu thành công",
+    });
+});

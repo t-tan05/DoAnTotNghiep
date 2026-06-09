@@ -12,6 +12,10 @@ import GuestRoute from "./GuestRoute";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
 import PublicLayout from "@/components/layout/PublicLayout";
+import ProfileLayout from "@/components/profile/ProfileLayout";
+import AccountProfilePage from "@/pages/profile/AccountProfilePage";
+import ChangePasswordPage from "@/pages/profile/ChangePasswordPage";
+import AddressPage from "@/pages/profile/AddressPage";
 
 
 export default function AppRoute() {
@@ -20,6 +24,13 @@ export default function AppRoute() {
             <Route element={<PublicLayout />} >
                 <Route index path="/" element={<HomePage/>}/>
                 <Route path="/gioi-thieu" element={<div>Gioi thieu</div>} />
+                <Route element={<ProtectedRoute />}>
+                    <Route path="/account" element={<ProfileLayout />}>
+                        <Route index element={<AccountProfilePage />} />
+                        <Route path="password" element={<ChangePasswordPage />} />
+                        <Route path="addresses" element={<AddressPage />} />
+                    </Route>
+                </Route>
             </Route>
 
             <Route element={<GuestRoute/>}>
@@ -29,10 +40,6 @@ export default function AppRoute() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/verify-reset-code" element={<VerifyResetCodePage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
-            </Route>
-
-            <Route element={<ProtectedRoute />}>
-                <Route path="/profile" element={<div>Profile</div>}/>
             </Route>
 
             <Route element={<AdminRoute />}>

@@ -4,10 +4,10 @@ import HomeNavbar from "../navbar/HomeNavbar";
 
 export default function PublicLayout() {
     return (
-        <div className="min-h-screen bg-background">
+        <div className="flex min-h-screen flex-col bg-background">
             <HomeNavbar />
 
-            <main>
+            <main className="flex-1">
                 <Outlet/>
             </main>
             

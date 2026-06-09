@@ -1,4 +1,4 @@
-import SpinnerButton from "@/components/common/SpinnerButton";
+import PageLoading from "@/components/common/PageLoading";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, Outlet } from "react-router-dom";
 
@@ -8,7 +8,7 @@ export default function GuestRoute(){
     if(loading){
         return(
             <div className="min-h-screen flex items-center justify-center">
-                <SpinnerButton loading loadingText="Đang tải..." disabled />
+                <PageLoading variant="plain" text="Đang tải..." />
             </div>
         )
     }
