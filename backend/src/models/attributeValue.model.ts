@@ -44,9 +44,13 @@ export const findAttributeValueById = async(attributeValueId: string) => {
     });
 };
 
-export const findAttributeValueByNormalizedValue = async(normalizedValue: string) => {
-    return await prisma.attribute_values.findUnique({
+export const findAttributeValueByAttributeAndNormalizedValue  = async(
+    attributeId: string,
+    normalizedValue: string
+) => {
+    return await prisma.attribute_values.findFirst({
         where: {
+            attribute_id: attributeId,
             normalized_value: normalizedValue,
         },
     });

@@ -28,22 +28,22 @@ export const createProductAttributeSchema = Joi.object({
         .required()
 });
 
-export const updateProductAtrributeSchema = Joi.object({
+export const updateProductAttributeSchema = Joi.object({
     attributeName: Joi.string()
         .trim()
         .min(2)
         .max(50)
-        .required()
+        .optional()
         .messages({
             "string.min":"Tên thuộc tính ít nhất 2 ký tự",
             "string.max":"Tên thuộc tính tối đa 50 ký tự",
-            "any.required":"Tên thuộc tính là bắt buộc",
         }),
     displayOrder: Joi.number()
         .integer()
         .min(0)
+        .optional()
         .messages({
             "number.integer":"Thứ tự hiển thị phải là số nguyên",
             "number.min":"Thứ tự hiển thị phải lớn hơn hoặc bằng 0",
         }),
-});
+}).min(1);

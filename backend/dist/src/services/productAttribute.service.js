@@ -5,27 +5,23 @@ import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
 export const createProductAttributeService = async (data) => {
     const normalizedSet = new Set();
-    for (const attribute of data?.attributes) {
-        const displayName = attribute?.attributeName;
-        const normalizedName = normalizeText(displayName);
+    for (const attribute of data.attributes) {
+        const normalizedName = normalizeText(attribute.attributeName);
         if (normalizedSet.has(normalizedName)) {
-            throw new AppError(`Thuộc tính ${attribute?.attributeName} bị trùng trong request`, 400);
+            throw new AppError(`Thuộc tính ${attribute.attributeName} bị trùng trong request`, 400);
         }
         normalizedSet.add(normalizedName);
     }
-    //Lấy ra từng phần tử trong normalizedSet lưu vào mảng mới 
     const normalizedNames = [...normalizedSet];
     const existedAttributes = await findProductAttributesByNormalizedNames(normalizedNames);
     if (existedAttributes.length > 0)
         throw new AppError("Có thuộc tính đã tồn tại", 409);
-    const productAttributeData = data?.attributes.map((item) => {
-        return {
-            attribute_id: crypto.randomUUID(),
-            attribute_name: item?.attributeName,
-            normalized_name: normalizeText(item?.attributeName),
-            display_order: item?.displayOrder ?? 0,
-        };
-    });
+    const productAttributeData = data.attributes.map((item) => ({
+        attribute_id: crypto.randomUUID(),
+        attribute_name: item.attributeName,
+        normalized_name: normalizeText(item.attributeName),
+        display_order: item.displayOrder ?? 0,
+    }));
     await createProductAttributes(productAttributeData);
     return { productAttributeData };
 };
@@ -39,19 +35,23 @@ export const getProductAttributeService = async (attributeId) => {
         throw new AppError("Không tìm thấy thuộc tính sản phẩm", 404);
     return { productAttribute };
 };
-export const updateProductAttributeService = async (attributeId, attributeName, displayOrder) => {
+export const updateProductAttributeService = async (attributeId, payload) => {
     const productAttribute = await findProductAttributeById(attributeId);
     if (!productAttribute)
         throw new AppError("Không tìm thấy mã thuộc tính sản phẩm", 404);
-    const normalizedName = normalizeText(attributeName);
-    const existedProductAttribute = await findProductAttributeByNormalizedName(normalizedName);
-    if (existedProductAttribute && existedProductAttribute.attribute_id !== attributeId)
-        throw new AppError("Tên thuộc tính đã tồn tại", 409);
-    const updProductAttribute = await updateProductAttribute(attributeId, {
-        attribute_name: attributeName,
-        normalized_name: normalizedName,
-        display_order: displayOrder,
-    });
+    const productAttributeData = {};
+    if (payload.attributeName !== undefined) {
+        const normalizedName = normalizeText(payload.attributeName);
+        const existedProductAttribute = await findProductAttributeByNormalizedName(normalizedName);
+        if (existedProductAttribute && existedProductAttribute.attribute_id !== attributeId) {
+            throw new AppError("Tên thuộc tính đã tồn tại", 409);
+        }
+        productAttributeData.attribute_name = payload.attributeName;
+        productAttributeData.normalized_name = normalizedName;
+    }
+    if (payload.displayOrder !== undefined)
+        productAttributeData.display_order = payload.displayOrder;
+    const updProductAttribute = await updateProductAttribute(attributeId, productAttributeData);
     return { updProductAttribute };
 };
 export const deleteProductAttributeService = async (attributeId) => {

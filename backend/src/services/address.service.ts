@@ -1,24 +1,7 @@
 import { countAddressByUserId, createAddress, createDefaultAddressByTransaction, deleteAddressById, findAddressByIdAndUserId, findDefaultAddressByUserId, getAllAddressesByUserId, updateAddressByTransaction } from "#models/address.model";
 import AppError from "#utils/AppError";
 import crypto from "crypto";
-
-interface CreateAddressPayload {
-    receiverName: string;
-    phoneNumber: string;
-    province: string,
-    ward: string,
-    street: string,
-    setDefault?: boolean;
-};
-
-interface UpdateAddressPayload {
-    receiverName: string;
-    phoneNumber: string;
-    province: string,
-    ward: string,
-    street: string,
-    isDefault: boolean;
-}
+import type { CreateAddressPayload, UpdateAddressPayload } from "#types/address.type";
 
 export const createAddressService = async(userId: string, payload: CreateAddressPayload) => {
     const addressId = crypto.randomUUID();

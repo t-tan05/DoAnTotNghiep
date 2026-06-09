@@ -8,6 +8,9 @@ import { normalizeText } from "#utils/normalizeText";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
 import crypto from "crypto";
 import { inventory_transactions_type } from "@prisma/client";
+const buildVariantComboKey = (attributeValueIds = []) => {
+    return [...attributeValueIds].sort().join("|");
+};
 export const createProductService = async (data, files, createdBy) => {
     //tên hiển thị
     const displayName = data?.productName;
@@ -26,12 +29,20 @@ export const createProductService = async (data, files, createdBy) => {
     if (!category)
         throw new AppError("Danh mục không tồn tại", 404);
     const skuSet = new Set();
+    const variantComboSet = new Set();
     const allAttributeValueIds = [];
     for (const variant of data?.variants) {
         if (skuSet.has(variant?.sku)) {
             throw new AppError(`SKU ${variant?.sku} bị trùng trong request`, 400);
         }
         skuSet.add(variant?.sku);
+        const comboKey = buildVariantComboKey(variant.attributeValueIds);
+        if (comboKey && variantComboSet.has(comboKey)) {
+            throw new AppError("Có biến thể bị trùng tổ hợp thuộc tính", 400);
+        }
+        if (comboKey) {
+            variantComboSet.add(comboKey);
+        }
         const existedSku = await findProductVariantBySku(variant?.sku);
         if (existedSku)
             throw new AppError(`SKU ${variant?.sku} đã tồn tại`, 409);
@@ -42,6 +53,7 @@ export const createProductService = async (data, files, createdBy) => {
     if (existedAttributeValues.length !== uniqueAttributeValueIds.length) {
         throw new AppError("Có giá trị thuộc tính không tồn tại", 404);
     }
+    const attributeValueAttributeMap = new Map(existedAttributeValues.map((item) => [item.attribute_value_id, item.attribute_id]));
     const productId = crypto.randomUUID();
     const productData = {
         product_id: productId,
@@ -63,6 +75,13 @@ export const createProductService = async (data, files, createdBy) => {
         for (let index = 0; index < data?.variants.length; index++) {
             const variant = data?.variants[index];
             const variantId = crypto.randomUUID();
+            const attributeIds = variant.attributeValueIds
+                .map((attributeValueId) => attributeValueAttributeMap.get(attributeValueId))
+                .filter((attributeId) => attributeId !== undefined);
+            const uniqueAttributeIds = new Set(attributeIds);
+            if (uniqueAttributeIds.size !== attributeIds.length) {
+                throw new AppError("Một biến thể không được có nhiều giá trị cùng một thuộc tính.", 400);
+            }
             productVariantData.push({
                 variant_id: variantId,
                 product_id: productId,
@@ -143,18 +162,32 @@ export const updateProductService = async (productId, data) => {
     const product = await findProductById(productId);
     if (!product)
         throw new AppError("Không tìm thấy sản phẩm", 404);
-    const normalizedName = normalizeText(data?.productName);
-    const existedProduct = await findProductByNormalizeName(normalizedName);
-    if (existedProduct && existedProduct.product_id !== data?.productId) {
-        throw new AppError("Tên sản phẩm đã tồn tại", 409);
+    const productData = {};
+    if (data.productName !== undefined) {
+        const normalizedName = normalizeText(data.productName);
+        const existedProduct = await findProductByNormalizeName(normalizedName);
+        if (existedProduct && existedProduct.product_id !== productId) {
+            throw new AppError("Tên sản phẩm đã tồn tại", 409);
+        }
+        productData.product_name = data.productName;
+        productData.normalized_name = normalizedName;
     }
-    const updProduct = await updateProduct(productId, {
-        product_name: data?.productName,
-        normalized_name: normalizedName,
-        brand_id: data?.brandId,
-        category_id: data?.categoryId,
-        description: data?.description,
-        warranty_period: data?.warrantyPeriod
-    });
+    if (data.brandId !== undefined) {
+        const brand = await findBrandById(data.brandId);
+        if (!brand)
+            throw new AppError("Thương hiệu không tồn tại", 404);
+        productData.brand_id = data.brandId;
+    }
+    if (data.categoryId !== undefined) {
+        const category = await findCategoryById(data.categoryId);
+        if (!category)
+            throw new AppError("Danh mục không tồn tại", 404);
+        productData.category_id = data.categoryId;
+    }
+    if (data.description !== undefined)
+        productData.description = data.description;
+    if (data.warrantyPeriod !== undefined)
+        productData.warranty_period = data.warrantyPeriod;
+    const updProduct = await updateProduct(productId, productData);
     return { updProduct };
 };

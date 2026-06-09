@@ -370,7 +370,7 @@ CREATE TABLE `attribute_values` (
   `display_order` int DEFAULT '0',
   PRIMARY KEY (`attribute_value_id`),
   KEY `fk_attr_val_attr` (`attribute_id`),
-  UNIQUE KEY `uk_normalized_value` (`normalized_value`),
+  UNIQUE KEY `uk_attribute_normalized_value` (`attribute_id`, `normalized_value`),
   CONSTRAINT `fk_attr_val_attr` FOREIGN KEY (`attribute_id`) REFERENCES `product_attributes` (`attribute_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

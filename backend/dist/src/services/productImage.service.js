@@ -15,7 +15,6 @@ export const addVariantImagesService = async (variantId, files) => {
             const uploadResult = await uploadImageToCloudinary(files[i], "DoAnTotNghiep/products");
             uploadedPublicIds.push(uploadResult.public_id);
             imageData.push({
-                image_id: 0,
                 product_id: variant.product_id,
                 variant_id: variantId,
                 image_url: uploadResult.secure_url,

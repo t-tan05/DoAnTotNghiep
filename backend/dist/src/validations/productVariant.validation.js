@@ -1,4 +1,46 @@
 import Joi from "joi";
+export const createProductVariantSchema = Joi.object({
+    variants: Joi.array()
+        .items(Joi.object({
+        sku: Joi.string()
+            .trim()
+            .uppercase()
+            .max(100)
+            .required()
+            .messages({
+            "string.empty": "Mã SKU không được để trống.",
+            "string.max": "Mã SKU tối đa 100 ký tự.",
+            "any.required": "Mã SKU là bắt buộc."
+        }),
+        price: Joi.number()
+            .positive()
+            .required()
+            .messages({
+            "number.positive": "Giá sản phẩm phải lớn hơn 0.",
+            "any.required": "Giá sản phẩm là bắt buộc.",
+        }),
+        quantityInStock: Joi.number()
+            .integer()
+            .min(0)
+            .required()
+            .messages({
+            "number.integer": "Số lượng sản phẩm trong kho phải là số nguyên.",
+            "number.min": "Số lượng sản phẩm trong kho không được nhỏ hơn 0.",
+            "any.required": "Số lượng sản phẩm trong kho là bắt buộc.",
+        }),
+        attributeValueIds: Joi.array()
+            .items(Joi.string().trim().required())
+            .default([]),
+        specs: Joi.array()
+            .items(Joi.object({
+            specKey: Joi.string().trim().required(),
+            specValue: Joi.string().trim().required(),
+        }))
+            .default([]),
+    }))
+        .min(1)
+        .required(),
+});
 export const updateProductVariantSchema = Joi.object({
     sku: Joi.string()
         .trim()
@@ -21,6 +63,10 @@ export const updateProductVariantSchema = Joi.object({
         "number.min": "Số lượng tồn kho phải lớn hơn hoặc bằng 0",
         "any.required": "Số lượng tồn kho là bắt buộc"
     }),
+    stockNote: Joi.string()
+        .trim()
+        .allow("", null)
+        .optional(),
     attributeValueIds: Joi.array()
         .items(Joi.string()
         .trim()
@@ -48,4 +94,4 @@ export const updateProductVariantSchema = Joi.object({
         }),
     }))
         .optional()
-});
+}).min(1).with("stockNote", "quantityInStock");

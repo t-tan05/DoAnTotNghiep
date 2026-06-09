@@ -56,6 +56,21 @@ export const findProductVariantById = async (variantId) => {
         }
     });
 };
+export const findProductVariantCombosByProductId = async (productId) => {
+    return await prisma.product_variants.findMany({
+        where: {
+            product_id: productId,
+        },
+        select: {
+            variant_id: true,
+            variant_attribute_values: {
+                select: {
+                    attribute_value_id: true,
+                },
+            },
+        },
+    });
+};
 export const createProductVariantTransaction = async (tx, data) => {
     return await tx.product_variants.createMany({
         data,
@@ -80,7 +95,7 @@ export const createProductVariants = async (productVariantData, variantAttribute
         return true;
     });
 };
-export const updateProductVariant = async (variantId, variantData, shouldUpdateAttributes, variantAttributeValueData, shouldUpdateSpecs, productVariantSpecData) => {
+export const updateProductVariant = async (variantId, variantData, shouldUpdateAttributes, variantAttributeValueData, shouldUpdateSpecs, productVariantSpecData, inventoryTransactionData) => {
     return await prisma.$transaction(async (tx) => {
         const updateVariant = await tx.product_variants.update({
             where: {
@@ -90,11 +105,18 @@ export const updateProductVariant = async (variantId, variantData, shouldUpdateA
         });
         if (shouldUpdateAttributes) {
             await deleteVariantAttributeTransaction(tx, variantId);
-            await createVariantAttributeTransaction(tx, variantAttributeValueData);
+            if (variantAttributeValueData.length > 0) {
+                await createVariantAttributeTransaction(tx, variantAttributeValueData);
+            }
         }
         if (shouldUpdateSpecs) {
             await deleteProductVariantSpecTransaction(tx, variantId);
-            await createProductVariantSpecTransaction(tx, productVariantSpecData);
+            if (productVariantSpecData.length > 0) {
+                await createProductVariantSpecTransaction(tx, productVariantSpecData);
+            }
+        }
+        if (inventoryTransactionData) {
+            await createInventoryTransaction(tx, [inventoryTransactionData]);
         }
         return updateVariant;
     });

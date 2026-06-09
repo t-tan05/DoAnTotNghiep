@@ -60,6 +60,22 @@ export const findProductVariantById = async(variantId: string) => {
     });
 };
 
+export const findProductVariantCombosByProductId = async(productId: string) => {
+    return await prisma.product_variants.findMany({
+        where: {
+            product_id: productId,
+        },
+        select: {
+            variant_id: true,
+            variant_attribute_values: {
+                select: {
+                    attribute_value_id: true,
+                },
+            },
+        },
+    });
+};
+
 export const createProductVariantTransaction = async(
     tx: Prisma.TransactionClient, 
     data: Prisma.product_variantsUncheckedCreateInput[]
@@ -106,7 +122,8 @@ export const updateProductVariant = async(
     shouldUpdateAttributes: boolean,
     variantAttributeValueData: Prisma.variant_attribute_valuesUncheckedCreateInput[],
     shouldUpdateSpecs: boolean,
-    productVariantSpecData: Prisma.product_variant_specsUncheckedCreateInput[]
+    productVariantSpecData: Prisma.product_variant_specsUncheckedCreateInput[],
+    inventoryTransactionData?: Prisma.inventory_transactionsUncheckedCreateInput,
 ) => {
     return await prisma.$transaction(async(tx) => {
         const updateVariant = await tx.product_variants.update({
@@ -119,13 +136,21 @@ export const updateProductVariant = async(
         if(shouldUpdateAttributes){
             await deleteVariantAttributeTransaction(tx, variantId);
 
-            await createVariantAttributeTransaction(tx, variantAttributeValueData);
+            if(variantAttributeValueData.length > 0){
+                await createVariantAttributeTransaction(tx, variantAttributeValueData);
+            }
         }
 
         if(shouldUpdateSpecs){
             await deleteProductVariantSpecTransaction(tx, variantId);
 
-            await createProductVariantSpecTransaction(tx, productVariantSpecData);
+            if(productVariantSpecData.length > 0){
+                await createProductVariantSpecTransaction(tx, productVariantSpecData);
+            }
+        }
+
+        if(inventoryTransactionData){
+            await createInventoryTransaction(tx, [inventoryTransactionData]);
         }
 
         return updateVariant;

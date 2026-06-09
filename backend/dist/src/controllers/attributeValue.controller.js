@@ -12,8 +12,7 @@ export const createAttributeValueController = CatchAsync(async (req, res) => {
 });
 export const updateAttributeValueController = CatchAsync(async (req, res) => {
     const attributeValueId = req.params?.attributeValueId;
-    const { value, displayOrder } = req.body;
-    const data = await updateAttributeValueService(attributeValueId, value, displayOrder);
+    const data = await updateAttributeValueService(attributeValueId, req.body);
     res.status(200).json({
         success: true,
         message: "Cập nhật giá trị thuộc tính thành công",

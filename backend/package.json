@@ -22,6 +22,7 @@
     "#services/*": "./src/services/*.js",
     "#routes/*": "./src/routes/*.js",
     "#validations/*": "./src/validations/*.js",
+    "#types/*": "./src/types/*.js",
     "#app": "./src/app.js"
   },
   "devDependencies": {

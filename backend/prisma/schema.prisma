@@ -30,11 +30,12 @@ model attribute_values {
   attribute_value_id       String                     @id @db.VarChar(50)
   attribute_id             String                     @db.VarChar(50)
   value                    String                     @db.VarChar(100)
-  normalized_value         String                     @unique(map: "uk_normalized_value") @db.VarChar(100)
+  normalized_value         String                     @db.VarChar(100)
   display_order            Int?                       @default(0)
   product_attributes       product_attributes         @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attr_val_attr")
   variant_attribute_values variant_attribute_values[]
 
+  @@unique([attribute_id, normalized_value], map: "uk_attribute_normalized_value")
   @@index([attribute_id], map: "fk_attr_val_attr")
 }
 

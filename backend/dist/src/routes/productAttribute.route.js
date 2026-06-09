@@ -2,12 +2,12 @@ import { createProductAttributeController, deleteProductAttributeController, get
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { Validate } from "#middlewares/Validate";
-import { createProductAttributeSchema, updateProductAtrributeSchema } from "#validations/productAttribute.validation";
+import { createProductAttributeSchema, updateProductAttributeSchema } from "#validations/productAttribute.validation";
 import { Router } from "express";
 const router = Router();
 router.post("/", VerifyToken, CheckRole("ADMIN"), Validate(createProductAttributeSchema), createProductAttributeController);
 router.get("/", VerifyToken, CheckRole("ADMIN"), getAllProductAttributesController);
 router.get("/:attributeId", VerifyToken, CheckRole("ADMIN"), getProductAttributeController);
-router.patch("/:attributeId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductAtrributeSchema), updateProductAttributeController);
+router.patch("/:attributeId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductAttributeSchema), updateProductAttributeController);
 router.delete("/:attributeId", VerifyToken, CheckRole("ADMIN"), deleteProductAttributeController);
 export default router;

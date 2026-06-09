@@ -2,10 +2,10 @@ import { createAddressController, deleteAddressController, getAddressDefaultCont
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { Validate } from "#middlewares/Validate";
-import { createAddessSchema } from "#validations/addess.validation";
+import { createAddressSchema } from "#validations/address.validation";
 import { Router } from "express";
 const router = Router();
-router.post("/", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), Validate(createAddessSchema), createAddressController);
+router.post("/", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), Validate(createAddressSchema), createAddressController);
 router.get("/address-default", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), getAddressDefaultController);
 router.get("/", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), getAllAddressByUserController);
 router.put("/:addressId", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), updateAddressController);

@@ -12,7 +12,8 @@ export const createProductVariantController = CatchAsync(async (req, res) => {
 });
 export const updateProductVariantController = CatchAsync(async (req, res) => {
     const variantId = req.params.variantId;
-    const data = await updateProductVariantService(variantId, req.body);
+    const userId = req.user?.user_id;
+    const data = await updateProductVariantService(variantId, req.body, userId);
     res.status(200).json({
         success: true,
         message: "Cập nhật biến thể sản phẩm thành công",

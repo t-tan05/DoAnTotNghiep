@@ -33,8 +33,7 @@ export const getProductAttributeController = CatchAsync(async (req, res) => {
 });
 export const updateProductAttributeController = CatchAsync(async (req, res) => {
     const attributeId = req.params?.attributeId;
-    const { attributeName, displayOrder } = req.body;
-    const data = await updateProductAttributeService(attributeId, attributeName, displayOrder);
+    const data = await updateProductAttributeService(attributeId, req.body);
     res.status(200).json({
         success: true,
         message: "Cập nhật thuộc tính sản phẩm thành công",

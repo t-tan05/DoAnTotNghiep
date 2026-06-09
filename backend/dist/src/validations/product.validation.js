@@ -72,3 +72,17 @@ export const createProductSchema = Joi.object({
         .min(1)
         .required()
 });
+export const updateProductSchema = Joi.object({
+    productName: Joi.string()
+        .trim()
+        .min(2)
+        .max(255)
+        .optional(),
+    brandId: Joi.string().optional(),
+    categoryId: Joi.string().optional(),
+    description: Joi.string().allow("", null).optional(),
+    warrantyPeriod: Joi.number()
+        .integer()
+        .min(0)
+        .optional(),
+}).min(1);

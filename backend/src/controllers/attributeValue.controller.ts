@@ -16,9 +16,8 @@ export const createAttributeValueController = CatchAsync(async(req: Request, res
 
 export const updateAttributeValueController = CatchAsync(async(req: Request, res: Response) => {
     const attributeValueId = req.params?.attributeValueId as string;
-    const {value, displayOrder} = req.body;
 
-    const data = await updateAttributeValueService(attributeValueId, value, displayOrder);
+    const data = await updateAttributeValueService(attributeValueId, req.body);
 
     res.status(200).json({
         success: true,

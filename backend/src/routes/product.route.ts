@@ -4,7 +4,7 @@ import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { parseData } from "#middlewares/parseData";
 import { Validate } from "#middlewares/Validate";
-import { createProductSchema } from "#validations/product.validation";
+import { createProductSchema, updateProductSchema } from "#validations/product.validation";
 import { Router } from "express";
 
 const router = Router();
@@ -12,6 +12,6 @@ const router = Router();
 router.post("/", VerifyToken, CheckRole("ADMIN"),upload.any(),parseData, Validate(createProductSchema), createProductController);
 router.get("/", getAllProductsController);
 router.get("/:productId", getProductDetailController);
-router.patch("/:productId", VerifyToken, CheckRole("ADMIN"), updateProductController);
+router.patch("/:productId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductSchema), updateProductController);
 
 export default router;

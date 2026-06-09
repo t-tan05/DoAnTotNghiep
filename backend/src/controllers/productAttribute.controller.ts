@@ -43,9 +43,8 @@ export const getProductAttributeController = CatchAsync(async(req: Request, res:
 
 export const updateProductAttributeController = CatchAsync(async(req: Request, res: Response) => {
     const attributeId = req.params?.attributeId as string;
-    const {attributeName, displayOrder} = req.body;
 
-    const data = await updateProductAttributeService(attributeId, attributeName, displayOrder);
+    const data = await updateProductAttributeService(attributeId, req.body);
 
     res.status(200).json({
         success: true,

@@ -25,10 +25,11 @@ export const createProductVariantController = CatchAsync(async(req: AuthRequest,
     });
 });
 
-export const updateProductVariantController = CatchAsync(async(req: Request, res: Response) => {
+export const updateProductVariantController = CatchAsync(async(req: AuthRequest, res: Response) => {
     const variantId = req.params.variantId as string;
+    const userId = req.user?.user_id;
 
-    const data = await updateProductVariantService(variantId, req.body);
+    const data = await updateProductVariantService(variantId, req.body, userId);
 
     res.status(200).json({
         success: true,

@@ -35,6 +35,9 @@ export const getAllAddressesByUserId = async (userId) => {
         where: {
             user_id: userId,
         },
+        orderBy: {
+            is_default: "desc",
+        }
     });
 };
 export const findAddressByIdAndUserId = async (addressId, userId) => {

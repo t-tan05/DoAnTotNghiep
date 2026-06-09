@@ -35,3 +35,24 @@ export const createAttributeValueSchema = Joi.object({
         .min(1)
         .required()
 });
+
+export const updateAttributeValueSchema = Joi.object({
+    value: Joi.string()
+        .trim()
+        .min(1)
+        .max(100)
+        .optional()
+        .messages({
+            "string.min":"Giá trị thuộc tính ít nhất 1 ký tự",
+            "string.max":"Giá trị thuộc tính tối đa 100 ký tự",
+        }),
+
+    displayOrder: Joi.number()
+        .integer()
+        .min(0)
+        .optional()
+        .messages({
+            "number.integer":"Thứ tự hiển thị phải là số dương",
+            "number.min":"Thứ tự hiển thị phải lớn hơn hoặc bằng 0",
+        }),
+}).min(1);

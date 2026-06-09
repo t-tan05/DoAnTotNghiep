@@ -1,14 +1,36 @@
 import { findAttributeValuesByIds } from "#models/attributeValue.model";
 import { findProductById } from "#models/product.model";
-import { createProductVariants, findProductVariantById, findProductVariantBySku, updateProductVariant } from "#models/productVariant.model";
+import { createProductVariants, findProductVariantById, findProductVariantBySku, findProductVariantCombosByProductId, updateProductVariant } from "#models/productVariant.model";
 import AppError from "#utils/AppError";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
-import { inventory_transactions_type } from "@prisma/client";
+import { inventory_transactions_type, Prisma } from "@prisma/client";
 import crypto from "crypto";
+import type { CreateProductVariantPayload, UpdateProductVariantPayload } from "../types/product.type.js";
+
+const buildVariantComboKey = (attributeValueIds: string[] = []) => {
+    return [...attributeValueIds].sort().join("|");
+};
+
+const buildExistingVariantComboSet = async(productId: string, excludedVariantId?: string) => {
+    const variants = await findProductVariantCombosByProductId(productId);
+    const comboSet = new Set<string>();
+
+    for(const variant of variants){
+        if(variant.variant_id === excludedVariantId) continue;
+
+        const comboKey = buildVariantComboKey(
+            variant.variant_attribute_values.map((item) => item.attribute_value_id)
+        );
+
+        if(comboKey) comboSet.add(comboKey);
+    }
+
+    return comboSet;
+};
 
 export const createProductVariantService = async(
     productId: string,
-    data: any,
+    data: CreateProductVariantPayload,
     files: Express.Multer.File[],
     createdBy?: string
 ) => {
@@ -17,6 +39,8 @@ export const createProductVariantService = async(
     if(!product) throw new AppError("Không tìm thấy sản phẩm", 404);
 
     const skuSet = new Set<string>();
+    const variantComboSet = new Set<string>();
+    const existingVariantComboSet = await buildExistingVariantComboSet(productId);
 
     const productVariantData = [];
     const variantAttributeValueData = [];
@@ -35,6 +59,19 @@ export const createProductVariantService = async(
             }
 
             skuSet.add(variant?.sku);
+            const comboKey = buildVariantComboKey(variant.attributeValueIds);
+
+            if(comboKey && variantComboSet.has(comboKey)) {
+                throw new AppError("Có biến thể bị trùng tổ hợp thuộc tính", 400);
+            }
+
+            if(comboKey && existingVariantComboSet.has(comboKey)) {
+                throw new AppError("Tổ hợp thuộc tính của biến thể đã tồn tại trong sản phẩm", 409);
+            }
+
+            if(comboKey) {
+                variantComboSet.add(comboKey);
+            }
 
             const existedSku = await findProductVariantBySku(variant?.sku);
 
@@ -55,6 +92,13 @@ export const createProductVariantService = async(
             if(variant.attributeValueIds){
                 const existedAttributeValues = await findAttributeValuesByIds(variant.attributeValueIds);
 
+                const attributeIds = existedAttributeValues.map((item) => item.attribute_id);
+                const uniqueAttributeIds = new Set(attributeIds);
+
+                if(uniqueAttributeIds.size !== attributeIds.length){
+                    throw new AppError("Một biến thể không được có nhiều giá trị cùng một thuộc tính.", 400);
+                }
+
                 if(existedAttributeValues.length !== variant.attributeValueIds.length){
                     throw new AppError("Có giá trị thuộc tính không tồn tại", 404);
                 }
@@ -67,8 +111,7 @@ export const createProductVariantService = async(
                 }
             }
 
-
-            for(let i = 0; i < variant?.specs.lenght; i++){
+            for(let i = 0; i < variant?.specs.length; i++){
                 productVariantSpecData.push({
                     variant_id: variantId,
                     spec_key: variant?.specs[i]?.specKey,
@@ -145,13 +188,14 @@ export const createProductVariantService = async(
 
 export const updateProductVariantService = async(
     variantId: string,
-    data: any,
+    data: UpdateProductVariantPayload,
+    updatedBy?: string,
 ) => {
     const productVariant = await findProductVariantById(variantId);
 
     if(!productVariant) throw new AppError("Không tìm thấy biến thể sản phẩm", 400);
 
-    if(data.sku){
+    if(data.sku !== undefined){
         const existedVariant = await findProductVariantBySku(data?.sku);
     
         if(existedVariant && existedVariant.variant_id !== variantId){
@@ -171,19 +215,49 @@ export const updateProductVariantService = async(
         }
 
         const existedAttributeValue = await findAttributeValuesByIds(data.attributeValueIds);
+        const attributeIds = existedAttributeValue.map((item) => item.attribute_id);
+        const uniqueAttributeIds = new Set(attributeIds);
+
+        if(uniqueAttributeIds.size !== attributeIds.length) {
+            throw new AppError("Một biến thể không được có nhiều giá trị cùng một thuộc tính.", 400);
+        }
 
         if(existedAttributeValue.length !== data?.attributeValueIds.length){
             throw new AppError("Có giá trị thuộc tính không tồn tại", 404);
         }
     }
 
-    const productVariantData: any = {};
+    if(data.attributeValueIds){
+        const comboKey = buildVariantComboKey(data.attributeValueIds);
+        const existingVariantComboSet = await buildExistingVariantComboSet(productVariant.product_id, variantId);
 
-    if(data.sku) productVariantData.sku = data.sku;
+        if(comboKey && existingVariantComboSet.has(comboKey)){
+            throw new AppError("Tổ hợp thuộc tính của biến thể đã tồn tại trong sản phẩm", 409);
+        }
+    }
 
-    if(data.price) productVariantData.price = data.price;
+    const productVariantData: Prisma.product_variantsUpdateInput = {};
 
-    if(data.quantityInStock) productVariantData.quantity_in_stock = data.quantityInStock;
+    if(data.sku !== undefined) productVariantData.sku = data.sku;
+
+    if(data.price !== undefined) productVariantData.price = data.price;
+
+    let inventoryTransactionData: Prisma.inventory_transactionsUncheckedCreateInput | undefined;
+
+    if(data.quantityInStock !== undefined) {
+        productVariantData.quantity_in_stock = data.quantityInStock;
+        inventoryTransactionData = {
+            transaction_id: crypto.randomUUID(),
+            variant_id: variantId,
+            type: inventory_transactions_type.ADJUST,
+            quantity: data.quantityInStock - productVariant.quantity_in_stock,
+            before_quantity: productVariant.quantity_in_stock,
+            after_quantity: data.quantityInStock,
+            note: data.stockNote || "Điều chỉnh tồn kho biến thể",
+            created_by: updatedBy,
+            created_at: new Date(),
+        };
+    }
 
     const variantAttributeValueData = [];
 
@@ -216,6 +290,7 @@ export const updateProductVariantService = async(
         variantAttributeValueData,
         data?.specs !== undefined,
         productVariantSpecData,
+        inventoryTransactionData,
     );
 
     return { updProductVariant };
