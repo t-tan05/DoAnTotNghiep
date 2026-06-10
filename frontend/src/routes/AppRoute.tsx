@@ -16,6 +16,8 @@ import ProfileLayout from "@/components/profile/ProfileLayout";
 import AccountProfilePage from "@/pages/profile/AccountProfilePage";
 import ChangePasswordPage from "@/pages/profile/ChangePasswordPage";
 import AddressPage from "@/pages/profile/AddressPage";
+import AdminLayout from "@/components/admin/layout/AdminLayout";
+import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 
 
 export default function AppRoute() {
@@ -43,7 +45,16 @@ export default function AppRoute() {
             </Route>
 
             <Route element={<AdminRoute />}>
-                <Route path="/admin" element={<div>Admin dashboard</div>}/>
+                <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<AdminDashboardPage />} />
+                    <Route path="products" element={<div>Quản lý sản phẩm</div>} />
+                    <Route path="categories" element={<div>Quản lý danh mục</div>} />
+                    <Route path="brands" element={<div>Quản lý thương hiệu</div>} />
+                    <Route path="orders" element={<div>Quản lý đơn hàng</div>} />
+                    <Route path="users" element={<div>Quản lý người dùng</div>} />
+                    <Route path="statistics" element={<div>Thống kê</div>} />
+                    <Route path="settings" element={<div>Cài đặt</div>} />
+                </Route>
             </Route>
 
             <Route path="/403" element={<ForbiddenPage/>} />
