@@ -7,6 +7,7 @@ import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type VerifyEmailLocationState = {
     email?: string;
@@ -24,7 +25,6 @@ export default function VerifyEmailPage() {
     },[location.state] );
 
     const [verifyToken, setVerifyToken] = useState("");
-    const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
@@ -34,7 +34,6 @@ export default function VerifyEmailPage() {
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError("");
-        setMessage("");
 
         if(!email){
             setError("Không tìm thấy email cần xác thực. Vui lòng đăng ký lại.");
@@ -50,6 +49,7 @@ export default function VerifyEmailPage() {
 
         try{
             await authService.verifyEmail({email, verifyToken});
+            toast.success("Xác thực email thành công. Bạn có thể đăng nhập.");
 
             sessionStorage.removeItem("pendingVerifyEmail");
 
@@ -63,7 +63,6 @@ export default function VerifyEmailPage() {
 
     async function handleResend(){
         setError("");
-        setMessage("");
 
         if(!email) {
             setError("Không tìm thấy email cần xác thực. Vui lòng đăng ký lại.");
@@ -74,7 +73,7 @@ export default function VerifyEmailPage() {
 
         try{
             const res = await authService.resendVerifyEmail(email);
-            setMessage(res.data.message || "Đã gửi lại mã xác thực.");
+            toast.success(res.data.message || "Đã gửi lại mã xác thực.");
             setVerifyToken("");
         }catch(error) {
             setError(getErrorMessage(error));
@@ -107,12 +106,6 @@ export default function VerifyEmailPage() {
         >
             <form onSubmit={handleSubmit} className="space-y-5">
                 <FormError message={error}/>
-
-                {message && (
-                    <div className="rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700">
-                        {message}
-                    </div>
-                )}
 
                 <p className="text-center text-sm text-muted-foreground">
                     Mã xác thực đã được gửi tới{" "}

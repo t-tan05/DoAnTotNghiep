@@ -5,6 +5,7 @@ import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {
     const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function ForgotPasswordPage() {
 
         try {
             await authService.forgotPassword({email});
+            toast.success("Đã gửi mã xác nhận đổi mật khẩu.");
 
             sessionStorage.setItem("pendingResetEmail", email);
 

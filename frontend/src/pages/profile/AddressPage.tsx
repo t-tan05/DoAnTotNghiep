@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import PageLoading from "@/components/common/PageLoading";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import SpinnerButton from "@/components/common/SpinnerButton";
+import { toast } from "sonner";
+import ConfirmDeleteDialog from "@/components/common/ConfirmDeleteDialog";
 
 export default function AddressPage() {
     const [addresses, setAddress] = useState<Address[]>([]);
@@ -14,6 +16,7 @@ export default function AddressPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteAddress, setDeleteAddress] = useState<Address | null> (null);
 
     async function loadAddresses() {
         setLoading(true);
@@ -44,14 +47,18 @@ export default function AddressPage() {
         setModalOpen(true);
     }
 
-    async function handleDelete(addressId: string) {
+    async function handleConfirmDelete() {
+        if(!deleteAddress) return;
 
-        setDeletingId(addressId);
-        try{
-            await addressService.deleteAddress(addressId);
+        setDeletingId(deleteAddress.address_id);
+
+        try {
+            await addressService.deleteAddress(deleteAddress.address_id);
+            toast.success("Xóa địa chỉ thành công.");
+            setDeleteAddress(null);
             await loadAddresses();
         }catch(error){
-            setError(getErrorMessage(error));
+            toast.error(getErrorMessage(error));
         }finally{
             setDeletingId(null);
         }
@@ -122,7 +129,7 @@ export default function AddressPage() {
                                         type="button"
                                         loading={deletingId === address.address_id}
                                         loadingText="Đang xóa..."
-                                        onClick={() => handleDelete(address.address_id)}
+                                        onClick={() => setDeleteAddress(address)}
                                         className="h-9 rounded-lg border bg-white px-4 text-sm text-gray-900 hover:bg-gray-50 cursor-pointer"
                                     >
                                         Xóa
@@ -141,6 +148,18 @@ export default function AddressPage() {
                 initialDefault={false}
                 onClose={() => setModalOpen(false)}
                 onSuccess={loadAddresses}
+            />
+
+            <ConfirmDeleteDialog 
+                open={Boolean(deleteAddress)}
+                loading={deletingId === deleteAddress?.address_id}
+                title="Xóa địa chỉ"
+                description={`Bạn có chắc muốn xóa địa chỉ của "${deleteAddress?.receiver_name}" không?`}
+                onOpenChange={(open) => {
+                    if(!open) setDeleteAddress(null);
+                }}
+
+                onConfirm={handleConfirmDelete}
             />
         </section>
     )

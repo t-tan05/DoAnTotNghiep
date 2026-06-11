@@ -5,6 +5,7 @@ import type { Address } from "@/types/address.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type AddressFormModalProps = {
   open: boolean;
@@ -84,6 +85,7 @@ export default function AddressFormModal({
                     street: form.street,
                     isDefault: form.isDefault,
                 });
+                toast.success("Cập nhật địa chỉ thành công.");
             }else {
                 await addressService.createAddress({
                     receiverName: form.receiverName,
@@ -93,6 +95,7 @@ export default function AddressFormModal({
                     street: form.street,
                     setDefault: form.isDefault,
                 });
+                toast.success("Thêm địa chỉ thành công.");
             }
 
             onSuccess();

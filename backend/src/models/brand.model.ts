@@ -1,5 +1,9 @@
 import prisma from "#config/prisma"
 import { Prisma } from "@prisma/client";
+import { ListQuery } from "#types/pagination.type";
+import { normalizeText } from "#utils/normalizeText";
+
+export type BrandSortBy = "brand_name";
 
 export const findBrandById = async(brandId: string) => {
     return await prisma.brands.findUnique({
@@ -9,13 +13,53 @@ export const findBrandById = async(brandId: string) => {
     });
 };
 
-export const getAllBrand = async() => {
-    return await prisma.brands.findMany({
-        orderBy: {
-            brand_name: "asc"
-        },
-    });
-};
+export const getBrandsWithQuery = async(params: ListQuery<BrandSortBy>) => {
+    const {page, limit, search, sortBy, sortOrder} = params;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.brandsWhereInput = search
+        ?   {
+                OR: [
+                    {
+                        brand_name: {
+                            contains: search,
+                        },
+                    },
+                    {
+                        normalized_name: {
+                            contains: normalizeText(search),
+                        },
+                    },
+                    {
+                        description: {
+                            contains: search,
+                        },
+                    },
+                ],
+            }
+        :
+            {};
+
+    const [brands, totalItems] = await prisma.$transaction([
+        prisma.brands.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: {
+                [sortBy]: sortOrder,
+            },
+        }),
+        prisma.brands.count({
+            where,
+        }),
+    ]);
+    
+    return {
+        brands,
+        totalItems,
+    };
+}
 
 export const findBrandByNormalizeName = async(nomarlizeName: string) => {
     return await prisma.brands.findUnique({

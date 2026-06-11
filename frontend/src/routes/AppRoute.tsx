@@ -18,6 +18,8 @@ import ChangePasswordPage from "@/pages/profile/ChangePasswordPage";
 import AddressPage from "@/pages/profile/AddressPage";
 import AdminLayout from "@/components/admin/layout/AdminLayout";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
+import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
 
 
 export default function AppRoute() {
@@ -48,8 +50,8 @@ export default function AppRoute() {
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboardPage />} />
                     <Route path="products" element={<div>Quản lý sản phẩm</div>} />
-                    <Route path="categories" element={<div>Quản lý danh mục</div>} />
-                    <Route path="brands" element={<div>Quản lý thương hiệu</div>} />
+                    <Route path="categories" element={<AdminCategoriesPage />} />
+                    <Route path="brands" element={<AdminBrandPage />} />
                     <Route path="orders" element={<div>Quản lý đơn hàng</div>} />
                     <Route path="users" element={<div>Quản lý người dùng</div>} />
                     <Route path="statistics" element={<div>Thống kê</div>} />

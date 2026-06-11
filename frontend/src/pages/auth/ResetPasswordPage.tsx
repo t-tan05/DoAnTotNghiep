@@ -6,6 +6,7 @@ import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type ResetPasswordLocationState = {
     email?: string;
@@ -52,6 +53,7 @@ export default function ResetPasswordPage(){
                 newPassword: form.newPassword,
                 confirmPassword: form.confirmPassword,
             });
+            toast.success("Đổi mật khẩu thành công. Vui lòng đăng nhập lại.");
 
             sessionStorage.removeItem("pendingResetEmail");
             sessionStorage.removeItem("verifiedResetEmail");

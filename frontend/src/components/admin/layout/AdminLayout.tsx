@@ -1,5 +1,5 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import AdminSidebar from "../AdminSidebar";
+import AdminSidebar from "../sidebar/AdminSidebar";
 import AdminHeader from "./AdminHeader";
 import { Outlet } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function LoginPage() {
     const {login} = useAuth();
@@ -31,6 +32,7 @@ export default function LoginPage() {
 
         try{
             await login(form.email, form.password);
+            toast.success("Đăng nhập thành công.");
         }catch(error) {
             setError(getErrorMessage(error));
         }finally{

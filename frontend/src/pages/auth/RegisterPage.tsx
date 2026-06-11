@@ -5,6 +5,7 @@ import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
     const navigate = useNavigate();
@@ -33,6 +34,7 @@ export default function RegisterPage() {
 
         try{
             await authService.register(form);
+            toast.success("Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.");
 
             sessionStorage.setItem("pendingVerifyEmail", form.email);
 

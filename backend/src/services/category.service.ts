@@ -1,8 +1,18 @@
-import { createCategory, deleteCategoryById, findCategoryById, findCategoryByNormalizeName, getAllCategories, updateCategory } from "#models/category.model";
+import { 
+    createCategory, 
+    deleteCategoryById, 
+    findCategoryById, 
+    findCategoryByNormalizeName, 
+    updateCategory,
+    CategorySortBy,
+    getCategoriesWithQuery
+} from "#models/category.model";
 import { findProductByCategoryId } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
+import { ListQuery } from "#types/pagination.type";
+
 
 export const createCategoryService = async(categoryName: string, description?: string) => {
     //Tên hiển thị
@@ -22,10 +32,25 @@ export const createCategoryService = async(categoryName: string, description?: s
     return {newCategory};
 };
 
-export const getAllCategoriesService = async() => {
-    const categories = await getAllCategories();
+export const getAllCategoriesService = async(params: ListQuery<CategorySortBy>) => {
+    const {categories, totalItems} = await getCategoriesWithQuery(params);
 
-    return {categories};
+    return {
+        categories,
+        meta: {
+            pagination: {
+                page: params.page,
+                limit: params.limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / params.limit),
+            },
+            sort: {
+                sortBy: params.sortBy,
+                sortOrder: params.sortOrder,
+            },
+            search: params.search,
+        },
+    };
 };
 
 export const getCategoryByIdService = async(categoryId: string) => {
