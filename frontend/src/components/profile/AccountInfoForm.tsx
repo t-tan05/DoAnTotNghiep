@@ -4,12 +4,12 @@ import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useEffect, useState } from "react";
 import FormError from "../common/FormError";
 import SpinnerButton from "../common/SpinnerButton";
+import { toast } from "sonner";
 
 export default function AccountInfoForm() {
     const {user, reloadUser} = useAuth();
 
     const [name, setName] = useState("");
-    const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -20,14 +20,13 @@ export default function AccountInfoForm() {
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError("");
-        setMessage("");
         setLoading(true);
 
         try{
             await userService.updateProfile({name});
             await reloadUser();
 
-            setMessage("Cập nhật thông tin thành công.");
+            toast.success("Cập nhật thông tin thành công.");
         }catch(error){
             setError(getErrorMessage(error));
         }finally{
@@ -41,12 +40,6 @@ export default function AccountInfoForm() {
 
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                 <FormError message={error} />
-                
-                {message && (
-                    <div className="rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700">
-                        {message}
-                    </div>
-                )}
 
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Họ tên</label>

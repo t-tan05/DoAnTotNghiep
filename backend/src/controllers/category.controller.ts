@@ -1,5 +1,6 @@
 import { createCategoryService, deleteCategoryService, getAllCategoriesService, getCategoryByIdService, updateCategoryService } from "#services/category.service";
 import { CatchAsync } from "#utils/CatchAsync";
+import { parseListQuery } from "#utils/parseListQuery";
 import { Request, Response } from "express";
 
 export const createCategoryController = CatchAsync(async(req: Request, res: Response) => {
@@ -17,7 +18,13 @@ export const createCategoryController = CatchAsync(async(req: Request, res: Resp
 });
 
 export const getAllCategoriesController = CatchAsync(async(req: Request, res: Response) => {
-    const data = await getAllCategoriesService();
+    const query = parseListQuery({
+        query: req.query,
+        allowedSortFields: ["category_name"],
+        defaultSortBy: "category_name",
+    });
+
+    const data = await getAllCategoriesService(query);
 
     res.status(200).json({
         success: true,

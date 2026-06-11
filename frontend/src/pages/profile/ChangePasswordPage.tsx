@@ -3,6 +3,7 @@ import SpinnerButton from "@/components/common/SpinnerButton";
 import { userService } from "@/services/user.service";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useState } from "react";
+import { toast } from "sonner";
 
 
 export default function ChangePasswordPage() {
@@ -12,7 +13,6 @@ export default function ChangePasswordPage() {
         confirmPassword: "",
     });
 
-    const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -26,7 +26,6 @@ export default function ChangePasswordPage() {
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError("");
-        setMessage("");
 
         if(form.newPassword !== form.confirmPassword){
             setError("Mật khẩu xác nhận không khớp.");
@@ -44,7 +43,7 @@ export default function ChangePasswordPage() {
                 confirmPassword: "",
             });
 
-            setMessage("Đổi mật khẩu thành công.");
+            toast.success("Đổi mật khẩu thành công.");
         }catch(error){
             setError(getErrorMessage(error));
         }finally{
@@ -58,12 +57,6 @@ export default function ChangePasswordPage() {
 
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                 <FormError message={error} />
-
-                {message && (
-                    <div className="rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-700">
-                        {message}
-                    </div>
-                )}
 
                 <input 
                     type="password" 

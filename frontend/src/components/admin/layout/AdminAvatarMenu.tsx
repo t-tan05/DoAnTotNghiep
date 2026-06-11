@@ -22,7 +22,7 @@ export default function AdminAvatarMenu() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg_muted">
+                <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg_muted hover:cursor-pointer">
                     <Avatar className="size-9" >
                         <AvatarImage src="" alt={user?.name || "Admin"} />
                         <AvatarFallback>
@@ -54,7 +54,7 @@ export default function AdminAvatarMenu() {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="hover:cursor-pointer">
                     <Link to={"/account"}>
                         <UserRound className="size-4" />
                         Tài khoản cá nhân
@@ -65,7 +65,7 @@ export default function AdminAvatarMenu() {
 
                 <DropdownMenuItem
                     onClick={logout}
-                    className="text-red-600 focus:text-red-600 pointer-cusor"
+                    className="text-red-600 focus:text-red-600 cursor-pointer"
                 >
                     <LogOut className="size-4" />
                     Đăng xuất

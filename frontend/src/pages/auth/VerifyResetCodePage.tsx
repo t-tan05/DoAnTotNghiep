@@ -7,6 +7,7 @@ import { authService } from "@/services/auth.service";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type VerifyResetCodeLocationState = {
     email?: string;
@@ -49,6 +50,7 @@ export default function VerifyResetCodePage() {
                 email,
                 resetCode
             });
+            toast.success("Mã xác nhận hợp lệ.");
 
             sessionStorage.setItem("verifiedResetEmail", email);
             sessionStorage.setItem("verifiedResetCode", resetCode);

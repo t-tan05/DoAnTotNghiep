@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
-import { adminSidebarItems } from "./admin-sidebar.data";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar";
+import { adminSidebarItems } from "../data/admin-sidebar.data";
 
 export default function AdminSidebar() {
     return (

@@ -1,8 +1,17 @@
-import { createBrand, deleteBrandById, findBrandById, findBrandByNormalizeName, getAllBrand, updateBrand } from "#models/brand.model";
+import { 
+    createBrand, 
+    deleteBrandById, 
+    findBrandById, 
+    findBrandByNormalizeName, 
+    updateBrand, 
+    BrandSortBy, 
+    getBrandsWithQuery 
+} from "#models/brand.model";
 import { findProductByBrandId } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
+import { ListQuery } from "#types/pagination.type";
 
 export const createBrandService = async(brandName: string, description?: string) => {
     const displayName = brandName.trim();
@@ -21,10 +30,25 @@ export const createBrandService = async(brandName: string, description?: string)
     return {newBrand};
 }
 
-export const getAllBrandsService = async() => {
-    const brands = await getAllBrand();
+export const getAllBrandsService = async(params: ListQuery<BrandSortBy>) => {
+    const {brands, totalItems} = await getBrandsWithQuery(params);
 
-    return {brands};
+    return {
+        brands,
+        meta: {
+            pagination: {
+                page: params.page,
+                limit: params.limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / params.limit),
+            },
+            sort: {
+                sortBy: params.sortBy,
+                sortOrder: params.sortOrder,
+            },
+            search: params.search,
+        },
+    };
 };
 
 export const getBrandByIdService = async(brandId: string) => {
