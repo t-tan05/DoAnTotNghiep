@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Package,
   Settings,
+  SlidersHorizontal,
   Tags,
   Users,
 } from "lucide-react";
@@ -19,6 +20,11 @@ export const adminSidebarItems = [
     title: "Sản phẩm",
     url: "/admin/products",
     icon: Package,
+  },
+  {
+    title: "Thuộc tính",
+    url: "/admin/attributes",
+    icon: SlidersHorizontal,
   },
   {
     title: "Danh mục",

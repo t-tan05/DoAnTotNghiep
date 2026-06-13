@@ -1,0 +1,33 @@
+import type { CreateProductPayload, ProductDetailData, ProductListData, ProductListQuery, UpdateProductPayload } from "@/types/product.type";
+import { api } from "./api";
+import type { BackendSuccess } from "@/types/api.type";
+
+export const productService = {
+    getAll: async(query: ProductListQuery) => {
+        const res = await api.get<BackendSuccess<ProductListData>>("/products", {
+            params: query,
+        });
+
+        return res.data.data;
+    },
+
+    getById: async(productId: string) => {
+        const res = await api.get<BackendSuccess<ProductDetailData>>(`/products/${productId}`);
+        return res.data.data;
+    },
+
+    create: async(payload: CreateProductPayload) => {
+        const res = await api.post("/products", payload);
+        return res.data;
+    },
+
+    update: async(productId: string, payload: UpdateProductPayload) => {
+        const res = await api.patch(`/products/${productId}`, payload);
+        return res.data;
+    },
+
+    remove: async(productId: string) => {
+        const res = await api.delete(`/products/${productId}`);
+        return res.data;
+    },
+};

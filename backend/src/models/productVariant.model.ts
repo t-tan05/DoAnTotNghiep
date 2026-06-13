@@ -39,19 +39,25 @@ export const findProductVariantById = async(variantId: string) => {
                 select: {
                     spec_key: true,
                     spec_value: true,
-                }
+                    display_order: true,
+                },
+                orderBy: {
+                    display_order: "asc",
+                },
             },
             variant_attribute_values: {
                 select: {
+                    attribute_value_id: true,
                     attribute_values: {
                         select: {
+                            attribute_value_id: true,
+                            value: true,
                             product_attributes: {
                                 select: {
                                     attribute_id: true,
                                     attribute_name: true
                                 }
                             },
-                            value: true,
                         }
                     }
                 }
@@ -154,5 +160,29 @@ export const updateProductVariant = async(
         }
 
         return updateVariant;
+    });
+};
+
+export const deleteProductVariant = async(variantId: string) => {
+    return await prisma.product_variants.delete({
+        where: {
+            variant_id: variantId,
+        },
+    });
+};
+
+export const updateVariantDefaultImage = async(
+    variantId: string,
+    imageUrl: string | null,
+    publicId: string | null,
+) => {
+    return await prisma.product_variants.update({
+        where: {
+            variant_id: variantId,
+        },
+        data: {
+            image_url: imageUrl,
+            public_id: publicId,
+        },
     });
 };

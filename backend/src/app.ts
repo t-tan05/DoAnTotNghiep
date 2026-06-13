@@ -45,7 +45,7 @@ app.use("/api/roles", roleRoute);
 app.use("/api/users", userRoute);
 app.use("/api/categories", categoryRoute);
 app.use("/api/brands", brandRoute);
-app.use("/api/products/", productRoute);
+app.use("/api/products", productRoute);
 app.use("/api/product-attributes", productAttributeRoute);
 app.use("/api/attribute-values", attributeValueRoute);
 app.use("/api/product-variants", productVariantRoute);

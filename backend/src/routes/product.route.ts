@@ -1,17 +1,22 @@
-import { upload } from "#config/multer";
-import { createProductController, getAllProductsController, getProductDetailController, updateProductController } from "#controllers/product.controller";
+import { 
+    createProductController, 
+    deleteProductController, 
+    getAllProductsController, 
+    getProductDetailController, 
+    updateProductController 
+} from "#controllers/product.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
-import { parseData } from "#middlewares/parseData";
 import { Validate } from "#middlewares/Validate";
 import { createProductSchema, updateProductSchema } from "#validations/product.validation";
 import { Router } from "express";
 
 const router = Router();
 
-router.post("/", VerifyToken, CheckRole("ADMIN"),upload.any(),parseData, Validate(createProductSchema), createProductController);
+router.post("/", VerifyToken, CheckRole("ADMIN"), Validate(createProductSchema), createProductController);
 router.get("/", getAllProductsController);
 router.get("/:productId", getProductDetailController);
 router.patch("/:productId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductSchema), updateProductController);
+router.delete("/:productId", VerifyToken, CheckRole("ADMIN"), deleteProductController);
 
 export default router;

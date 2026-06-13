@@ -1,6 +1,6 @@
 import { findAttributeValuesByIds } from "#models/attributeValue.model";
 import { findProductById } from "#models/product.model";
-import { createProductVariants, findProductVariantById, findProductVariantBySku, findProductVariantCombosByProductId, updateProductVariant } from "#models/productVariant.model";
+import { createProductVariants, deleteProductVariant, findProductVariantById, findProductVariantBySku, findProductVariantCombosByProductId, updateProductVariant } from "#models/productVariant.model";
 import AppError from "#utils/AppError";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
 import { inventory_transactions_type, Prisma } from "@prisma/client";
@@ -79,15 +79,8 @@ export const createProductVariantService = async(
 
             const variantId = crypto.randomUUID();
 
-            productVariantData.push({
-                variant_id: variantId,
-                product_id: productId,
-                sku: variant?.sku,
-                price: variant?.price,
-                quantity_in_stock: variant?.quantityInStock,
-                reserved_quantity: 0,
-                sold_quantity: 0,
-            });
+            let defaultImageUrl: string | null = null;
+            let defaultPublicId: string | null = null;
 
             if(variant.attributeValueIds){
                 const existedAttributeValues = await findAttributeValuesByIds(variant.attributeValueIds);
@@ -145,6 +138,11 @@ export const createProductVariantService = async(
                 );
 
                 uploadedPublicIds.push(uploadResult.public_id);
+
+                if(i === 0){
+                    defaultImageUrl = uploadResult.secure_url;
+                    defaultPublicId = uploadResult.public_id;
+                }
                 
                 productImageData.push({
                     product_id: productId,
@@ -154,6 +152,18 @@ export const createProductVariantService = async(
                     is_default: i === 0,
                 });
             }
+
+            productVariantData.push({
+                variant_id: variantId,
+                product_id: productId,
+                sku: variant?.sku,
+                price: variant?.price,
+                quantity_in_stock: variant?.quantityInStock,
+                reserved_quantity: 0,
+                sold_quantity: 0,
+                image_url: defaultImageUrl,
+                public_id: defaultPublicId,
+            });
         }
 
         const unmatchedFileFieldnames = files
@@ -175,7 +185,7 @@ export const createProductVariantService = async(
             inventoryTransactionData,
         );
 
-        return true;
+        return {created: true};
 
     }catch(error){
         await Promise.allSettled(
@@ -304,5 +314,12 @@ export const getProductVariantService = async(variantId: string) => {
     return {productVariant};
 }
 
+export const deleteProductVariantService = async(variantId: string) => {
+    const variant = await findProductVariantById(variantId);
 
+    if(!variant) throw new AppError("Không tìm thấy biến thể sản phẩm", 404);
 
+    const delVariant = await deleteProductVariant(variantId);
+
+    return {delVariant};
+}

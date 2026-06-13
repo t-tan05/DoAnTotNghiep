@@ -1,5 +1,11 @@
-import { createProductImages, deleteProductImage, findProductImgaeById, setDefaultProductImage } from "#models/productImage.model";
-import { findProductVariantById } from "#models/productVariant.model"
+import { 
+    countVariantImages,
+    createProductImages, 
+    deleteProductImage, 
+    findProductImageById, 
+    setDefaultProductImage 
+} from "#models/productImage.model";
+import { findProductVariantById, updateVariantDefaultImage } from "#models/productVariant.model"
 import AppError from "#utils/AppError";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
 
@@ -12,6 +18,10 @@ export const addVariantImagesService = async(variantId: string, files: Express.M
 
     const imageData = [];
     const uploadedPublicIds: string[] = [];
+    const existingImageCount = await countVariantImages(variantId);
+    const shouldSetFirstAsDefault = existingImageCount === 0;
+    let newDefaultImageUrl: string | null = null;
+    let newDefaultPublicId: string | null = null;
 
     try{
         for(let i = 0; i < files.length; i++){
@@ -21,17 +31,30 @@ export const addVariantImagesService = async(variantId: string, files: Express.M
             );
 
             uploadedPublicIds.push(uploadResult.public_id);
+
+            if(shouldSetFirstAsDefault && i === 0){
+                newDefaultImageUrl = uploadResult.secure_url;
+                newDefaultPublicId = uploadResult.public_id;
+            }
     
             imageData.push({
                 product_id: variant.product_id,
                 variant_id: variantId,
                 image_url: uploadResult.secure_url,
                 public_id: uploadResult.public_id,
-                is_default: false,
+                is_default: shouldSetFirstAsDefault && i === 0,
             });
         }
 
         await createProductImages(imageData);
+
+        if(newDefaultImageUrl){
+            await updateVariantDefaultImage(
+                variantId,
+                newDefaultImageUrl,
+                newDefaultPublicId,
+            );
+        }
     
         return {imageData};
     }catch(error){
@@ -45,7 +68,7 @@ export const addVariantImagesService = async(variantId: string, files: Express.M
 };
 
 export const deleteProductImageService = async(imageId: number) => {
-    const image = await findProductImgaeById(imageId);
+    const image = await findProductImageById(imageId);
 
     if(!image) throw new AppError("Không tìm thấy ảnh sản phẩm", 404);
 
@@ -59,11 +82,17 @@ export const deleteProductImageService = async(imageId: number) => {
 };
 
 export const setDefaultProductImageService = async(imageId: number) => {
-    const image = await findProductImgaeById(imageId);
+    const image = await findProductImageById(imageId);
 
     if(!image) throw new AppError("Không tìm thấy sản phẩm", 404);
 
     const defaultImage = await setDefaultProductImage(imageId, image.variant_id as string);
+
+    await updateVariantDefaultImage(
+        image.variant_id as string,
+        image.image_url,
+        image.public_id,
+    );
 
     return {defaultImage};
 };

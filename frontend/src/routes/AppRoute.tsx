@@ -20,6 +20,10 @@ import AdminLayout from "@/components/admin/layout/AdminLayout";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
 import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
+import AdminProductsPage from "@/pages/admin/AdminProductsPage";
+import AdminProductDetailPage from "@/pages/admin/AdminProductDetailPage";
+import AdminProductAttributesPage from "@/pages/admin/AdminProductAttributesPage";
+import AdminProductVariantFormPage from "@/pages/admin/AdminProductVariantFormPage";
 
 
 export default function AppRoute() {
@@ -49,7 +53,12 @@ export default function AppRoute() {
             <Route element={<AdminRoute />}>
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboardPage />} />
-                    <Route path="products" element={<div>Quản lý sản phẩm</div>} />
+                    <Route path="products" element={<AdminProductsPage />} />
+                    <Route path="products/:productId" element={<AdminProductDetailPage />}/>
+                    <Route path="products/:productId/variants/new" element={<AdminProductVariantFormPage />}/>
+                    <Route path="products/:productId/variants/:variantId/edit" element={<AdminProductVariantFormPage />}/>
+
+                    <Route path="attributes" element={<AdminProductAttributesPage />}/>
                     <Route path="categories" element={<AdminCategoriesPage />} />
                     <Route path="brands" element={<AdminBrandPage />} />
                     <Route path="orders" element={<div>Quản lý đơn hàng</div>} />

@@ -1,6 +1,6 @@
 import { upload } from "#config/multer";
 import { addVariantImageController } from "#controllers/productImage.controller";
-import { createProductVariantController, getProductVariantController, updateProductVariantController } from "#controllers/productVariant.controller";
+import { createProductVariantController, deleteProductVariantController, getProductVariantController, updateProductVariantController } from "#controllers/productVariant.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { parseData } from "#middlewares/parseData";
@@ -14,5 +14,6 @@ router.post("/:productId", VerifyToken, CheckRole("ADMIN"), upload.any(), parseD
 router.patch("/:variantId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductVariantSchema), updateProductVariantController);
 router.post("/:variantId/images", VerifyToken, CheckRole("ADMIN"), upload.any(), addVariantImageController);
 router.get("/:variantId", VerifyToken, CheckRole("ADMIN"), getProductVariantController);
+router.delete("/:variantId", VerifyToken, CheckRole("ADMIN"), deleteProductVariantController);
 
 export default router;

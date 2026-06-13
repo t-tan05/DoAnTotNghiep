@@ -1,21 +1,16 @@
-import { createProductService, getAllProductsService, getProductDetailService, updateProductService } from "#services/product.service";
+import { 
+    createProductService, 
+    deleteProductService, 
+    getAllProductsService, 
+    getProductDetailService, 
+    updateProductService 
+} from "#services/product.service";
 import { CatchAsync } from "#utils/CatchAsync";
+import { parseListQuery } from "#utils/parseListQuery";
 import { Request, Response } from "express";
 
-interface AuthRequest extends Request {
-    user?: any;
-}
-
-export const createProductController = CatchAsync(async(req: AuthRequest, res: Response) => {
-    const userId = req.user.user_id;
-    
-    const files = (req.files as Express.Multer.File[]) ?? [];
-
-    const data = await createProductService(
-        req.body,
-        files,
-        userId,
-    );
+export const createProductController = CatchAsync(async(req: Request, res: Response) => {
+    const data = await createProductService(req.body);
 
     res.status(201).json({
         success: true,
@@ -41,13 +36,38 @@ export const getProductDetailController = CatchAsync(async(req: Request, res: Re
 });
 
 export const getAllProductsController = CatchAsync(async(req: Request, res: Response) => {
-    const data = await getAllProductsService();
+    const query = {
+        ...parseListQuery({
+            query: req.query,
+            allowedSortFields: ["product_name", "created_at", "warranty_period"],
+            defaultSortBy: "created_at",
+        }),
+
+        brandId: typeof req.query.brandId === "string" ? req.query.brandId : undefined,
+        categoryId: typeof req.query.categoryId === "string" ? req.query.categoryId : undefined,
+    };
+    
+    const data = await getAllProductsService(query);
 
     res.status(200).json({
         success: true,
         message: "Lấy danh sách sản phẩm thành công",
         data: {
             ...data
+        },
+    });
+});
+
+export const deleteProductController = CatchAsync(async(req: Request, res: Response) => {
+    const productId = req.params.productId as string;
+
+    const data = await deleteProductService(productId);
+
+    res.status(200).json({
+        success: true,
+        message: "Xóa sản phẩm thành công",
+        data: {
+            ...data,
         },
     });
 });

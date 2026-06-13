@@ -19,7 +19,6 @@ export interface CreateProductPayload {
     categoryId: string;
     description?: string | null;
     warrantyPeriod: number;
-    variants: ProductVariantPayload[];
 }
 
 export interface UpdateProductPayload {

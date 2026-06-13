@@ -10,7 +10,7 @@ export const createProductImageTransaction = async(
     });
 };
 
-export const findProductImgaeById = async(imageId: number) => {
+export const findProductImageById = async(imageId: number) => {
     return await prisma.product_images.findUnique({
         where: {
             image_id: imageId,
@@ -55,5 +55,13 @@ export const setDefaultProductImage = async(imageId: number, variantId: string) 
         });
 
         return image;
+    });
+};
+
+export const countVariantImages = async(variantId: string) => {
+    return await prisma.product_images.count({
+        where: {
+            variant_id: variantId,
+        },
     });
 };

@@ -1,8 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TableBody, TableCell, TableHead, TableHeader, TableRow, Table } from "@/components/ui/table";
+import { 
+    TableBody, 
+    TableCell, 
+    TableHead, 
+    TableHeader, 
+    TableRow, 
+    Table,
+} from "@/components/ui/table";
 import type { SortOrder } from "@/types/admin-table.type";
-import { ArrowDown, ArrowUp, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Plus, Search, Trash2, Eye } from "lucide-react";
 import AdminTablePagination from "./AdminTablePagination";
 
 export type AdminColumn<T> = {
@@ -28,8 +35,9 @@ type Props<T> = {
     onPageChange: (page: number) => void;
     onSortChange: (sortBy: string) => void;
     onAdd: () => void;
-    onEdit: (item: T) => void;
+    onEdit?: (item: T) => void;
     onDelete: (item: T) => void;
+    onView?: (item: T) => void;
 };
 
 export default function AdminDataTable<T>({
@@ -50,6 +58,7 @@ export default function AdminDataTable<T>({
     onAdd,
     onEdit,
     onDelete,
+    onView,
 }: Props<T>) {
     return (
         <section className="space-y-4">
@@ -134,14 +143,26 @@ export default function AdminDataTable<T>({
 
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <Button 
-                                            variant={"outline"}
-                                            size={"icon"}
-                                            onClick={() => onEdit(item)}
-                                            className="cursor-pointer"
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
+                                        {onView && (
+                                            <Button
+                                                variant={"outline"}
+                                                size={"icon"}
+                                                onClick={() => onView(item)}
+                                                className="cursor-pointer"
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        {onEdit && (
+                                            <Button 
+                                                variant={"outline"}
+                                                size={"icon"}
+                                                onClick={() => onEdit(item)}
+                                                className="cursor-pointer"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        )}
 
                                         <Button 
                                             variant={"destructive"}
