@@ -8,7 +8,7 @@ export const productImageService = {
             formData.append("images", file);
         });
 
-        const res = await api.post(`/product-variants/${variantId}images`, formData, {
+        const res = await api.post(`/product-variants/${variantId}/images`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },

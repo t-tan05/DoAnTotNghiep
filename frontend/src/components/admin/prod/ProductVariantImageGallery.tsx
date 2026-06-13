@@ -51,7 +51,7 @@ export default function ProductVariantImageGallery({ variant, onChanged }: Props
                     Biến thể chưa có ảnh.
                 </div>
             ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <div className="mt-4 grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                     {variant.product_images.map((image) => (
                         <div key={image.image_id} className="overflow-hidden rounded-lg border bg-background">
                             <div className="relative">
@@ -62,13 +62,13 @@ export default function ProductVariantImageGallery({ variant, onChanged }: Props
                                 />
 
                                 {image.is_default && (
-                                    <span className="absolute left-2 top-2 rounded bg-black px-2 py-1 text-xs text-white">
+                                    <span className="absolute left-2 top-2 rounded bg-black px-2 py-1 text-xs text-white shadow-sm">
                                         Mặc định
                                     </span>
                                 )}
                             </div>
 
-                            <div className="flex gap-2 p-2">
+                            <div className="flex flex-wrap gap-2 p-2">
                                 {!image.is_default && (
                                     <Button
                                         type="button"
@@ -76,10 +76,10 @@ export default function ProductVariantImageGallery({ variant, onChanged }: Props
                                         size="sm"
                                         disabled={loadingImageId === image.image_id}
                                         onClick={() => handleSetDefault(image.image_id)}
-                                        className="flex-1 cursor-pointer"
+                                        className="flex-1 cursor-pointer min-w-[80px]"
                                     >
-                                        <Check className="mr-1 h-4 w-4" />
-                                        Mặc định
+                                        <Check className="mr-1 h-4 w-4 shrink-0" />
+                                        <span className="truncate">Mặc định</span>
                                     </Button>
                                 )}
 

@@ -245,7 +245,7 @@ export default function AdminProductVariantFormPage() {
                     type="submit"
                     loading={saving}
                     loadingText={isEdit ? "Đang cập nhật..." : "Đang tạo..."}
-                    className={saving ? "cursor-not-allowed" : "cursor-pointer"}
+                    className={saving ? "cursor-not-allowed" : "cursor-pointer h-12"}
                 >
                     {isEdit ? "Cập nhật biến thể" : "Tạo biến thể"}
                 </SpinnerButton>
@@ -253,82 +253,78 @@ export default function AdminProductVariantFormPage() {
 
             <FormError message={error} />
 
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-                <div className="space-y-6">
-                    <div className="rounded-lg border bg-background p-5">
-                        <h2 className="text-lg font-semibold">Thông tin cơ bản</h2>
+            <div className="space-y-6">
+                <div className="rounded-lg border bg-background p-5">
+                    <h2 className="text-lg font-semibold">Thông tin cơ bản</h2>
 
-                        <div className="mt-4 grid gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                                <Label>SKU</Label>
-                                <Input
-                                    value={form.sku}
-                                    onChange={(e) => updateField("sku", e.target.value)}
-                                    placeholder="Ví dụ: IP15PM-WHITE-256"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Giá</Label>
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={form.price}
-                                    onChange={(e) => updateField("price", e.target.value)}
-                                    placeholder="29990000"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Tồn kho</Label>
-                                <Input
-                                    type="number"
-                                    min={0}
-                                    value={form.quantityInStock}
-                                    onChange={(e) => updateField("quantityInStock", e.target.value)}
-                                />
-                            </div>
+                    <div className="mt-4 grid gap-4 md:grid-cols-3">
+                        <div className="space-y-2">
+                            <Label>SKU</Label>
+                            <Input
+                                value={form.sku}
+                                onChange={(e) => updateField("sku", e.target.value)}
+                                placeholder="Ví dụ: IP15PM-WHITE-256"
+                            />
                         </div>
 
-                        {isEdit && (
-                            <div className="mt-4 space-y-2">
-                                <Label>Ghi chú điều chỉnh kho</Label>
-                                <Input
-                                    value={form.stockNote}
-                                    onChange={(e) => updateField("stockNote", e.target.value)}
-                                    placeholder="Ví dụ: Kiểm kho cuối tháng"
-                                />
-                            </div>
-                        )}
+                        <div className="space-y-2">
+                            <Label>Giá</Label>
+                            <Input
+                                type="number"
+                                min={0}
+                                value={form.price}
+                                onChange={(e) => updateField("price", e.target.value)}
+                                placeholder="29990000"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Tồn kho</Label>
+                            <Input
+                                type="number"
+                                min={0}
+                                value={form.quantityInStock}
+                                onChange={(e) => updateField("quantityInStock", e.target.value)}
+                            />
+                        </div>
                     </div>
 
-                    <ProductVariantAttributeSelector
-                        attributes={attributes}
-                        selectedValueIds={selectedAttributeValueIds}
-                        onChange={setSelectedAttributeValueIds}
-                    />
-
-                    <ProductVariantSpecEditor
-                        specs={specs}
-                        onChange={setSpecs}
-                    />
-                </div>
-
-                <div className="space-y-6">
                     {isEdit && (
-                        <ProductVariantImageGallery
-                            variant={variant}
-                            onChanged={async () => {
-                                if (variantId) await loadVariant(variantId);
-                            }}
-                        />
+                        <div className="mt-4 space-y-2">
+                            <Label>Ghi chú điều chỉnh kho</Label>
+                            <Input
+                                value={form.stockNote}
+                                onChange={(e) => updateField("stockNote", e.target.value)}
+                                placeholder="Ví dụ: Kiểm kho cuối tháng"
+                            />
+                        </div>
                     )}
-
-                    <ProductVariantImageUploader
-                        files={newImages}
-                        onChange={setNewImages}
-                    />
                 </div>
+
+                <ProductVariantAttributeSelector
+                    attributes={attributes}
+                    selectedValueIds={selectedAttributeValueIds}
+                    onChange={setSelectedAttributeValueIds}
+                />
+
+                <ProductVariantSpecEditor
+                    specs={specs}
+                    onChange={setSpecs}
+                />
+
+                {isEdit && (
+                    <ProductVariantImageGallery
+                        variant={variant}
+                        onChanged={async () => {
+                            if (variantId) await loadVariant(variantId);
+                        }}
+                    />
+                )}
+
+                <ProductVariantImageUploader
+                    files={newImages}
+                    onChange={setNewImages}
+                />
             </div>
         </form>
     )
