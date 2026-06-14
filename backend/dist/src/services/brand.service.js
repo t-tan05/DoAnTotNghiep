@@ -1,4 +1,4 @@
-import { createBrand, deleteBrandById, findBrandById, findBrandByNormalizeName, getAllBrand, updateBrand } from "#models/brand.model";
+import { createBrand, deleteBrandById, findBrandById, findBrandByNormalizeName, updateBrand, getBrandsWithQuery } from "#models/brand.model";
 import { findProductByBrandId } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
@@ -14,9 +14,24 @@ export const createBrandService = async (brandName, description) => {
     const newBrand = await createBrand(brandId, displayName, normalizeName, description);
     return { newBrand };
 };
-export const getAllBrandsService = async () => {
-    const brands = await getAllBrand();
-    return { brands };
+export const getAllBrandsService = async (params) => {
+    const { brands, totalItems } = await getBrandsWithQuery(params);
+    return {
+        brands,
+        meta: {
+            pagination: {
+                page: params.page,
+                limit: params.limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / params.limit),
+            },
+            sort: {
+                sortBy: params.sortBy,
+                sortOrder: params.sortOrder,
+            },
+            search: params.search,
+        },
+    };
 };
 export const getBrandByIdService = async (brandId) => {
     const brand = await findBrandById(brandId);

@@ -1,9 +1,5 @@
 import prisma from "#config/prisma";
-import { createProductVariantTransaction } from "./productVariant.model.js";
-import { createInventoryTransaction } from "./inventory.model.js";
-import { createProductImageTransaction } from "./productImage.model.js";
-import { createVariantAttributeTransaction } from "./variantAttributeValue.model.js";
-import { createProductVariantSpecTransaction } from "./productVariantSpec.model.js";
+import { normalizeText } from "#utils/normalizeText";
 export const findProductByNormalizeName = async (normalizedName) => {
     return await prisma.products.findUnique({
         where: {
@@ -20,26 +16,8 @@ export const findProductByNormalizeName = async (normalizedName) => {
         }
     });
 };
-export const createProduct = async (productData, productVariantData, inventoryData, variantAttributeData, productVariantSpecData, imageData) => {
-    return await prisma.$transaction(async (tx) => {
-        const newProduct = await tx.products.create({
-            data: productData
-        });
-        await createProductVariantTransaction(tx, productVariantData);
-        if (variantAttributeData.length > 0) {
-            await createVariantAttributeTransaction(tx, variantAttributeData);
-        }
-        if (productVariantSpecData.length > 0) {
-            await createProductVariantSpecTransaction(tx, productVariantSpecData);
-        }
-        if (imageData.length > 0) {
-            await createProductImageTransaction(tx, imageData);
-        }
-        if (inventoryData.length > 0) {
-            await createInventoryTransaction(tx, inventoryData);
-        }
-        return newProduct;
-    });
+export const createProduct = async (data) => {
+    return await prisma.products.create({ data });
 };
 export const findProductById = async (productId) => {
     return await prisma.products.findUnique({
@@ -111,49 +89,102 @@ export const findProductById = async (productId) => {
         }
     });
 };
-export const getAllProducts = async () => {
-    return await prisma.products.findMany({
-        select: {
-            product_id: true,
-            product_name: true,
-            description: true,
-            warranty_period: true,
-            created_at: true,
-            brands: {
-                select: {
-                    brand_id: true,
-                    brand_name: true,
-                }
-            },
-            categories: {
-                select: {
-                    category_id: true,
-                    category_name: true,
-                }
-            },
-            product_variants: {
-                select: {
-                    variant_id: true,
-                    sku: true,
-                    price: true,
-                    quantity_in_stock: true,
-                    product_images: {
-                        select: {
-                            image_url: true,
-                            is_default: true,
-                        },
-                        where: {
-                            is_default: true
-                        },
-                        take: 1
-                    }
-                }
+export const getProductWithQuery = async (params) => {
+    const { page, limit, search, sortBy, sortOrder, brandId, categoryId } = params;
+    const skip = (page - 1) * limit;
+    const where = {
+        ...(search
+            ? {
+                OR: [
+                    {
+                        product_name: {
+                            contains: search
+                        }
+                    },
+                    {
+                        normalized_name: {
+                            contains: normalizeText(search)
+                        }
+                    },
+                    {
+                        description: {
+                            contains: search
+                        }
+                    },
+                    {
+                        brands: {
+                            brand_name: {
+                                contains: search
+                            }
+                        }
+                    },
+                    {
+                        categories: {
+                            category_name: {
+                                contains: search
+                            }
+                        }
+                    },
+                ],
             }
-        },
-        orderBy: {
-            created_at: "desc",
-        },
-    });
+            : {}),
+        ...(brandId ? { brand_id: brandId } : {}),
+        ...(categoryId ? { category_id: categoryId } : {}),
+    };
+    const [products, totalItems] = await prisma.$transaction([
+        prisma.products.findMany({
+            where,
+            skip,
+            take: limit,
+            select: {
+                product_id: true,
+                product_name: true,
+                description: true,
+                warranty_period: true,
+                created_at: true,
+                brands: {
+                    select: {
+                        brand_id: true,
+                        brand_name: true,
+                    },
+                },
+                categories: {
+                    select: {
+                        category_id: true,
+                        category_name: true,
+                    },
+                },
+                product_variants: {
+                    select: {
+                        variant_id: true,
+                        sku: true,
+                        price: true,
+                        quantity_in_stock: true,
+                        product_images: {
+                            select: {
+                                image_url: true,
+                                is_default: true,
+                            },
+                            where: {
+                                is_default: true,
+                            },
+                            take: 1,
+                        },
+                    },
+                },
+            },
+            orderBy: {
+                [sortBy]: sortOrder,
+            },
+        }),
+        prisma.products.count({
+            where,
+        }),
+    ]);
+    return {
+        products,
+        totalItems,
+    };
 };
 export const updateProduct = async (productId, data) => {
     return await prisma.products.update({

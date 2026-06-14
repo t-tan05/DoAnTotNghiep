@@ -1,4 +1,5 @@
 import prisma from "#config/prisma";
+import { normalizeText } from "#utils/normalizeText";
 export const findCategoryById = async (categoryId) => {
     return await prisma.categories.findUnique({
         where: {
@@ -23,12 +24,48 @@ export const createCategory = async (categoryId, categoryName, normalizeName, de
         },
     });
 };
-export const getAllCategories = async () => {
-    return await prisma.categories.findMany({
-        orderBy: {
-            category_name: "asc"
-        },
-    });
+export const getCategoriesWithQuery = async (params) => {
+    const { page, limit, search, sortBy, sortOrder } = params;
+    const skip = (page - 1) * limit;
+    const where = search
+        ? {
+            OR: [
+                {
+                    category_name: {
+                        contains: search,
+                    },
+                },
+                {
+                    normalized_name: {
+                        contains: normalizeText(search),
+                    },
+                },
+                {
+                    description: {
+                        contains: search,
+                    },
+                },
+            ],
+        }
+        :
+            {};
+    const [categories, totalItems] = await prisma.$transaction([
+        prisma.categories.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: {
+                [sortBy]: sortOrder,
+            },
+        }),
+        prisma.categories.count({
+            where,
+        }),
+    ]);
+    return {
+        categories,
+        totalItems,
+    };
 };
 export const updateCategory = async (categoryId, data) => {
     return await prisma.categories.update({

@@ -32,6 +32,13 @@ export const createProductAttributes = async (data) => {
 };
 export const findAllProductAttribute = async () => {
     return await prisma.product_attributes.findMany({
+        include: {
+            attribute_values: {
+                orderBy: {
+                    display_order: "asc",
+                },
+            },
+        },
         orderBy: {
             display_order: "asc"
         },

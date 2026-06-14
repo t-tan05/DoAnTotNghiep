@@ -3,7 +3,7 @@ import { findProductById } from "#models/product.model";
 import { createProductVariants, deleteProductVariant, findProductVariantById, findProductVariantBySku, findProductVariantCombosByProductId, updateProductVariant } from "#models/productVariant.model";
 import AppError from "#utils/AppError";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
-import { inventory_transactions_type, Prisma } from "@prisma/client";
+import { devices_status, inventory_transactions_type, Prisma } from "@prisma/client";
 import crypto from "crypto";
 import type { CreateProductVariantPayload, UpdateProductVariantPayload } from "../types/product.type.js";
 
@@ -49,6 +49,8 @@ export const createProductVariantService = async(
     const inventoryTransactionData = [];
     const uploadedPublicIds: string[] = [];
     const matchedImageFieldnames = new Set<string>();
+
+    const deviceData: Prisma.devicesUncheckedCreateInput[] = [];
 
     try{
         for(let index = 0; index < data?.variants.length; index++){
@@ -125,6 +127,16 @@ export const createProductVariantService = async(
                 created_at: new Date(Date.now()),
             });
 
+            //Tự động tạo các devices cho từng product
+            for(let i = 0; i < variant.quantityInStock; i++) {
+                deviceData.push({
+                    device_id: crypto.randomUUID(),
+                    variant_id: variantId,
+                    serial_number: `${variant.sku}-${Date.now()}-${i + 1}`,
+                    status: devices_status.AVAILABLE,
+                });
+            }
+
             const variantImages = files.filter((file) => {
                 return file.fieldname.startsWith(`variant_${index}_image`);
             });
@@ -183,6 +195,7 @@ export const createProductVariantService = async(
             productVariantSpecData,
             productImageData,
             inventoryTransactionData,
+            deviceData,
         );
 
         return {created: true};

@@ -1,5 +1,5 @@
-import { createProductImages, deleteProductImage, findProductImgaeById, setDefaultProductImage } from "#models/productImage.model";
-import { findProductVariantById } from "#models/productVariant.model";
+import { countVariantImages, createProductImages, deleteProductImage, findProductImageById, setDefaultProductImage } from "#models/productImage.model";
+import { findProductVariantById, updateVariantDefaultImage } from "#models/productVariant.model";
 import AppError from "#utils/AppError";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
 export const addVariantImagesService = async (variantId, files) => {
@@ -10,19 +10,30 @@ export const addVariantImagesService = async (variantId, files) => {
         throw new AppError("Vui lòng chọn ảnh cần tải lên", 400);
     const imageData = [];
     const uploadedPublicIds = [];
+    const existingImageCount = await countVariantImages(variantId);
+    const shouldSetFirstAsDefault = existingImageCount === 0;
+    let newDefaultImageUrl = null;
+    let newDefaultPublicId = null;
     try {
         for (let i = 0; i < files.length; i++) {
             const uploadResult = await uploadImageToCloudinary(files[i], "DoAnTotNghiep/products");
             uploadedPublicIds.push(uploadResult.public_id);
+            if (shouldSetFirstAsDefault && i === 0) {
+                newDefaultImageUrl = uploadResult.secure_url;
+                newDefaultPublicId = uploadResult.public_id;
+            }
             imageData.push({
                 product_id: variant.product_id,
                 variant_id: variantId,
                 image_url: uploadResult.secure_url,
                 public_id: uploadResult.public_id,
-                is_default: false,
+                is_default: shouldSetFirstAsDefault && i === 0,
             });
         }
         await createProductImages(imageData);
+        if (newDefaultImageUrl) {
+            await updateVariantDefaultImage(variantId, newDefaultImageUrl, newDefaultPublicId);
+        }
         return { imageData };
     }
     catch (error) {
@@ -31,7 +42,7 @@ export const addVariantImagesService = async (variantId, files) => {
     }
 };
 export const deleteProductImageService = async (imageId) => {
-    const image = await findProductImgaeById(imageId);
+    const image = await findProductImageById(imageId);
     if (!image)
         throw new AppError("Không tìm thấy ảnh sản phẩm", 404);
     if (image.public_id) {
@@ -41,9 +52,10 @@ export const deleteProductImageService = async (imageId) => {
     return { delImage };
 };
 export const setDefaultProductImageService = async (imageId) => {
-    const image = await findProductImgaeById(imageId);
+    const image = await findProductImageById(imageId);
     if (!image)
         throw new AppError("Không tìm thấy sản phẩm", 404);
     const defaultImage = await setDefaultProductImage(imageId, image.variant_id);
+    await updateVariantDefaultImage(image.variant_id, image.image_url, image.public_id);
     return { defaultImage };
 };

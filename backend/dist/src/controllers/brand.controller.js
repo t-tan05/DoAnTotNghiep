@@ -1,5 +1,6 @@
 import { createBrandService, deleteBrandService, getAllBrandsService, getBrandByIdService, updateBrandService } from "#services/brand.service";
 import { CatchAsync } from "#utils/CatchAsync";
+import { parseListQuery } from "#utils/parseListQuery";
 export const createBrandController = CatchAsync(async (req, res) => {
     const { brandName, description } = req.body;
     const data = await createBrandService(brandName, description);
@@ -12,7 +13,12 @@ export const createBrandController = CatchAsync(async (req, res) => {
     });
 });
 export const getAllBrandsController = CatchAsync(async (req, res) => {
-    const data = await getAllBrandsService();
+    const query = parseListQuery({
+        query: req.query,
+        allowedSortFields: ["brand_name"],
+        defaultSortBy: "brand_name",
+    });
+    const data = await getAllBrandsService(query);
     res.status(200).json({
         success: true,
         message: "Danh sách thương hiệu",

@@ -11,9 +11,9 @@ export default function ProductMegaMenu(){
                 "group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-hover:pointer-events-auto",
             ].join(" ")}
         >
-            <div className="mx-auto grid max-w-7xl grid-cols-4 gap-12 px-8 py-12">
+            <div className="mx-auto grid max-w-7xl grid-cols-3 gap-12 px-8 py-12">
                 {productCategories.map((group) => (
-                    <div className="space-y-4" key={group.title}>
+                    <div className="space-y-3" key={group.title}>
                         <h3 className="text-lg font-bold text-foreground">
                             {group.title}
                         </h3>

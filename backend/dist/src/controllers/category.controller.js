@@ -1,5 +1,6 @@
 import { createCategoryService, deleteCategoryService, getAllCategoriesService, getCategoryByIdService, updateCategoryService } from "#services/category.service";
 import { CatchAsync } from "#utils/CatchAsync";
+import { parseListQuery } from "#utils/parseListQuery";
 export const createCategoryController = CatchAsync(async (req, res) => {
     const { categoryName, description } = req.body;
     const data = await createCategoryService(categoryName, description);
@@ -12,7 +13,12 @@ export const createCategoryController = CatchAsync(async (req, res) => {
     });
 });
 export const getAllCategoriesController = CatchAsync(async (req, res) => {
-    const data = await getAllCategoriesService();
+    const query = parseListQuery({
+        query: req.query,
+        allowedSortFields: ["category_name"],
+        defaultSortBy: "category_name",
+    });
+    const data = await getAllCategoriesService(query);
     res.status(200).json({
         success: true,
         message: "Danh sách danh mục",

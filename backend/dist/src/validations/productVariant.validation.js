@@ -74,7 +74,7 @@ export const updateProductVariantSchema = Joi.object({
         .messages({
         "any.required": "Mã giá trị thuộc tính là bắt buộc",
     }))
-        .min(1)
+        .default([])
         .optional(),
     specs: Joi.array()
         .items(Joi.object({

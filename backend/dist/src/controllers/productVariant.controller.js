@@ -1,4 +1,4 @@
-import { createProductVariantService, getProductVariantService, updateProductVariantService } from "#services/productVariant.service";
+import { createProductVariantService, deleteProductVariantService, getProductVariantService, updateProductVariantService } from "#services/productVariant.service";
 import { CatchAsync } from "#utils/CatchAsync";
 export const createProductVariantController = CatchAsync(async (req, res) => {
     const productId = req.params?.productId;
@@ -8,6 +8,9 @@ export const createProductVariantController = CatchAsync(async (req, res) => {
     res.status(201).json({
         success: true,
         message: "Tạo biến thể sản phẩm thành công",
+        data: {
+            ...data
+        }
     });
 });
 export const updateProductVariantController = CatchAsync(async (req, res) => {
@@ -28,6 +31,17 @@ export const getProductVariantController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Lấy biến thể sản phẩm thành công",
+        data: {
+            ...data,
+        },
+    });
+});
+export const deleteProductVariantController = CatchAsync(async (req, res) => {
+    const variantId = req.params.variantId;
+    const data = await deleteProductVariantService(variantId);
+    res.status(200).json({
+        success: true,
+        message: "Xóa biến thể sản phẩm thành công",
         data: {
             ...data,
         },

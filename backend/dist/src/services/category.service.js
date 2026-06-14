@@ -1,4 +1,4 @@
-import { createCategory, deleteCategoryById, findCategoryById, findCategoryByNormalizeName, getAllCategories, updateCategory } from "#models/category.model";
+import { createCategory, deleteCategoryById, findCategoryById, findCategoryByNormalizeName, updateCategory, getCategoriesWithQuery } from "#models/category.model";
 import { findProductByCategoryId } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
@@ -15,9 +15,24 @@ export const createCategoryService = async (categoryName, description) => {
     const newCategory = await createCategory(categoryId, displayName, normalizeName, description);
     return { newCategory };
 };
-export const getAllCategoriesService = async () => {
-    const categories = await getAllCategories();
-    return { categories };
+export const getAllCategoriesService = async (params) => {
+    const { categories, totalItems } = await getCategoriesWithQuery(params);
+    return {
+        categories,
+        meta: {
+            pagination: {
+                page: params.page,
+                limit: params.limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / params.limit),
+            },
+            sort: {
+                sortBy: params.sortBy,
+                sortOrder: params.sortOrder,
+            },
+            search: params.search,
+        },
+    };
 };
 export const getCategoryByIdService = async (categoryId) => {
     const category = await findCategoryById(categoryId);

@@ -1,4 +1,5 @@
 import prisma from "#config/prisma";
+import { normalizeText } from "#utils/normalizeText";
 export const findBrandById = async (brandId) => {
     return await prisma.brands.findUnique({
         where: {
@@ -6,12 +7,48 @@ export const findBrandById = async (brandId) => {
         },
     });
 };
-export const getAllBrand = async () => {
-    return await prisma.brands.findMany({
-        orderBy: {
-            brand_name: "asc"
-        },
-    });
+export const getBrandsWithQuery = async (params) => {
+    const { page, limit, search, sortBy, sortOrder } = params;
+    const skip = (page - 1) * limit;
+    const where = search
+        ? {
+            OR: [
+                {
+                    brand_name: {
+                        contains: search,
+                    },
+                },
+                {
+                    normalized_name: {
+                        contains: normalizeText(search),
+                    },
+                },
+                {
+                    description: {
+                        contains: search,
+                    },
+                },
+            ],
+        }
+        :
+            {};
+    const [brands, totalItems] = await prisma.$transaction([
+        prisma.brands.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy: {
+                [sortBy]: sortOrder,
+            },
+        }),
+        prisma.brands.count({
+            where,
+        }),
+    ]);
+    return {
+        brands,
+        totalItems,
+    };
 };
 export const findBrandByNormalizeName = async (nomarlizeName) => {
     return await prisma.brands.findUnique({

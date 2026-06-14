@@ -3,6 +3,7 @@ import { createVariantAttributeTransaction, deleteVariantAttributeTransaction } 
 import { createProductVariantSpecTransaction, deleteProductVariantSpecTransaction } from "./productVariantSpec.model.js";
 import { createProductImageTransaction } from "./productImage.model.js";
 import { createInventoryTransaction } from "./inventory.model.js";
+import { createDevicesTransaction } from "./device.model.js";
 export const findProductVariantBySku = async (sku) => {
     return await prisma.product_variants.findUnique({
         where: {
@@ -36,19 +37,25 @@ export const findProductVariantById = async (variantId) => {
                 select: {
                     spec_key: true,
                     spec_value: true,
-                }
+                    display_order: true,
+                },
+                orderBy: {
+                    display_order: "asc",
+                },
             },
             variant_attribute_values: {
                 select: {
+                    attribute_value_id: true,
                     attribute_values: {
                         select: {
+                            attribute_value_id: true,
+                            value: true,
                             product_attributes: {
                                 select: {
                                     attribute_id: true,
                                     attribute_name: true
                                 }
                             },
-                            value: true,
                         }
                     }
                 }
@@ -77,7 +84,7 @@ export const createProductVariantTransaction = async (tx, data) => {
     });
 };
 //Tạo nhiều productVariants
-export const createProductVariants = async (productVariantData, variantAttributeValueData, productVariantSpecData, productImageData, inventoryTransactionData) => {
+export const createProductVariants = async (productVariantData, variantAttributeValueData, productVariantSpecData, productImageData, inventoryTransactionData, deviceData) => {
     return await prisma.$transaction(async (tx) => {
         await createProductVariantTransaction(tx, productVariantData);
         if (variantAttributeValueData.length > 0) {
@@ -91,6 +98,9 @@ export const createProductVariants = async (productVariantData, variantAttribute
         }
         if (inventoryTransactionData.length > 0) {
             await createInventoryTransaction(tx, inventoryTransactionData);
+        }
+        if (deviceData.length > 0) {
+            await createDevicesTransaction(tx, deviceData);
         }
         return true;
     });
@@ -119,5 +129,23 @@ export const updateProductVariant = async (variantId, variantData, shouldUpdateA
             await createInventoryTransaction(tx, [inventoryTransactionData]);
         }
         return updateVariant;
+    });
+};
+export const deleteProductVariant = async (variantId) => {
+    return await prisma.product_variants.delete({
+        where: {
+            variant_id: variantId,
+        },
+    });
+};
+export const updateVariantDefaultImage = async (variantId, imageUrl, publicId) => {
+    return await prisma.product_variants.update({
+        where: {
+            variant_id: variantId,
+        },
+        data: {
+            image_url: imageUrl,
+            public_id: publicId,
+        },
     });
 };

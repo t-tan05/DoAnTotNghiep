@@ -4,6 +4,7 @@ import { createVariantAttributeTransaction, deleteVariantAttributeTransaction } 
 import { createProductVariantSpecTransaction, deleteProductVariantSpecTransaction } from "./productVariantSpec.model.js";
 import { createProductImageTransaction } from "./productImage.model.js";
 import { createInventoryTransaction } from "./inventory.model.js";
+import { createDevicesTransaction } from "./device.model.js";
 
 export const findProductVariantBySku = async(sku: string) => {
     return await prisma.product_variants.findUnique({
@@ -97,7 +98,8 @@ export const createProductVariants = async(
     variantAttributeValueData: Prisma.variant_attribute_valuesUncheckedCreateInput[],
     productVariantSpecData: Prisma.product_variant_specsUncheckedCreateInput[],
     productImageData: Prisma.product_imagesUncheckedCreateInput[],
-    inventoryTransactionData: Prisma.inventory_transactionsUncheckedCreateInput[]
+    inventoryTransactionData: Prisma.inventory_transactionsUncheckedCreateInput[],
+    deviceData: Prisma.devicesUncheckedCreateInput[],
 ) => {
     return await prisma.$transaction(async(tx) => {
         await createProductVariantTransaction(tx, productVariantData);
@@ -116,6 +118,10 @@ export const createProductVariants = async(
 
         if(inventoryTransactionData.length > 0){
             await createInventoryTransaction(tx, inventoryTransactionData);
+        }
+
+        if(deviceData.length > 0){
+            await createDevicesTransaction(tx, deviceData);
         }
 
         return true;

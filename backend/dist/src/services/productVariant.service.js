@@ -1,9 +1,9 @@
 import { findAttributeValuesByIds } from "#models/attributeValue.model";
 import { findProductById } from "#models/product.model";
-import { createProductVariants, findProductVariantById, findProductVariantBySku, findProductVariantCombosByProductId, updateProductVariant } from "#models/productVariant.model";
+import { createProductVariants, deleteProductVariant, findProductVariantById, findProductVariantBySku, findProductVariantCombosByProductId, updateProductVariant } from "#models/productVariant.model";
 import AppError from "#utils/AppError";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "#utils/UploadCloud";
-import { inventory_transactions_type } from "@prisma/client";
+import { devices_status, inventory_transactions_type } from "@prisma/client";
 import crypto from "crypto";
 const buildVariantComboKey = (attributeValueIds = []) => {
     return [...attributeValueIds].sort().join("|");
@@ -34,6 +34,7 @@ export const createProductVariantService = async (productId, data, files, create
     const inventoryTransactionData = [];
     const uploadedPublicIds = [];
     const matchedImageFieldnames = new Set();
+    const deviceData = [];
     try {
         for (let index = 0; index < data?.variants.length; index++) {
             const variant = data?.variants[index];
@@ -55,15 +56,8 @@ export const createProductVariantService = async (productId, data, files, create
             if (existedSku)
                 throw new AppError(`SKU ${variant?.sku} đã tồn tại`, 409);
             const variantId = crypto.randomUUID();
-            productVariantData.push({
-                variant_id: variantId,
-                product_id: productId,
-                sku: variant?.sku,
-                price: variant?.price,
-                quantity_in_stock: variant?.quantityInStock,
-                reserved_quantity: 0,
-                sold_quantity: 0,
-            });
+            let defaultImageUrl = null;
+            let defaultPublicId = null;
             if (variant.attributeValueIds) {
                 const existedAttributeValues = await findAttributeValuesByIds(variant.attributeValueIds);
                 const attributeIds = existedAttributeValues.map((item) => item.attribute_id);
@@ -100,6 +94,15 @@ export const createProductVariantService = async (productId, data, files, create
                 created_by: createdBy,
                 created_at: new Date(Date.now()),
             });
+            //Tự động tạo các devices cho từng product
+            for (let i = 0; i < variant.quantityInStock; i++) {
+                deviceData.push({
+                    device_id: crypto.randomUUID(),
+                    variant_id: variantId,
+                    serial_number: `${variant.sku}-${Date.now()}-${i + 1}`,
+                    status: devices_status.AVAILABLE,
+                });
+            }
             const variantImages = files.filter((file) => {
                 return file.fieldname.startsWith(`variant_${index}_image`);
             });
@@ -107,6 +110,10 @@ export const createProductVariantService = async (productId, data, files, create
             for (let i = 0; i < variantImages.length; i++) {
                 const uploadResult = await uploadImageToCloudinary(variantImages[i], "DoAnTotNghiep/products");
                 uploadedPublicIds.push(uploadResult.public_id);
+                if (i === 0) {
+                    defaultImageUrl = uploadResult.secure_url;
+                    defaultPublicId = uploadResult.public_id;
+                }
                 productImageData.push({
                     product_id: productId,
                     variant_id: variantId,
@@ -115,6 +122,17 @@ export const createProductVariantService = async (productId, data, files, create
                     is_default: i === 0,
                 });
             }
+            productVariantData.push({
+                variant_id: variantId,
+                product_id: productId,
+                sku: variant?.sku,
+                price: variant?.price,
+                quantity_in_stock: variant?.quantityInStock,
+                reserved_quantity: 0,
+                sold_quantity: 0,
+                image_url: defaultImageUrl,
+                public_id: defaultPublicId,
+            });
         }
         const unmatchedFileFieldnames = files
             .map((file) => file.fieldname)
@@ -122,8 +140,8 @@ export const createProductVariantService = async (productId, data, files, create
         if (unmatchedFileFieldnames.length > 0) {
             throw new AppError(`Tên field ảnh không hợp lệ: ${unmatchedFileFieldnames.join(", ")}. Định dạng đúng là variant_{index}_image_{number}, ví dụ variant_0_image_0`, 400);
         }
-        await createProductVariants(productVariantData, variantAttributeValueData, productVariantSpecData, productImageData, inventoryTransactionData);
-        return true;
+        await createProductVariants(productVariantData, variantAttributeValueData, productVariantSpecData, productImageData, inventoryTransactionData, deviceData);
+        return { created: true };
     }
     catch (error) {
         await Promise.allSettled(uploadedPublicIds.map((publicId) => deleteImageFromCloudinary(publicId)));
@@ -214,4 +232,11 @@ export const getProductVariantService = async (variantId) => {
     if (!productVariant)
         throw new AppError("Không tìm thấy biến thể sản phẩm", 404);
     return { productVariant };
+};
+export const deleteProductVariantService = async (variantId) => {
+    const variant = await findProductVariantById(variantId);
+    if (!variant)
+        throw new AppError("Không tìm thấy biến thể sản phẩm", 404);
+    const delVariant = await deleteProductVariant(variantId);
+    return { delVariant };
 };
