@@ -33,12 +33,12 @@ CREATE TABLE `addresses` (
   `receiver_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone_number` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_default` tinyint(1) DEFAULT '0',
-  `created_at` datetime default CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`address_id`),
   KEY `fk_address_user` (`user_id`),
-  key `idx_user_default` (`user_id`, `is_default`),
-  key `idx_user_address_id` (`user_id`, `address_id`),
+  KEY `idx_user_addess_default` (`user_id`, `is_default`),
+  KEY `idx_user_addess_id` (`user_id`, `address_id`),
   CONSTRAINT `fk_address_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Table structure for table `brands`
@@ -76,6 +76,7 @@ CREATE TABLE `carts` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`cart_id`),
+  UNIQUE KEY `uk_cart_user` (`user_id`),
   KEY `fk_cart_user` (`user_id`),
   CONSTRAINT `fk_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -98,7 +99,9 @@ CREATE TABLE `carts_items` (
   `quantity` int NOT NULL,
   `price_at_add` decimal(15,2) NOT NULL,
   PRIMARY KEY (`cart_item_id`),
+  UNIQUE KEY `uk_cart_variant` (`cart_id`,`variant_id`),
   KEY `fk_cartitem_cart` (`cart_id`),
+  KEY `fk_cartitem_variant` (`variant_id`),
   CONSTRAINT `fk_cartitem_cart` FOREIGN KEY (`cart_id`) REFERENCES `carts` (`cart_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cartitem_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`variant_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -142,7 +145,8 @@ CREATE TABLE `devices` (
   PRIMARY KEY (`device_id`),
   UNIQUE KEY `serial_number` (`serial_number`),
   KEY `fk_device_orderdetail` (`order_detail_id`),
-  CONSTRAINT `fk_device_orderdetail` FOREIGN KEY (`order_detail_id`) REFERENCES `orders_details` (`order_detail_id`) ON DELETE SET NULL,
+  KEY `fk_device_variant` (`variant_id`),
+  CONSTRAINT `fk_device_orderdetail` FOREIGN KEY (`order_detail_id`) REFERENCES `orders_details` (`order_detail_id`),
   CONSTRAINT `fk_device_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`variant_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -210,13 +214,11 @@ CREATE TABLE `orders` (
 
   CONSTRAINT `fk_orders_employee`
     FOREIGN KEY (`employee_id`)
-    REFERENCES `users` (`user_id`)
-    ON DELETE SET NULL,
+    REFERENCES `users` (`user_id`),
 
   CONSTRAINT `fk_orders_user`
     FOREIGN KEY (`user_id`)
     REFERENCES `users` (`user_id`)
-    ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `payment_transactions`;
@@ -248,7 +250,7 @@ CREATE TABLE `payment_transactions` (
 
   `paid_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (`transaction_id`),
 
@@ -279,8 +281,9 @@ CREATE TABLE `orders_details` (
   `price` decimal(10,2) NOT NULL,
   PRIMARY KEY (`order_detail_id`),
   KEY `fk_odetail_order` (`order_id`),
+  KEY `fk_odetail_variant` (`variant_id`),
   CONSTRAINT `fk_odetail_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_odetail_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`variant_id`) ON DELETE RESTRICT
+  CONSTRAINT `fk_odetail_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`variant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -326,7 +329,7 @@ CREATE TABLE `products` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `warranty_period` int NOT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`product_id`),
 
   UNIQUE KEY `uq_products_normalized_name` (`normalized_name`),
@@ -390,7 +393,7 @@ CREATE TABLE `product_variants` (
   `image_url` varchar(255) DEFAULT NULL,
   `public_id` varchar(255) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`variant_id`),
   UNIQUE KEY `sku` (`sku`),
   KEY `fk_variant_product` (`product_id`),
@@ -437,7 +440,7 @@ CREATE TABLE `blog_categories` (
   `category_name` varchar(100) NOT NULL,
   `description` text,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`category_id`),
   UNIQUE KEY `category_name` (`category_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -457,14 +460,14 @@ CREATE TABLE `blog_posts` (
   `status` enum('DRAFT','PUBLISHED','ARCHIVED') DEFAULT 'DRAFT',
   `published_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `thumbnail_url` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`post_id`),
   UNIQUE KEY `slug` (`slug`),
   KEY `fk_post_author` (`author_id`),
   KEY `fk_post_category` (`category_id`),
   CONSTRAINT `fk_post_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`user_id`),
-  CONSTRAINT `fk_post_category` FOREIGN KEY (`category_id`) REFERENCES `blog_categories` (`category_id`) ON DELETE SET NULL
+  CONSTRAINT `fk_post_category` FOREIGN KEY (`category_id`) REFERENCES `blog_categories` (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -524,9 +527,10 @@ CREATE TABLE `reviews` (
   UNIQUE KEY `uk_review_order_product` (`order_id`,`product_id`),
   KEY `fk_review_product` (`product_id`),
   KEY `fk_review_user` (`user_id`),
+  KEY `fk_reviews_order` (`order_id`),
   CONSTRAINT `fk_review_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_review_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_reviews_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_reviews_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   CONSTRAINT `reviews_chk_1` CHECK ((`rating` between 1 and 5))
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -563,7 +567,7 @@ CREATE TABLE `statistics` (
   `total_products_sold` int DEFAULT '0',
   `total_inventory` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`stat_id`),
   UNIQUE KEY `unique_stat_date` (`stat_date`),
   KEY `idx_statistics_stat_date` (`stat_date`)
@@ -605,6 +609,7 @@ CREATE TABLE `users` (
   `pass_word` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `verified` tinyint(1) DEFAULT '0',
+  `must_change_password` tinyint(1) DEFAULT '0',
   `status` enum('ACTIVE', 'LOCKED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE',
   `locked_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `locked_at` datetime DEFAULT NULL,
@@ -658,7 +663,7 @@ CREATE TABLE `warranties` (
   `status` enum('RECEIVED','IN_PROGRESS','COMPLETED','RETURNED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RECEIVED',
   `note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`warranty_id`),
   KEY `fk_warranty_device` (`device_id`),
   KEY `idx_warranty_status` (`status`),
@@ -711,10 +716,10 @@ CREATE TABLE `inventory_transactions` (
     REFERENCES `product_variants`(`variant_id`) ON DELETE CASCADE,
 
   CONSTRAINT `fk_inventory_order` FOREIGN KEY (`order_id`)
-    REFERENCES `orders`(`order_id`) ON DELETE SET NULL,
+    REFERENCES `orders`(`order_id`),
 
   CONSTRAINT `fk_inventory_creator` FOREIGN KEY (`created_by`)
-    REFERENCES `users`(`user_id`) ON DELETE SET NULL
+    REFERENCES `users`(`user_id`)
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
