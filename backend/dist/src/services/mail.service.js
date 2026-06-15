@@ -36,3 +36,20 @@ export const sendResetPasswordEmail = async (to, code) => {
         `
     });
 };
+export const sendNotifyPasswordForEmployee = async (to, password) => {
+    await transpoter.sendMail({
+        from: process.env.EMAIL_USER,
+        to,
+        subject: "Tài khoản nhân viên đã được tạo",
+        html: `
+            <div style="font-family: Arial">
+                <h2>Tài khoản nhân viên đã được tạo</h2>
+                <p>Email đăng nhập của bạn là: <b>${to}</b></p>
+                <p>Mật khẩu tạm thời của bạn là:</p>
+                <h2 style="color: blue">${password}</h2>
+                <p>Vui lòng đăng nhập và đổi mật khẩu ngay trong lần đăng nhập đầu tiên.</p>
+                <p>Nếu bạn không biết về tài khoản này, vui lòng liên hệ quản trị viên.</p>
+            </div>
+        `,
+    });
+};

@@ -50,6 +50,7 @@ export function AuthProvider({children}:AuthProviderProps) {
         const res = await authService.login({email, password});
 
         const accessToken = res.data.data?.accessToken;
+        const mustChangePassword = Boolean(res.data.data?.mustChangePassword);
 
         if(!accessToken){
             throw new Error("Backend không trả accessToken.");
@@ -59,8 +60,15 @@ export function AuthProvider({children}:AuthProviderProps) {
 
         const currentUser = await reloadUser();
 
+        if(mustChangePassword || currentUser?.must_change_password){
+            navigate("/account/password");
+            return;
+        }
+
         if(currentUser?.roles?.includes("ADMIN")){
             navigate("/admin");
+        }else if(currentUser?.roles?.includes("EMPLOYEE")){
+            navigate("/employee");
         }else {
             navigate("/");
         }

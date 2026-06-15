@@ -10,6 +10,14 @@ export type AdminProductVariant = {
     sold_quantity?: number;
     image_url?: string | null;
     public_id?: string | null;
+    original_price?: number;
+    discount_price?: number | null;
+    active_promotion?: {
+        promotion_id: string;
+        promotion_name: string;
+        discount_type: "PERCENT" | "FIXED";
+        discount_value: string | number;
+    } | null;
     product_images: Array<{
         image_id: number;
         image_url: string;

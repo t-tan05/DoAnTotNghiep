@@ -124,18 +124,14 @@ export const attachProductsToPromotionSchema = Joi.object({
         .items(
             Joi.string()
                 .trim()
-                .required()
                 .messages({
                     "string.base": "ID sản phẩm phải là chuỗi.",
                     "string.empty": "ID sản phẩm không được để trống.",
                     "any.required": "ID sản phẩm là bắt buộc.",
                 }),
         )
-        .min(1)
-        .required()
+        .default([])
         .messages({
             "array.base": "Danh sách sản phẩm phải là một mảng.",
-            "array.min": "Phải chọn ít nhất một sản phẩm.",
-            "any.required": "Danh sách sản phẩm là bắt buộc.",
         }),
 });

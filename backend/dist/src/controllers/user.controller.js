@@ -1,5 +1,5 @@
 import { CatchAsync } from "#utils/CatchAsync";
-import { delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updatePasswordService, updateProfileService } from "#services/user.service";
+import { createEmpByAdminService, delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updatePasswordService, updateProfileService } from "#services/user.service";
 import AppError from "#utils/AppError";
 export const getAllUsersController = CatchAsync(async (req, res) => {
     const data = await getAllUsersService();
@@ -78,5 +78,16 @@ export const updatePasswordController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Thay đổi mật khẩu thành công",
+    });
+});
+export const createEmployeeController = CatchAsync(async (req, res) => {
+    const { name, email, password, confirmPassword } = req.body;
+    const data = await createEmpByAdminService(name, email, password, confirmPassword);
+    res.status(201).json({
+        success: true,
+        message: "Tạo tài khoản nhân viên thành công",
+        data: {
+            ...data,
+        },
     });
 });

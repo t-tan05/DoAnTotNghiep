@@ -1,0 +1,15 @@
+import { createBlogController, deleteBlogController, getAdminBlogDetailController, getAdminBlogsController, getPublicBlogDetailController, getPublicBlogsController, updateBlogController, } from "#controllers/blog.controller";
+import { VerifyToken } from "#middlewares/Auth";
+import { CheckRole } from "#middlewares/CheckRole";
+import { Validate } from "#middlewares/Validate";
+import { createBlogSchema, updateBlogSchema } from "#validations/blog.validation";
+import { Router } from "express";
+const router = Router();
+router.get("/public", getPublicBlogsController);
+router.get("/public/:postId", getPublicBlogDetailController);
+router.get("/admin", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), getAdminBlogsController);
+router.get("/admin/:postId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), getAdminBlogDetailController);
+router.post("/", VerifyToken, CheckRole("EMPLOYEE"), Validate(createBlogSchema), createBlogController);
+router.patch("/:postId", VerifyToken, CheckRole("EMPLOYEE"), Validate(updateBlogSchema), updateBlogController);
+router.delete("/:postId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), deleteBlogController);
+export default router;

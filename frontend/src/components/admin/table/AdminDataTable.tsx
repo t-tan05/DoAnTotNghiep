@@ -34,7 +34,7 @@ type Props<T> = {
     onSearchChange: (value: string) => void;
     onPageChange: (page: number) => void;
     onSortChange: (sortBy: string) => void;
-    onAdd: () => void;
+    onAdd?: () => void;
     onEdit?: (item: T) => void;
     onDelete: (item: T) => void;
     onView?: (item: T) => void;
@@ -70,10 +70,12 @@ export default function AdminDataTable<T>({
                     ) : null}
                 </div>
 
-                <Button onClick={onAdd} className="h-12 w-full sm:w-auto cursor-pointer">
-                    <Plus className="mr-2 h-4 w-4"/>
-                    Thêm mới 
-                </Button>
+                {onAdd && (
+                    <Button onClick={onAdd} className="h-12 w-full sm:w-auto cursor-pointer">
+                        <Plus className="mr-2 h-4 w-4"/>
+                        Thêm mới 
+                    </Button>
+                )}
             </div>
 
             <div className="relative max-w-md">

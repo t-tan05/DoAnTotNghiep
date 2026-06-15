@@ -105,6 +105,7 @@ export const loginService = async (email: string, password: string) => {
         user_id: user.user_id,
         email: user.email,
         roles: roles.map((role) => role.role_name),
+        mustChangePassword: Boolean(user.must_change_password),
     };
 
     //Tạo accessToken
@@ -122,7 +123,7 @@ export const loginService = async (email: string, password: string) => {
     });
     
     //Trả về dữ liệu theo dạng object
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, mustChangePassword: Boolean(user.must_change_password) };
 };
 
 export const registerService = async(name: string, email: string, password: string, confirmPassword: string) => {
@@ -309,6 +310,7 @@ export const refreshTokenService = async(refreshToken: string) => {
         user_id: user.user_id,
         email: user.email,
         roles: roles.map((role) => role.role_name),
+        mustChangePassword: Boolean(user.must_change_password),
     };
 
     const newAccessToken = signAccessToken(payload);

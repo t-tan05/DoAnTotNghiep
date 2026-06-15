@@ -77,6 +77,7 @@ export const loginService = async (email, password) => {
         user_id: user.user_id,
         email: user.email,
         roles: roles.map((role) => role.role_name),
+        mustChangePassword: Boolean(user.must_change_password),
     };
     //Tạo accessToken
     const accessToken = signAccessToken(payload);
@@ -89,7 +90,7 @@ export const loginService = async (email, password) => {
         refreshToken: hashRefreshToken
     });
     //Trả về dữ liệu theo dạng object
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, mustChangePassword: Boolean(user.must_change_password) };
 };
 export const registerService = async (name, email, password, confirmPassword) => {
     const isExisted = await findUserByEmail(email);
@@ -230,6 +231,7 @@ export const refreshTokenService = async (refreshToken) => {
         user_id: user.user_id,
         email: user.email,
         roles: roles.map((role) => role.role_name),
+        mustChangePassword: Boolean(user.must_change_password),
     };
     const newAccessToken = signAccessToken(payload);
     return { accessToken: newAccessToken };

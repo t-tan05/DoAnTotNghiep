@@ -1,7 +1,13 @@
 import redisClient from "#config/redis";
-import { getAllUsers, findUserById, updateUserById, deleteUserById, findUserByIdForChangePassword } from "#models/user.model";
+import { getAllUsers, findUserById, updateUserById, deleteUserById, findUserByIdForChangePassword, findUserByEmail, createEmpByAdmin } from "#models/user.model";
 import AppError from "#utils/AppError";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { sendNotifyPasswordForEmployee } from "#services/mail.service";
+//Tạo hàm hash token
+const hashToken = (token) => {
+    return crypto.createHash("sha256").update(token).digest("hex");
+};
 //Hàm lấy tất cả tài khoản dành cho ADMIN
 export const getAllUsersService = async () => {
     const users = await getAllUsers();
@@ -18,6 +24,7 @@ export const profileService = async (userId) => {
         name: user.name,
         verified: user.verified,
         roles: user.users_roles.map((role) => role.role_name),
+        must_change_password: user.must_change_password,
     };
 };
 //Hàm cập nhật thông tin cá nhân
@@ -95,6 +102,24 @@ export const updatePasswordService = async (userId, currentPassword, newPassword
     const hashPassword = await bcrypt.hash(newPassword, 10);
     await updateUserById(userId, {
         pass_word: hashPassword,
+        must_change_password: false,
     });
     return true;
+};
+export const createEmpByAdminService = async (name, email, password, confirmPassword) => {
+    const isExisted = await findUserByEmail(email);
+    //Kiểm tra xem email đã tồn tại chưa. Nếu tồn tại thì báo lỗi
+    if (isExisted)
+        throw new AppError("Email đã tồn tại.", 409);
+    //So sánh password và confirmPassword có giống nhau không
+    if (password !== confirmPassword)
+        throw new AppError("Mật khẩu xác nhận không đúng.", 400);
+    //Mã hóa Password
+    const hashPassword = await bcrypt.hash(password, 10);
+    //Tạo userId bằng UUID
+    const userId = crypto.randomUUID();
+    //Tạo user mới 
+    const user = await createEmpByAdmin(userId, name, email, hashPassword, "EMPLOYEE");
+    await sendNotifyPasswordForEmployee(email, password);
+    return { user };
 };

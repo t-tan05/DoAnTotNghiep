@@ -20,6 +20,8 @@ import productVariantRoute from "#routes/productVariant.route";
 import productImageRoute from "#routes/productImage.route";
 import addressRoute from "#routes/address.route";
 import promotionRoute from "#routes/promotion.route";
+import blogRoute from "#routes/blog.route";
+import externalNewsRoute from "#routes/externalNews.route";
 
 const app = express();
 
@@ -53,6 +55,8 @@ app.use("/api/product-variants", productVariantRoute);
 app.use("/api/product-images", productImageRoute);
 app.use("/api/addresses", addressRoute);
 app.use("/api/promotions", promotionRoute);
+app.use("/api/blogs", blogRoute);
+app.use("/api/external-news", externalNewsRoute);
 
 app.use(globalErrorHandler);
 

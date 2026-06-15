@@ -1,7 +1,9 @@
 import {
+  BadgePercent,
   Boxes,
   ChartColumn,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Package,
   Settings,
@@ -37,6 +39,11 @@ export const adminSidebarItems = [
     icon: Tags,
   },
   {
+    title: "Khuyến mãi",
+    url: "/admin/promotions",
+    icon: BadgePercent,
+  },
+  {
     title: "Đơn hàng",
     url: "/admin/orders",
     icon: ClipboardList,
@@ -45,6 +52,11 @@ export const adminSidebarItems = [
     title: "Người dùng",
     url: "/admin/users",
     icon: Users,
+  },
+  {
+    title: "Quản lý blog",
+    url: "/admin/blogs",
+    icon: FileText,
   },
   {
     title: "Thống kê",

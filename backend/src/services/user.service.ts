@@ -4,10 +4,20 @@ import {
     findUserById, 
     updateUserById, 
     deleteUserById, 
-    findUserByIdForChangePassword 
+    findUserByIdForChangePassword, 
+    findUserByEmail,
+    createUserWithRole,
+    createEmpByAdmin
 } from "#models/user.model";
 import AppError from "#utils/AppError";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { sendNotifyPasswordForEmployee } from "#services/mail.service";
+
+//Tạo hàm hash token
+const hashToken = (token: string) => {
+    return crypto.createHash("sha256").update(token).digest("hex");
+};
 
 //Hàm lấy tất cả tài khoản dành cho ADMIN
 export const getAllUsersService = async() => {
@@ -28,6 +38,7 @@ export const profileService = async(userId: string) => {
         name: user.name,
         verified: user.verified,
         roles: user.users_roles.map((role) => role.role_name),
+        must_change_password: user.must_change_password,
     };
 };
 
@@ -130,7 +141,37 @@ export const updatePasswordService = async(userId: string, currentPassword: stri
 
     await updateUserById(userId, {
         pass_word: hashPassword,
+        must_change_password: false,
     });
 
     return true;
+};
+
+export const createEmpByAdminService = async(name: string, email: string, password: string, confirmPassword: string) => {
+    const isExisted = await findUserByEmail(email);
+
+    //Kiểm tra xem email đã tồn tại chưa. Nếu tồn tại thì báo lỗi
+    if(isExisted) throw new AppError("Email đã tồn tại.", 409);
+
+    //So sánh password và confirmPassword có giống nhau không
+    if(password !== confirmPassword) throw new AppError("Mật khẩu xác nhận không đúng.", 400);
+
+    //Mã hóa Password
+    const hashPassword = await bcrypt.hash(password, 10);
+
+    //Tạo userId bằng UUID
+    const userId = crypto.randomUUID();
+
+    //Tạo user mới 
+    const user = await createEmpByAdmin(
+        userId,
+        name,
+        email,
+        hashPassword,
+        "EMPLOYEE",
+    );
+
+    await sendNotifyPasswordForEmployee(email, password);
+
+    return {user};
 };

@@ -24,6 +24,16 @@ import AdminProductsPage from "@/pages/admin/AdminProductsPage";
 import AdminProductDetailPage from "@/pages/admin/AdminProductDetailPage";
 import AdminProductAttributesPage from "@/pages/admin/AdminProductAttributesPage";
 import AdminProductVariantFormPage from "@/pages/admin/AdminProductVariantFormPage";
+import AdminPromotionsPage from "@/pages/admin/AdminPromotionsPage";
+import BlogListPage from "@/pages/public/BlogListPage";
+import BlogDetailPage from "@/pages/public/BlogDetailPage";
+import AdminBlogsPage from "@/pages/admin/AdminBlogsPage";
+import EmployeeBlogsPage from "@/pages/employee/EmployeeBlogsPage";
+import EmployeeBlogFormPage from "@/pages/employee/EmployeeBlogFormPage";
+import EmployeeBlogPreviewPage from "@/pages/employee/EmployeeBlogPreviewPage";
+import EmployeeExternalNewsPage from "@/pages/employee/EmployeeExternalNewsPage";
+import EmployeeRoute from "./EmployeeRoute";
+import EmployeeLayout from "@/components/employee/layout/EmployeeLayout";
 
 
 export default function AppRoute() {
@@ -32,6 +42,8 @@ export default function AppRoute() {
             <Route element={<PublicLayout />} >
                 <Route index path="/" element={<HomePage/>}/>
                 <Route path="/gioi-thieu" element={<div>Gioi thieu</div>} />
+                <Route path="/tin-tuc" element={<BlogListPage />} />
+                <Route path="/tin-tuc/:postId" element={<BlogDetailPage />} />
                 <Route element={<ProtectedRoute />}>
                     <Route path="/account" element={<ProfileLayout />}>
                         <Route index element={<AccountProfilePage />} />
@@ -61,10 +73,23 @@ export default function AppRoute() {
                     <Route path="attributes" element={<AdminProductAttributesPage />}/>
                     <Route path="categories" element={<AdminCategoriesPage />} />
                     <Route path="brands" element={<AdminBrandPage />} />
+                    <Route path="promotions" element={<AdminPromotionsPage />} />
                     <Route path="orders" element={<div>Quản lý đơn hàng</div>} />
                     <Route path="users" element={<div>Quản lý người dùng</div>} />
                     <Route path="statistics" element={<div>Thống kê</div>} />
+                    <Route path="blogs" element={<AdminBlogsPage />} />
                     <Route path="settings" element={<div>Cài đặt</div>} />
+                </Route>
+            </Route>
+
+            <Route element={<EmployeeRoute />}>
+                <Route path="/employee" element={<EmployeeLayout />}>
+                    <Route index element={<EmployeeBlogsPage />} />
+                    <Route path="blogs" element={<EmployeeBlogsPage />} />
+                    <Route path="blogs/new" element={<EmployeeBlogFormPage />} />
+                    <Route path="blogs/:postId/edit" element={<EmployeeBlogFormPage />} />
+                    <Route path="blogs/:postId/preview" element={<EmployeeBlogPreviewPage />} />
+                    <Route path="external-news" element={<EmployeeExternalNewsPage />} />
                 </Route>
             </Route>
 

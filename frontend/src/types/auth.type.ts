@@ -37,5 +37,6 @@ export type AuthUser = {
     email: string;
     verified: boolean;
     status: string;
+    must_change_password?: boolean;
     roles?: Array<string>;
 };

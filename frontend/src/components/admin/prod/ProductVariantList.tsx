@@ -7,6 +7,10 @@ type Props = {
     onDelete: (variant: AdminProductVariant) => void;
 };
 
+function formatPrice(value: string | number) {
+    return `${Number(value).toLocaleString("vi-VN")}đ`;
+}
+
 export default function ProductVariantList({
     variants,
     onEdit,
@@ -24,6 +28,7 @@ export default function ProductVariantList({
         <div className="space-y-3">
             {variants.map((variant) => {
                 const imageUrl = variant.image_url || variant.product_images?.[0]?.image_url;
+                const hasDiscount = variant.discount_price !== null && variant.discount_price !== undefined;
 
                 return (
                     <div 
@@ -45,9 +50,29 @@ export default function ProductVariantList({
 
                             <div className="min-w-0">
                                 <p className="font-medium">{variant.sku}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {Number(variant.price).toLocaleString("vi-VN")}đ / Tồn: {variant.quantity_in_stock}
-                                </p>
+                                <div className="text-sm">
+                                    {hasDiscount ? (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-muted-foreground line-through">
+                                                {formatPrice(variant.original_price ?? variant.price)}
+                                            </span>
+                                            <span className="font-semibold text-red-600">
+                                                {formatPrice(variant.discount_price as number)}
+                                            </span>
+                                            <span className="rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+                                                {variant.active_promotion?.promotion_name}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-muted-foreground">
+                                            {formatPrice(variant.price)}
+                                        </span>
+                                    )}
+
+                                    <p className="text-muted-foreground">
+                                        Tồn: {variant.quantity_in_stock}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 

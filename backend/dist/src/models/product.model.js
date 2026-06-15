@@ -51,6 +51,8 @@ export const findProductById = async (productId) => {
                     quantity_in_stock: true,
                     reserved_quantity: true,
                     sold_quantity: true,
+                    image_url: true,
+                    public_id: true,
                     product_images: {
                         select: {
                             image_id: true,
@@ -85,7 +87,22 @@ export const findProductById = async (productId) => {
                         }
                     }
                 }
-            }
+            },
+            products_promotions: {
+                select: {
+                    promotions: {
+                        select: {
+                            promotion_id: true,
+                            promotion_name: true,
+                            discount_type: true,
+                            discount_value: true,
+                            start_date: true,
+                            end_date: true,
+                            is_active: true,
+                        },
+                    },
+                },
+            },
         }
     });
 };
@@ -160,6 +177,8 @@ export const getProductWithQuery = async (params) => {
                         sku: true,
                         price: true,
                         quantity_in_stock: true,
+                        image_url: true,
+                        public_id: true,
                         product_images: {
                             select: {
                                 image_url: true,
@@ -169,6 +188,21 @@ export const getProductWithQuery = async (params) => {
                                 is_default: true,
                             },
                             take: 1,
+                        },
+                    },
+                },
+                products_promotions: {
+                    select: {
+                        promotions: {
+                            select: {
+                                promotion_id: true,
+                                promotion_name: true,
+                                discount_type: true,
+                                discount_value: true,
+                                start_date: true,
+                                end_date: true,
+                                is_active: true,
+                            },
                         },
                     },
                 },

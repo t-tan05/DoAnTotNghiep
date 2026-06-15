@@ -37,12 +37,13 @@ export const getProductDetailService = async (productId) => {
     const product = await findProductById(productId);
     if (!product)
         throw new AppError("Không tìm thấy sản phẩm", 404);
-    return { product };
+    return { product: applyPromotionToProduct(product) };
 };
 export const getAllProductsService = async (params) => {
     const { products, totalItems } = await getProductWithQuery(params);
+    const productsWithPromotion = products.map(applyPromotionToProduct);
     return {
-        products,
+        products: productsWithPromotion,
         meta: {
             pagination: {
                 page: params.page,
@@ -101,4 +102,54 @@ export const updateProductService = async (productId, data) => {
         productData.warranty_period = data.warrantyPeriod;
     const updProduct = await updateProduct(productId, productData);
     return { updProduct };
+};
+const getActivePromotions = (product) => {
+    const now = new Date();
+    return product.products_promotions
+        ?.map((item) => item.promotions)
+        .filter((promotion) => {
+        return promotion
+            && new Date(promotion.start_date) <= now
+            && new Date(promotion.end_date) >= now;
+    }) ?? [];
+};
+const calculateDiscountPrice = (price, promotion) => {
+    if (!promotion)
+        return price;
+    if (promotion.discount_type === "PERCENT") {
+        return Math.max(0, price - (price * Number(promotion.discount_value)) / 100);
+    }
+    return Math.max(0, price - Number(promotion.discount_value));
+};
+const applyPromotionToProduct = (product) => {
+    const activePromotions = getActivePromotions(product);
+    const productVariants = product.product_variants.map((variant) => {
+        const originalPrice = Number(variant.price);
+        let bestPromotion = null;
+        let bestDiscountPrice = originalPrice;
+        for (const promotion of activePromotions) {
+            const nextPrice = calculateDiscountPrice(originalPrice, promotion);
+            if (nextPrice < bestDiscountPrice) {
+                bestDiscountPrice = nextPrice;
+                bestPromotion = promotion;
+            }
+        }
+        return {
+            ...variant,
+            original_price: originalPrice,
+            discount_price: bestPromotion ? bestDiscountPrice : null,
+            active_promotion: bestPromotion
+                ? {
+                    promotion_id: bestPromotion.promotion_id,
+                    promotion_name: bestPromotion.promotion_name,
+                    discount_type: bestPromotion.discount_type,
+                    discount_value: bestPromotion.discount_value,
+                }
+                : null,
+        };
+    });
+    return {
+        ...product,
+        product_variants: productVariants,
+    };
 };

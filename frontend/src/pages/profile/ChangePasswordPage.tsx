@@ -1,12 +1,17 @@
 import FormError from "@/components/common/FormError";
 import SpinnerButton from "@/components/common/SpinnerButton";
+import { useAuth } from "@/hooks/useAuth";
 import { userService } from "@/services/user.service";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 
 export default function ChangePasswordPage() {
+    const { reloadUser } = useAuth();
+    const navigate = useNavigate();
+
     const [form, setForm] = useState({
         currentPassword: "",
         newPassword: "",
@@ -44,6 +49,15 @@ export default function ChangePasswordPage() {
             });
 
             toast.success("Đổi mật khẩu thành công.");
+            const currentUser = await reloadUser();
+
+            if(currentUser?.roles?.includes("ADMIN")){
+                navigate("/admin");
+            }else if(currentUser?.roles?.includes("EMPLOYEE")){
+                navigate("/employee");
+            }else{
+                navigate("/");
+            }
         }catch(error){
             setError(getErrorMessage(error));
         }finally{

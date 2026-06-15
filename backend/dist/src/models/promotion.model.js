@@ -165,3 +165,13 @@ export const detachProductFromPromotion = async (promotionId, productId) => {
         },
     });
 };
+export const findProductInPromotionByProductId = async (promotionId, productId) => {
+    return await prisma.products_promotions.findUnique({
+        where: {
+            product_id_promotion_id: {
+                product_id: productId,
+                promotion_id: promotionId,
+            },
+        },
+    });
+};

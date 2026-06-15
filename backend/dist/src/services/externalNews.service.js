@@ -1,0 +1,290 @@
+import { createBlogService } from "#services/blog.service";
+import AppError from "#utils/AppError";
+import * as cheerio from "cheerio";
+import crypto from "crypto";
+import Parser from "rss-parser";
+const parser = new Parser({
+    timeout: 12000,
+    headers: {
+        "User-Agent": "Mozilla/5.0 NewsReader/1.0",
+    },
+});
+export const EXTERNAL_NEWS_SOURCES = [
+    {
+        id: "vnexpress-so-hoa",
+        name: "VnExpress Số hóa",
+        homepageUrl: "https://vnexpress.net/so-hoa",
+        feedUrl: "https://vnexpress.net/rss/so-hoa.rss",
+        language: "vi",
+    },
+    {
+        id: "tinhte",
+        name: "Tinhte",
+        homepageUrl: "https://tinhte.vn",
+        feedUrl: "https://tinhte.vn/rss",
+        language: "vi",
+    },
+    {
+        id: "genk",
+        name: "GenK",
+        homepageUrl: "https://genk.vn",
+        feedUrl: "https://genk.vn/rss/home.rss",
+        language: "vi",
+    },
+    {
+        id: "techcrunch",
+        name: "TechCrunch",
+        homepageUrl: "https://techcrunch.com",
+        feedUrl: "https://techcrunch.com/feed/",
+        language: "en",
+    },
+    {
+        id: "the-verge",
+        name: "The Verge",
+        homepageUrl: "https://www.theverge.com",
+        feedUrl: "https://www.theverge.com/rss/index.xml",
+        language: "en",
+    },
+];
+const ARTICLE_SELECTORS = {
+    "vnexpress-so-hoa": [
+        "article.fck_detail",
+        ".fck_detail",
+        ".Normal",
+    ],
+    tinhte: [
+        ".bbWrapper",
+        "article",
+        ".message-body",
+    ],
+    genk: [
+        ".knc-content",
+        ".detail-content",
+        ".VCSortableInPreviewMode",
+        "article",
+    ],
+    techcrunch: [
+        ".article-content",
+        ".entry-content",
+        "article",
+    ],
+    "the-verge": [
+        ".duet--article--article-body-component",
+        ".c-entry-content",
+        "article",
+    ],
+};
+const ALLOWED_CONTENT_TAGS = new Set([
+    "a",
+    "b",
+    "blockquote",
+    "br",
+    "div",
+    "em",
+    "h2",
+    "h3",
+    "i",
+    "img",
+    "li",
+    "ol",
+    "p",
+    "span",
+    "strong",
+    "u",
+    "ul",
+]);
+function getSource(sourceId) {
+    if (!sourceId)
+        return undefined;
+    return EXTERNAL_NEWS_SOURCES.find((source) => source.id === sourceId);
+}
+function detectSourceByUrl(url) {
+    return EXTERNAL_NEWS_SOURCES.find((source) => {
+        try {
+            return new URL(url).hostname.includes(new URL(source.homepageUrl).hostname.replace("www.", ""));
+        }
+        catch {
+            return false;
+        }
+    });
+}
+function stripHtml(value) {
+    if (!value)
+        return "";
+    return cheerio.load(value).text().replace(/\s+/g, " ").trim();
+}
+function normalizeUrl(value) {
+    if (!value)
+        return "";
+    return value.trim();
+}
+function makeArticleId(url) {
+    return crypto.createHash("sha1").update(url).digest("hex");
+}
+function getImageFromHtml(html) {
+    if (!html)
+        return null;
+    const $ = cheerio.load(html);
+    const imageUrl = $("img").first().attr("src") || $("img").first().attr("data-src");
+    return imageUrl || null;
+}
+function getMetaImage($) {
+    return ($('meta[property="og:image"]').attr("content")
+        || $('meta[name="twitter:image"]').attr("content")
+        || null);
+}
+function getMetaDescription($) {
+    return ($('meta[property="og:description"]').attr("content")
+        || $('meta[name="description"]').attr("content")
+        || "");
+}
+function resolveUrl(url, baseUrl) {
+    try {
+        return new URL(url, baseUrl).toString();
+    }
+    catch {
+        return "";
+    }
+}
+function sanitizeArticleContent(html, baseUrl) {
+    const $ = cheerio.load(html);
+    $("script, style, iframe, noscript, form, button, input, textarea, select").remove();
+    $("*").each((_, element) => {
+        const node = element;
+        const tagName = node.tagName?.toLowerCase();
+        if (!tagName || !ALLOWED_CONTENT_TAGS.has(tagName)) {
+            $(element).replaceWith($(element).contents());
+            return;
+        }
+        const attributes = { ...node.attribs };
+        Object.keys(attributes).forEach((attribute) => {
+            if (!["href", "src", "alt", "title"].includes(attribute)) {
+                $(element).removeAttr(attribute);
+            }
+        });
+        if (tagName === "a") {
+            const href = $(element).attr("href");
+            if (href)
+                $(element).attr("href", resolveUrl(href, baseUrl));
+            $(element).attr("target", "_blank");
+            $(element).attr("rel", "noreferrer");
+        }
+        if (tagName === "img") {
+            const src = $(element).attr("src") || $(element).attr("data-src");
+            if (src)
+                $(element).attr("src", resolveUrl(src, baseUrl));
+        }
+    });
+    return $.root().html() || "";
+}
+function normalizeArticle(source, item) {
+    const url = normalizeUrl(item.link || item.guid);
+    if (!url)
+        return null;
+    const contentSnippet = item.contentSnippet || item.summary || item.content || "";
+    const contentHtml = item["content:encoded"] || item.content || item.summary || "";
+    return {
+        id: makeArticleId(url),
+        sourceId: source.id,
+        sourceName: source.name,
+        title: stripHtml(item.title),
+        url,
+        excerpt: stripHtml(contentSnippet).slice(0, 500),
+        thumbnailUrl: item.enclosure?.url
+            || item.image?.url
+            || getImageFromHtml(contentHtml)
+            || null,
+        publishedAt: item.isoDate || item.pubDate || null,
+    };
+}
+export const getExternalNewsSourcesService = () => {
+    return { sources: EXTERNAL_NEWS_SOURCES };
+};
+export const getExternalNewsService = async (params) => {
+    const sources = params.sourceId
+        ? [getSource(params.sourceId)].filter(Boolean)
+        : EXTERNAL_NEWS_SOURCES;
+    if (!sources.length) {
+        throw new AppError("Nguồn tin không hợp lệ.", 400);
+    }
+    const settledFeeds = await Promise.allSettled(sources.map(async (source) => {
+        const feed = await parser.parseURL(source.feedUrl);
+        return (feed.items || [])
+            .map((item) => normalizeArticle(source, item))
+            .filter(Boolean);
+    }));
+    const articles = settledFeeds
+        .flatMap((result) => result.status === "fulfilled" ? result.value : [])
+        .filter((article) => {
+        if (!params.search)
+            return true;
+        const keyword = params.search.toLowerCase();
+        return `${article.title} ${article.excerpt}`.toLowerCase().includes(keyword);
+    })
+        .sort((a, b) => {
+        const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+        const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+        return dateB - dateA;
+    })
+        .slice(0, params.limit);
+    return { articles };
+};
+export const getExternalNewsDetailService = async (url, sourceId) => {
+    const source = getSource(sourceId) || detectSourceByUrl(url);
+    if (!source) {
+        throw new AppError("Không xác định được nguồn tin từ URL.", 400);
+    }
+    const response = await fetch(url, {
+        headers: {
+            "User-Agent": "Mozilla/5.0 NewsReader/1.0",
+        },
+    });
+    if (!response.ok) {
+        throw new AppError("Không thể lấy nội dung bài viết từ nguồn ngoài.", 502);
+    }
+    const pageHtml = await response.text();
+    const $ = cheerio.load(pageHtml);
+    const title = $("h1").first().text().trim() || $("title").text().trim();
+    const excerpt = getMetaDescription($);
+    const thumbnailUrl = getMetaImage($);
+    const publishedAt = $('meta[property="article:published_time"]').attr("content")
+        || $("time").first().attr("datetime")
+        || null;
+    const selectors = ARTICLE_SELECTORS[source.id];
+    const contentNode = selectors
+        .map((selector) => $(selector).first())
+        .find((node) => node.length && node.text().trim().length > 120);
+    const contentHtml = contentNode
+        ? sanitizeArticleContent(contentNode.html() || "", url)
+        : `<p>${stripHtml(excerpt)}</p>`;
+    const detail = {
+        id: makeArticleId(url),
+        sourceId: source.id,
+        sourceName: source.name,
+        title,
+        url,
+        excerpt: stripHtml(excerpt),
+        thumbnailUrl,
+        publishedAt,
+        contentHtml,
+    };
+    return { article: detail };
+};
+export const importExternalNewsService = async (authorId, payload) => {
+    const { article } = await getExternalNewsDetailService(payload.url, payload.sourceId);
+    const sourceNote = `
+        <hr />
+        <p><strong>Nguồn tham khảo:</strong> <a href="${article.url}" target="_blank" rel="noreferrer">${article.sourceName}</a></p>
+    `;
+    const data = await createBlogService(authorId, {
+        title: article.title,
+        content: `${article.contentHtml}${sourceNote}`,
+        categoryId: payload.categoryId || null,
+        thumbnailUrl: article.thumbnailUrl,
+        status: payload.status || "DRAFT",
+    });
+    return {
+        article,
+        blog: data.blog,
+    };
+};

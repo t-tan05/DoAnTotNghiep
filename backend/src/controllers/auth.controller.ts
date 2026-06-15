@@ -30,6 +30,7 @@ export const loginController = CatchAsync(async(req: Request, res: Response) => 
         message: "Đăng nhập thành công",
         data: {
             accessToken: data.accessToken,
+            mustChangePassword: data.mustChangePassword,
         }
     });
 });

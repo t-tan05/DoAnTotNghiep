@@ -1,9 +1,10 @@
-import { attachProductsToPromotion, createPromotion, deletePromotion, detachProductFromPromotion, findAllPromotions, findDuplicatePromotion, findPromotionById, refreshAllPromotionsActive, refreshPromotionActive, updatePromotion, } from "#models/promotion.model";
+import { findProductById } from "#models/product.model";
+import { attachProductsToPromotion, createPromotion, deletePromotion, detachProductFromPromotion, findAllPromotions, findDuplicatePromotion, findProductInPromotionByProductId, findPromotionById, refreshAllPromotionsActive, refreshPromotionActive, updatePromotion, } from "#models/promotion.model";
 import AppError from "#utils/AppError";
 import crypto from "crypto";
-const PROMOTION_NOT_FOUND_MESSAGE = "Khong tim thay khuyen mai";
-const INVALID_PROMOTION_DATE_MESSAGE = "Ngay ket thuc phai sau ngay bat dau";
-const PROMOTION_DUPLICATE_MESSAGE = "Khuyen mai da ton tai";
+const PROMOTION_NOT_FOUND_MESSAGE = "Không tìm thấy khuyến mãi.";
+const INVALID_PROMOTION_DATE_MESSAGE = "Ngày kết thúc phải sau ngày bắt đầu.";
+const PROMOTION_DUPLICATE_MESSAGE = "Khuyến mãi đã tồn tại.";
 const calculateActive = (startDate, endDate) => {
     const now = new Date();
     return now >= startDate && now <= endDate;
@@ -39,6 +40,14 @@ export const createPromotionService = async (payload) => {
     const endDate = new Date(payload.endDate);
     validateDates(startDate, endDate);
     await validateDuplicate(payload.promotionName, startDate, endDate);
+    if (payload.productIds !== undefined) {
+        for (const id of payload.productIds) {
+            const existedProduct = await findProductById(id);
+            if (!existedProduct) {
+                throw new AppError(`Không tìm thấy sản phẩm có mã ${id} để gắn vào khuyến mãi.`, 404);
+            }
+        }
+    }
     const promotion = await createPromotion({
         promotion_id: crypto.randomUUID(),
         promotion_name: payload.promotionName,
@@ -93,6 +102,9 @@ export const detachProductFromPromotionService = async (promotionId, productId) 
     const promotion = await findPromotionById(promotionId);
     if (!promotion)
         throw new AppError(PROMOTION_NOT_FOUND_MESSAGE, 404);
+    const existedProduct = await findProductInPromotionByProductId(promotionId, productId);
+    if (!existedProduct)
+        throw new AppError(`Không tìm thấy sản phẩm được gán cho khuyến mãi này.`, 404);
     const result = await detachProductFromPromotion(promotionId, productId);
     return { result };
 };

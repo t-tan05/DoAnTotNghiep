@@ -328,6 +328,7 @@ model users {
   pass_word                        String                   @db.VarChar(255)
   name                             String                   @db.VarChar(100)
   verified                         Boolean?                 @default(false)
+  must_change_password             Boolean?                 @default(false)
   status                           UserStatus               @default(ACTIVE)
   locked_reason                    String?                  @db.VarChar(255)
   locked_at                        DateTime?                @db.DateTime(0)

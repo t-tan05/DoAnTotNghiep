@@ -5,9 +5,9 @@ export const createPromotionSchema = Joi.object({
         .max(100)
         .required()
         .messages({
-        "string.empty": "Ten khuyen mai khong duoc de trong",
-        "string.max": "Ten khuyen mai toi da 100 ky tu",
-        "any.required": "Ten khuyen mai la bat buoc",
+        "string.empty": "Tên khuyến mãi không được để trống.",
+        "string.max": "Tên khuyến mãi tối đa 100 ký tự.",
+        "any.required": "Tên khuyến mãi là bắt buộc.",
     }),
     description: Joi.string()
         .trim()
@@ -17,47 +17,47 @@ export const createPromotionSchema = Joi.object({
         .valid("PERCENT", "FIXED")
         .required()
         .messages({
-        "any.only": "Loai giam gia khong hop le",
-        "any.required": "Loai giam gia la bat buoc",
+        "any.only": "Loại giảm giá không hợp lệ.",
+        "any.required": "Loại giảm giá là bắt buộc.",
     }),
     discountValue: Joi.number()
         .positive()
         .required()
         .messages({
-        "number.base": "Gia tri giam gia phai la so",
-        "number.positive": "Gia tri giam gia phai la so duong",
-        "any.required": "Gia tri giam gia la bat buoc",
+        "number.base": "Giá trị giảm giá phải là số.",
+        "number.positive": "Giá trị giảm giá phải là số dương.",
+        "any.required": "Giá trị giảm giá là bắt buộc.",
     }),
     startDate: Joi.date()
         .iso()
         .required()
         .messages({
-        "date.base": "Ngay bat dau khong hop le",
-        "date.format": "Ngay bat dau phai theo dinh dang ISO",
-        "date.iso": "Ngay bat dau phai theo dinh dang ISO",
-        "any.required": "Ngay bat dau la bat buoc",
+        "date.base": "Ngày bắt đầu không hợp lệ.",
+        "date.format": "Ngày bắt đầu phải theo định dạng ISO.",
+        "date.iso": "Ngày bắt đầu phải theo định dạng ISO.",
+        "any.required": "Ngày bắt đầu là bắt buộc.",
     }),
     endDate: Joi.date()
         .iso()
         .greater(Joi.ref("startDate"))
         .required()
         .messages({
-        "date.base": "Ngay ket thuc khong hop le",
-        "date.format": "Ngay ket thuc phai theo dinh dang ISO",
-        "date.iso": "Ngay ket thuc phai theo dinh dang ISO",
-        "date.greater": "Ngay ket thuc phai sau ngay bat dau",
-        "any.required": "Ngay ket thuc la bat buoc",
+        "date.base": "Ngày kết thúc không hợp lệ.",
+        "date.format": "Ngày kết thúc phải theo định dạng ISO.",
+        "date.iso": "Ngày kết thúc phải theo định dạng ISO.",
+        "date.greater": "Ngày kết thúc phải sau ngày bắt đầu.",
+        "any.required": "Ngày kết thúc là bắt buộc.",
     }),
     productIds: Joi.array()
         .items(Joi.string()
         .trim()
         .messages({
-        "string.base": "ID san pham phai la chuoi",
-        "string.empty": "ID san pham khong duoc de trong",
+        "string.base": "ID sản phẩm phải là chuỗi.",
+        "string.empty": "ID sản phẩm không được để trống.",
     }))
         .default([])
         .messages({
-        "array.base": "Danh sach san pham phai la mot mang",
+        "array.base": "Danh sách sản phẩm phải là một mảng.",
     }),
 });
 export const updatePromotionSchema = Joi.object({
@@ -66,8 +66,8 @@ export const updatePromotionSchema = Joi.object({
         .max(100)
         .optional()
         .messages({
-        "string.empty": "Ten khuyen mai khong duoc de trong",
-        "string.max": "Ten khuyen mai toi da 100 ky tu",
+        "string.empty": "Tên khuyến mãi không được để trống.",
+        "string.max": "Tên khuyến mãi tối đa 100 ký tự.",
     }),
     description: Joi.string()
         .trim()
@@ -77,47 +77,43 @@ export const updatePromotionSchema = Joi.object({
         .valid("PERCENT", "FIXED")
         .optional()
         .messages({
-        "any.only": "Loai giam gia khong hop le",
+        "any.only": "Loại giảm giá không hợp lệ.",
     }),
     discountValue: Joi.number()
         .positive()
         .optional()
         .messages({
-        "number.base": "Gia tri giam gia phai la so",
-        "number.positive": "Gia tri giam gia phai lon hon 0",
+        "number.base": "Giá trị giảm giá phải là số.",
+        "number.positive": "Giá trị giảm giá phải lớn hơn 0.",
     }),
     startDate: Joi.date()
         .iso()
         .optional()
         .messages({
-        "date.base": "Ngay bat dau khong hop le",
-        "date.iso": "Ngay bat dau phai theo dinh dang ISO",
+        "date.base": "Ngày bắt đầu không hợp lệ.",
+        "date.iso": "Ngày bắt đầu phải theo định dạng ISO.",
     }),
     endDate: Joi.date()
         .iso()
         .optional()
         .messages({
-        "date.base": "Ngay ket thuc khong hop le",
-        "date.iso": "Ngay ket thuc phai theo dinh dang ISO",
+        "date.base": "Ngày kết thúc không hợp lệ.",
+        "date.iso": "Ngày kết thúc phải theo định dạng ISO.",
     }),
 }).min(1).messages({
-    "object.min": "Phai cung cap it nhat mot truong de cap nhat",
+    "object.min": "Phải cung cấp ít nhất một trường để cập nhật.",
 });
 export const attachProductsToPromotionSchema = Joi.object({
     productIds: Joi.array()
         .items(Joi.string()
         .trim()
-        .required()
         .messages({
-        "string.base": "ID san pham phai la chuoi",
-        "string.empty": "ID san pham khong duoc de trong",
-        "any.required": "ID san pham la bat buoc",
+        "string.base": "ID sản phẩm phải là chuỗi.",
+        "string.empty": "ID sản phẩm không được để trống.",
+        "any.required": "ID sản phẩm là bắt buộc.",
     }))
-        .min(1)
-        .required()
+        .default([])
         .messages({
-        "array.base": "Danh sach san pham phai la mot mang",
-        "array.min": "Phai chon it nhat mot san pham",
-        "any.required": "Danh sach san pham la bat buoc",
+        "array.base": "Danh sách sản phẩm phải là một mảng.",
     }),
 });

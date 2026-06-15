@@ -1,6 +1,6 @@
 import { CatchAsync } from "#utils/CatchAsync";
 import { Request, Response } from "express";
-import { delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updatePasswordService, updateProfileService } from "#services/user.service";
+import { createEmpByAdminService, delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updatePasswordService, updateProfileService } from "#services/user.service";
 import AppError from "#utils/AppError";
 
 interface AuthRequest extends Request {
@@ -106,5 +106,19 @@ export const updatePasswordController = CatchAsync(async(req: AuthRequest, res: 
     res.status(200).json({
         success: true,
         message: "Thay đổi mật khẩu thành công",
+    });
+});
+
+export const createEmployeeController = CatchAsync(async(req: Request, res: Response) => {
+    const {name, email, password, confirmPassword} = req.body;
+
+    const data = await createEmpByAdminService(name, email, password, confirmPassword);
+
+    res.status(201).json({
+        success: true,
+        message: "Tạo tài khoản nhân viên thành công",
+        data: {
+            ...data,
+        },
     });
 });

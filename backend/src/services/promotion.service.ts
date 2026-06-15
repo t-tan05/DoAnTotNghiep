@@ -1,3 +1,4 @@
+import { findProductById } from "#models/product.model";
 import {
     attachProductsToPromotion,
     createPromotion,
@@ -79,6 +80,16 @@ export const createPromotionService = async (payload: CreatePromotionPayload) =>
     validateDates(startDate, endDate);
     await validateDuplicate(payload.promotionName, startDate, endDate);
 
+    if(payload.productIds !== undefined)
+    {
+        for (const id of payload.productIds) {
+            const existedProduct = await findProductById(id);
+
+            if (!existedProduct) {
+                throw new AppError(`Không tìm thấy sản phẩm có mã ${id} để gắn vào khuyến mãi.`, 404);
+            }
+        }
+    }
     const promotion = await createPromotion(
         {
             promotion_id: crypto.randomUUID(),
