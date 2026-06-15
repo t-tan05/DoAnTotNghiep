@@ -34,6 +34,7 @@ import EmployeeBlogPreviewPage from "@/pages/employee/EmployeeBlogPreviewPage";
 import EmployeeExternalNewsPage from "@/pages/employee/EmployeeExternalNewsPage";
 import EmployeeRoute from "./EmployeeRoute";
 import EmployeeLayout from "@/components/employee/layout/EmployeeLayout";
+import CartPage from "@/pages/customer/CartPage";
 
 
 export default function AppRoute() {
@@ -50,6 +51,8 @@ export default function AppRoute() {
                         <Route path="password" element={<ChangePasswordPage />} />
                         <Route path="addresses" element={<AddressPage />} />
                     </Route>
+
+                    <Route path="/cart" element={<CartPage />}/>
                 </Route>
             </Route>
 

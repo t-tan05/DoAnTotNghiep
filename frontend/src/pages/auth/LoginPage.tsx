@@ -4,7 +4,7 @@ import AuthLayout from "@/components/layout/AuthLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -17,6 +17,9 @@ export default function LoginPage() {
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const location = useLocation();
+    const redirectTo = (location.state as { from?: string } | null)?.from;
 
     function updateField(name: keyof typeof form, value: string) {
         setForm((prev) => ({
@@ -31,7 +34,7 @@ export default function LoginPage() {
         setLoading(true);
 
         try{
-            await login(form.email, form.password);
+            await login(form.email, form.password, redirectTo);
             toast.success("Đăng nhập thành công.");
         }catch(error) {
             setError(getErrorMessage(error));

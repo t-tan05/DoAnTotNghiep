@@ -12,7 +12,7 @@ type AuthContextValue = {
     user: AuthUser | null;
     loading: boolean;
     isAuthenticated: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string, redirectTo?: string) => Promise<void>;
     logout: () => Promise<void>;
     reloadUser: () => Promise<AuthUser | null>;
 };
@@ -46,13 +46,13 @@ export function AuthProvider({children}:AuthProviderProps) {
         return currentUser;
     }
 
-    async function login(email: string, password: string) {
+    async function login(email: string, password: string, redirectTo?: string) {
         const res = await authService.login({email, password});
 
         const accessToken = res.data.data?.accessToken;
         const mustChangePassword = Boolean(res.data.data?.mustChangePassword);
 
-        if(!accessToken){
+        if (!accessToken) {
             throw new Error("Backend không trả accessToken.");
         }
 
@@ -60,16 +60,21 @@ export function AuthProvider({children}:AuthProviderProps) {
 
         const currentUser = await reloadUser();
 
-        if(mustChangePassword || currentUser?.must_change_password){
+        if (mustChangePassword || currentUser?.must_change_password) {
             navigate("/account/password");
             return;
         }
 
-        if(currentUser?.roles?.includes("ADMIN")){
+        if (redirectTo && !currentUser?.roles?.includes("ADMIN") && !currentUser?.roles?.includes("EMPLOYEE")) {
+            navigate(redirectTo);
+            return;
+        }
+
+        if (currentUser?.roles?.includes("ADMIN")) {
             navigate("/admin");
-        }else if(currentUser?.roles?.includes("EMPLOYEE")){
+        } else if (currentUser?.roles?.includes("EMPLOYEE")) {
             navigate("/employee");
-        }else {
+        } else {
             navigate("/");
         }
     }
