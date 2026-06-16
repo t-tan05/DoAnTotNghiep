@@ -54,7 +54,7 @@ export const adminSidebarItems = [
     icon: Users,
   },
   {
-    title: "Quản lý blog",
+    title: "Bài viết",
     url: "/admin/blogs",
     icon: FileText,
   },

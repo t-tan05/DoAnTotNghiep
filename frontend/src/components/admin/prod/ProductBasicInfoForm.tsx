@@ -219,7 +219,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                             onValueChange={(value) => updateField("brandId", value)}
                             disabled={loadingOptions}
                         >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full cursor-pointer">
                                 <SelectValue placeholder="Chọn thương hiệu" />
                             </SelectTrigger>
                             <SelectContent position="popper" align="start">
@@ -239,7 +239,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                             onValueChange={(value) => updateField("categoryId", value)}
                             disabled={loadingOptions}
                         >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full cursor-pointer">
                                 <SelectValue placeholder="Chọn danh mục" />
                             </SelectTrigger>
                             <SelectContent position="popper" align="start">
@@ -262,11 +262,11 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                 </div>
 
                 <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" disabled={saving} onClick={cancelEdit}>
+                    <Button type="button" variant="outline" disabled={saving} onClick={cancelEdit} className="cursor-pointer">
                         Hủy
                     </Button>
 
-                    <SpinnerButton type="submit" loading={saving} loadingText="Đang lưu...">
+                    <SpinnerButton type="submit" loading={saving} loadingText="Đang lưu..." className="cursor-pointer">
                         Lưu thay đổi
                     </SpinnerButton>
                 </div>

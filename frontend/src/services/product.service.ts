@@ -2,6 +2,21 @@ import type { CreateProductPayload, ProductDetailData, ProductListData, ProductL
 import { api } from "./api";
 import type { BackendSuccess } from "@/types/api.type";
 
+export type ProductImportError = {
+    row: number;
+    field: string;
+    message: string;
+};
+
+export type ProductImportResult = {
+    imported: boolean;
+    totalRows: number;
+    errors: ProductImportError[];
+    createdProductCount?: number;
+    createdVariantCount?: number;
+    createdDeviceCount?: number;
+};
+
 export const productService = {
     getAll: async(query: ProductListQuery) => {
         const res = await api.get<BackendSuccess<ProductListData>>("/products", {
@@ -29,5 +44,30 @@ export const productService = {
     remove: async(productId: string) => {
         const res = await api.delete(`/products/${productId}`);
         return res.data;
+    },
+
+    downloadImportTemplate: async() => {
+        const res = await api.get<Blob>("/products/import-template", {
+            responseType: "blob",
+        });
+
+        return res.data;
+    },
+
+    importFromExcel: async(file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await api.post<BackendSuccess<ProductImportResult>>(
+            "/products/import-excel",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            },
+        );
+
+        return res.data.data;
     },
 };

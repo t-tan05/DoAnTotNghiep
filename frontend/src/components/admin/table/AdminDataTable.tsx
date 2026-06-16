@@ -1,15 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow, 
+import {
     Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import type { SortOrder } from "@/types/admin-table.type";
-import { ArrowDown, ArrowUp, Pencil, Plus, Search, Trash2, Eye } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 import AdminTablePagination from "./AdminTablePagination";
 
 export type AdminColumn<T> = {
@@ -35,6 +36,7 @@ type Props<T> = {
     onPageChange: (page: number) => void;
     onSortChange: (sortBy: string) => void;
     onAdd?: () => void;
+    headerActions?: ReactNode;
     onEdit?: (item: T) => void;
     onDelete: (item: T) => void;
     onView?: (item: T) => void;
@@ -56,6 +58,7 @@ export default function AdminDataTable<T>({
     onPageChange,
     onSortChange,
     onAdd,
+    headerActions,
     onEdit,
     onDelete,
     onView,
@@ -70,16 +73,22 @@ export default function AdminDataTable<T>({
                     ) : null}
                 </div>
 
-                {onAdd && (
-                    <Button onClick={onAdd} className="h-12 w-full sm:w-auto cursor-pointer">
-                        <Plus className="mr-2 h-4 w-4"/>
-                        Thêm mới 
-                    </Button>
+                {(headerActions || onAdd) && (
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        {headerActions}
+
+                        {onAdd && (
+                            <Button onClick={onAdd} className="h-12 w-full cursor-pointer sm:w-auto">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Thêm mới
+                            </Button>
+                        )}
+                    </div>
                 )}
             </div>
 
             <div className="relative max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                     value={search}
                     onChange={(event) => onSearchChange(event.target.value)}
@@ -98,11 +107,11 @@ export default function AdminDataTable<T>({
                                         <button
                                             type="button"
                                             onClick={() => onSortChange(String(column.key))}
-                                            className="inline-flex items-center gap-1 font-medium cursor-pointer"
+                                            className="inline-flex cursor-pointer items-center gap-1 font-medium"
                                         >
                                             {column.title}
                                             {sortBy === column.key && sortOrder === "asc" ? (
-                                                <ArrowUp className="h-3.5 w-3.5"/>
+                                                <ArrowUp className="h-3.5 w-3.5" />
                                             ) : null}
                                             {sortBy === column.key && sortOrder === "desc" ? (
                                                 <ArrowDown className="h-3.5 w-3.5" />
@@ -125,7 +134,7 @@ export default function AdminDataTable<T>({
                                     Đang tải dữ liệu...
                                 </TableCell>
                             </TableRow>
-                        ) : null }
+                        ) : null}
 
                         {!loading && items.length === 0 ? (
                             <TableRow>
@@ -147,8 +156,8 @@ export default function AdminDataTable<T>({
                                     <div className="flex justify-end gap-2">
                                         {onView && (
                                             <Button
-                                                variant={"outline"}
-                                                size={"icon"}
+                                                variant="outline"
+                                                size="icon"
                                                 onClick={() => onView(item)}
                                                 className="cursor-pointer"
                                             >
@@ -156,9 +165,9 @@ export default function AdminDataTable<T>({
                                             </Button>
                                         )}
                                         {onEdit && (
-                                            <Button 
-                                                variant={"outline"}
-                                                size={"icon"}
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
                                                 onClick={() => onEdit(item)}
                                                 className="cursor-pointer"
                                             >
@@ -166,9 +175,9 @@ export default function AdminDataTable<T>({
                                             </Button>
                                         )}
 
-                                        <Button 
-                                            variant={"destructive"}
-                                            size={"icon"}
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
                                             onClick={() => onDelete(item)}
                                             className="cursor-pointer"
                                         >
@@ -182,11 +191,11 @@ export default function AdminDataTable<T>({
                 </Table>
             </div>
 
-            <AdminTablePagination 
+            <AdminTablePagination
                 page={page}
                 totalPages={totalPages}
                 onPageChange={onPageChange}
             />
         </section>
-    )
+    );
 }

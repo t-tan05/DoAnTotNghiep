@@ -1,11 +1,14 @@
-import { createProductController, deleteProductController, getAllProductsController, getProductDetailController, updateProductController } from "#controllers/product.controller";
+import { createProductController, deleteProductController, downloadProductImportTemplateController, getAllProductsController, getProductDetailController, importProductsFromExcelController, updateProductController } from "#controllers/product.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { Validate } from "#middlewares/Validate";
 import { createProductSchema, updateProductSchema } from "#validations/product.validation";
 import { Router } from "express";
+import { excelUpload } from "#config/excelMulter";
 const router = Router();
 router.post("/", VerifyToken, CheckRole("ADMIN"), Validate(createProductSchema), createProductController);
+router.post("/import-excel", VerifyToken, CheckRole("ADMIN"), excelUpload.single("file"), importProductsFromExcelController);
+router.get("/import-template", VerifyToken, CheckRole("ADMIN"), downloadProductImportTemplateController);
 router.get("/", getAllProductsController);
 router.get("/:productId", getProductDetailController);
 router.patch("/:productId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductSchema), updateProductController);

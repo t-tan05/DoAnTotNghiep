@@ -106,6 +106,15 @@ const ALLOWED_CONTENT_TAGS = new Set([
     "ul",
 ]);
 
+const IMAGE_SOURCE_ATTRIBUTES = [
+    "src",
+    "data-src",
+    "data-original",
+    "data-url",
+    "data-lazy-src",
+    "data-llsrc",
+];
+
 function getSource(sourceId?: string) {
     if (!sourceId) return undefined;
     return EXTERNAL_NEWS_SOURCES.find((source) => source.id === sourceId);
@@ -166,6 +175,58 @@ function resolveUrl(url: string, baseUrl: string) {
     }
 }
 
+function getUrlFromSrcset(value?: string) {
+    if (!value) return "";
+
+    const candidates = value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    const bestCandidate = candidates[candidates.length - 1];
+
+    return bestCandidate?.split(/\s+/)[0] || "";
+}
+
+function isPlaceholderImage(url: string) {
+    return (
+        !url
+        || url.startsWith("data:")
+        || url.includes("blank.gif")
+        || url.includes("transparent.gif")
+        || url.includes("loading.gif")
+    );
+}
+
+function getImageSource($: cheerio.CheerioAPI, element: Element) {
+    const image = $(element);
+
+    for (const attribute of IMAGE_SOURCE_ATTRIBUTES) {
+        const value = image.attr(attribute);
+
+        if (value && !isPlaceholderImage(value)) {
+            return value;
+        }
+    }
+
+    const srcsetUrl = getUrlFromSrcset(image.attr("srcset") || image.attr("data-srcset"));
+
+    if (srcsetUrl && !isPlaceholderImage(srcsetUrl)) {
+        return srcsetUrl;
+    }
+
+    const pictureSource = image.closest("picture").find("source").first();
+    const pictureSrcsetUrl = getUrlFromSrcset(
+        pictureSource.attr("srcset") || pictureSource.attr("data-srcset"),
+    );
+
+    if (pictureSrcsetUrl && !isPlaceholderImage(pictureSrcsetUrl)) {
+        return pictureSrcsetUrl;
+    }
+
+    return "";
+}
+
 function sanitizeArticleContent(html: string, baseUrl: string) {
     const $ = cheerio.load(html);
 
@@ -174,6 +235,7 @@ function sanitizeArticleContent(html: string, baseUrl: string) {
     $("*").each((_, element) => {
         const node = element as Element;
         const tagName = node.tagName?.toLowerCase();
+        const imageSource = tagName === "img" ? getImageSource($, node) : "";
 
         if (!tagName || !ALLOWED_CONTENT_TAGS.has(tagName)) {
             $(element).replaceWith($(element).contents());
@@ -196,8 +258,11 @@ function sanitizeArticleContent(html: string, baseUrl: string) {
         }
 
         if (tagName === "img") {
-            const src = $(element).attr("src") || $(element).attr("data-src");
-            if (src) $(element).attr("src", resolveUrl(src, baseUrl));
+            if (imageSource) {
+                $(element).attr("src", resolveUrl(imageSource, baseUrl));
+            } else {
+                $(element).remove();
+            }
         }
     });
 
