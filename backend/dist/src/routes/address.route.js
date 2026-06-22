@@ -1,13 +1,12 @@
 import { createAddressController, deleteAddressController, getAddressDefaultController, getAllAddressByUserController, updateAddressController } from "#controllers/address.controller";
 import { VerifyToken } from "#middlewares/Auth";
-import { CheckRole } from "#middlewares/CheckRole";
 import { Validate } from "#middlewares/Validate";
 import { createAddressSchema } from "#validations/address.validation";
 import { Router } from "express";
 const router = Router();
-router.post("/", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), Validate(createAddressSchema), createAddressController);
-router.get("/address-default", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), getAddressDefaultController);
-router.get("/", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), getAllAddressByUserController);
-router.put("/:addressId", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), updateAddressController);
-router.delete("/:addressId", VerifyToken, CheckRole("ADMIN", "CUSTOMER"), deleteAddressController);
+router.post("/", VerifyToken, Validate(createAddressSchema), createAddressController);
+router.get("/address-default", VerifyToken, getAddressDefaultController);
+router.get("/", VerifyToken, getAllAddressByUserController);
+router.put("/:addressId", VerifyToken, updateAddressController);
+router.delete("/:addressId", VerifyToken, deleteAddressController);
 export default router;

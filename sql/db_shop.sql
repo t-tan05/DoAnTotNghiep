@@ -999,14 +999,34 @@ DROP PROCEDURE IF EXISTS sp_cancel_expired_orders //
 CREATE PROCEDURE sp_cancel_expired_orders()
 BEGIN
     UPDATE orders
+    SET status = 'CANCELLED',
+        payment_status = 'FAILED'
+    WHERE status = 'PENDING'
+      AND payment_status = 'PENDING'
+      AND payment_method IN ('VNPAY', 'MOMO', 'ZALOPAY', 'BANK_TRANSFER')
+      AND order_date < NOW() - INTERVAL 16 MINUTE;
+
+    UPDATE payment_transactions pt
+    JOIN orders o ON o.order_id = pt.order_id
+    SET pt.status = 'FAILED',
+        pt.updated_at = NOW(),
+        pt.provider_response = 'Auto failed: payment timeout'
+    WHERE o.status = 'CANCELLED'
+      AND o.payment_status = 'FAILED'
+      AND pt.status = 'PENDING'
+      AND pt.payment_method IN ('VNPAY', 'MOMO', 'ZALOPAY', 'BANK_TRANSFER');
+
+    UPDATE orders
     SET status = 'CANCELLED'
     WHERE status = 'PENDING'
+      AND payment_method = 'COD'
+      AND payment_status = 'UNPAID'
       AND order_date < NOW() - INTERVAL 24 HOUR;
 END //
 
 DROP EVENT IF EXISTS evt_auto_cancel_pending_orders //
 CREATE EVENT evt_auto_cancel_pending_orders
-ON SCHEDULE EVERY 1 HOUR
+ON SCHEDULE EVERY 1 MINUTE
 STARTS CURRENT_TIMESTAMP
 DO CALL sp_cancel_expired_orders() //
 
