@@ -31,14 +31,12 @@ function getVariantAttributes(item: CartItem) {
 export default function CartPage() {
     const [items, setItems] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [updatingId, setUpdatingId] = useState("");
     const [clearing, setClearing] = useState(false);
 
     async function fetchCart(options?: { silent?: boolean }) {
         try {
             if (options?.silent) {
-                setRefreshing(true);
             } else {
                 setLoading(true);
             }
@@ -49,7 +47,6 @@ export default function CartPage() {
             toast.error(getErrorMessage(error));
         } finally {
             if (options?.silent) {
-                setRefreshing(false);
             } else {
                 setLoading(false);
             }
@@ -221,6 +218,7 @@ export default function CartPage() {
                                             type="button"
                                             variant="ghost"
                                             size="icon"
+                                            className={Number(item.quantity) <= 1 ? "disabled:!pointer-events-auto disabled:!cursor-not-allowed opacity-50" : "cursor-pointer"}
                                             disabled={isUpdating || item.quantity <= 1}
                                             onClick={() => updateQuantity(item, item.quantity - 1)}
                                         >
@@ -237,6 +235,7 @@ export default function CartPage() {
                                             size="icon"
                                             disabled={isUpdating}
                                             onClick={() => updateQuantity(item, item.quantity + 1)}
+                                            className="cursor-pointer"
                                         >
                                             <Plus className="h-4 w-4" />
                                         </Button>
@@ -278,8 +277,8 @@ export default function CartPage() {
                         </div>
                     </div>
 
-                    <Button className="mt-5 w-full h-14 cursor-pointer">
-                        Tiến hành thanh toán
+                    <Button asChild className="mt-5 w-full h-14 cursor-pointer">
+                        <Link to="/checkout">Tiến hành thanh toán</Link>
                     </Button>
                 </aside>
             </div>

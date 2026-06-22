@@ -11,10 +11,14 @@ export default defineConfig({
   ],
   server: {
     host: "0.0.0.0",
+    allowedHosts: [
+      "0fab-14-186-15-153.ngrok-free.app",
+    ],
   },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     }
-  }
+  },
+  
 })

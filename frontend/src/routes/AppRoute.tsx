@@ -16,6 +16,7 @@ import ProfileLayout from "@/components/profile/ProfileLayout";
 import AccountProfilePage from "@/pages/profile/AccountProfilePage";
 import ChangePasswordPage from "@/pages/profile/ChangePasswordPage";
 import AddressPage from "@/pages/profile/AddressPage";
+import OrderHistoryPage from "@/pages/profile/OrderHistoryPage";
 import AdminLayout from "@/components/admin/layout/AdminLayout";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
@@ -35,6 +36,8 @@ import EmployeeExternalNewsPage from "@/pages/employee/EmployeeExternalNewsPage"
 import EmployeeRoute from "./EmployeeRoute";
 import EmployeeLayout from "@/components/employee/layout/EmployeeLayout";
 import CartPage from "@/pages/customer/CartPage";
+import CheckoutPage from "@/pages/customer/CheckoutPage";
+import PaymentReturnPage from "@/pages/customer/PaymentReturnPage";
 
 
 export default function AppRoute() {
@@ -49,10 +52,13 @@ export default function AppRoute() {
                     <Route path="/account" element={<ProfileLayout />}>
                         <Route index element={<AccountProfilePage />} />
                         <Route path="password" element={<ChangePasswordPage />} />
+                        <Route path="orders" element={<OrderHistoryPage />} />
                         <Route path="addresses" element={<AddressPage />} />
                     </Route>
 
                     <Route path="/cart" element={<CartPage />}/>
+                    <Route path="/checkout" element={<CheckoutPage />}/>
+                    <Route path="/payment/vnpay-return" element={<PaymentReturnPage />}/>
                 </Route>
             </Route>
 

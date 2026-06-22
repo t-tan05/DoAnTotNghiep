@@ -1,4 +1,4 @@
-import { Heart, ShoppingBag, SquarePen } from "lucide-react";
+import { Heart, ShoppingCart, SquarePen } from "lucide-react";
 import { Link } from "react-router-dom";
 import UserDropdown from "./UserDropdown";
 
@@ -45,7 +45,7 @@ export default function HeaderActions(){
             <UserDropdown />
 
             <CircleAction to="/cart" label="Giỏ hàng">
-                <ShoppingBag className="size-5 md:size-6"/>
+                <ShoppingCart className="size-5 md:size-6"/>
             </CircleAction>
         </div>
     )

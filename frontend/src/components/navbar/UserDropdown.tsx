@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { LogIn, LogOut, UserRound } from "lucide-react";
+import { LockKeyhole, LogIn, LogOut, MapPinned, Package, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -68,10 +68,37 @@ export default function UserDropdown() {
                             Xem thông tin cá nhận
                         </Link>
 
+                        <Link
+                            to="/account/password"
+                            onClick={() => setOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                        >
+                            <LockKeyhole className="size-4" />
+                            Đổi mật khẩu
+                        </Link>
+
+                        <Link
+                            to="/account/orders"
+                            onClick={() => setOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                        >
+                            <Package className="size-4" />
+                            Quản lý đơn hàng
+                        </Link>
+
+                        <Link
+                            to="/account/addresses"
+                            onClick={() => setOpen(false)}
+                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                        >
+                            <MapPinned className="size-4" />
+                            Sổ địa chỉ
+                        </Link>
+
                         <button
                             type="button"
                             onClick={handleLogout}
-                            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
+                            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-red-600 transition hover:bg-red-50 cursor-pointer"
                         >
                             <LogOut className="size-4" />
                             Đăng xuất
