@@ -1,10 +1,11 @@
-import { cancelMyOrderController, checkoutOrderController, getMyOrderDetailController, getMyOrdersController, cancelOrderForStaffController, completeOrderController, confirmOrderController, getAllOrdersController, getOrderDetailForStaffController, markDeliveryFailedController, shipOrderController, vnpayReturnController } from "#controllers/order.controller";
+import { cancelMyOrderController, checkoutOrderController, getMyOrderDetailController, getMyOrdersController, cancelOrderForStaffController, completeOrderController, confirmOrderController, getAllOrdersController, getOrderDetailForStaffController, markDeliveryFailedController, shipOrderController, vnpayReturnController, vnpayIpnController } from "#controllers/order.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { Validate } from "#middlewares/Validate";
 import { checkoutOrderSchema } from "#validations/order.validation";
 import { Router } from "express";
 import { CheckRole } from "#middlewares/CheckRole";
 const router = Router();
+router.get("/payment/vnpay-ipn", vnpayIpnController);
 router.get("/payment/vnpay-return", vnpayReturnController);
 router.use(VerifyToken);
 router.post("/checkout", Validate(checkoutOrderSchema), checkoutOrderController);

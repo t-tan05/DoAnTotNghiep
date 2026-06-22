@@ -894,7 +894,7 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
     return result;
 };
 
-export const handleVnpayIpnService = async(query: Record<string, any>) => {
+export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = "127.0.0.1") => {
     const isValidSignature = verifyVnpayReturn(query);
 
     if(!isValidSignature) {
@@ -919,7 +919,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>) => {
     }
 
     try {
-        return await prisma.$transaction(async(tx) => {
+        const result = await prisma.$transaction(async(tx) => {
             const order = await tx.orders.findUnique({
                 where: {
                     order_id: orderId,
@@ -969,7 +969,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>) => {
                 };
             }
 
-            if(Number(order.total_price) != paidAmount) {
+            if(Number(order.total_price) !== paidAmount) {
                 return {
                     RspCode: "04",
                     Message: "Invalid amount",
@@ -991,6 +991,15 @@ export const handleVnpayIpnService = async(query: Record<string, any>) => {
                         updated_at: new Date(),
                     },
                 });
+
+                if(order.status === orders_status.CANCELLED) {
+                    return {
+                        RspCode: "00",
+                        Message: "Confirm Success",
+                        needRefund: true,
+                    };
+                }
+
 
                 await tx.orders.update({
                     where: {
@@ -1034,6 +1043,63 @@ export const handleVnpayIpnService = async(query: Record<string, any>) => {
                 Message: "Confirm Success",
             };
         });
+
+        if("needRefund" in result && result.needRefund) {
+            try {
+                const { paymentTransaction, refundResult } = await refundPaidVnpayOrder({
+                    orderId,
+                    amount: paidAmount,
+                    userId: "SYSTEM",
+                    ipAddr: ipAddr,
+                });
+
+                await prisma.$transaction(async(tx) => {
+                    await tx.payment_transactions.update({
+                        where: {
+                            transaction_id: paymentTransaction.transaction_id,
+                        },
+                        data: {
+                            status: payment_transactions_status.REFUNDED,
+                            provider_response: JSON.stringify({
+                                paymentIpn: query,
+                                refund: refundResult,
+                            }),
+                            updated_at: new Date(),
+                        },
+                    });
+
+                    await tx.orders.update({
+                        where: {
+                            order_id: orderId,
+                        },
+                        data: {
+                            payment_status: orders_payment_status.REFUNDED,
+                        },
+                    });
+                });
+
+                return {
+                    RspCode: "00",
+                    Message: "Confirm Success",
+                };
+            } catch(error) {
+                await prisma.orders.update({
+                    where: {
+                        order_id: orderId,
+                    },
+                    data: {
+                        payment_status: orders_payment_status.PAID,
+                    },
+                });
+
+                return {
+                    RspCode: "00",
+                    Message: "Confirm Success",
+                };
+            }
+        }
+
+        return result;
     }catch(error) {
         return {
             RspCode: "99",

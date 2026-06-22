@@ -1,4 +1,4 @@
-import { cancelMyOrderService, checkoutOrderService, getMyOrderDetailService, getMyOrdersService, cancelOrderForStaffService, completeOrderService, confirmOrderService, getAllOrdersService, getOrderDetailForStaffService, markDeliveryFailedService, shipOrderService, handleVnpayReturnService, } from "#services/order.service";
+import { cancelMyOrderService, checkoutOrderService, getMyOrderDetailService, getMyOrdersService, cancelOrderForStaffService, completeOrderService, confirmOrderService, getAllOrdersService, getOrderDetailForStaffService, markDeliveryFailedService, shipOrderService, handleVnpayReturnService, handleVnpayIpnService, } from "#services/order.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { orders_payment_method, orders_payment_status, orders_status, } from "@prisma/client";
 const getEnumQuery = (value, values) => {
@@ -160,3 +160,18 @@ export const vnpayReturnController = CatchAsync(async (req, res) => {
         },
     });
 });
+export const vnpayIpnController = async (req, res) => {
+    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
+        || req.socket.remoteAddress
+        || "127.0.0.1";
+    try {
+        const data = await handleVnpayIpnService(req.query, ipAddr);
+        return res.status(200).json(data);
+    }
+    catch (error) {
+        return res.status(200).json({
+            RspCode: "99",
+            Message: "Unknown error",
+        });
+    }
+};

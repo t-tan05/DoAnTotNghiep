@@ -739,3 +739,192 @@ export const handleVnpayReturnService = async (query, ipAddr = "127.0.0.1") => {
     }
     return result;
 };
+export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
+    const isValidSignature = verifyVnpayReturn(query);
+    if (!isValidSignature) {
+        return {
+            RspCode: "97",
+            Message: "Invalid Checksum",
+        };
+    }
+    const orderId = String(query.vnp_TxnRef || "");
+    const responseCode = String(query.vnp_ResponseCode || "");
+    const transactionStatus = String(query.vnp_TransactionStatus || "");
+    const transactionCode = String(query.vnp_TransactionNo || "");
+    const paidAmount = Number(query.vnp_Amount || 0) / 100;
+    const paidAt = parseVnpayDate(String(query.vnp_PayDate || ""));
+    if (!orderId) {
+        return {
+            RspCode: "01",
+            Message: "Order not Found",
+        };
+    }
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            const order = await tx.orders.findUnique({
+                where: {
+                    order_id: orderId,
+                },
+            });
+            if (!order) {
+                return {
+                    RspCode: "01",
+                    Message: "Order not Found",
+                };
+            }
+            if (order.payment_method !== "VNPAY") {
+                return {
+                    RspCode: "01",
+                    Message: "Order not Found",
+                };
+            }
+            const paymentTransaction = await tx.payment_transactions.findFirst({
+                where: {
+                    order_id: orderId,
+                    payment_method: "VNPAY",
+                },
+                orderBy: {
+                    created_at: "desc",
+                },
+            });
+            if (!paymentTransaction) {
+                return {
+                    RspCode: "01",
+                    Message: "Order not Found",
+                };
+            }
+            const confirmedPaymentStatuses = new Set([
+                payment_transactions_status.SUCCESS,
+                payment_transactions_status.REFUNDED,
+            ]);
+            if (confirmedPaymentStatuses.has(paymentTransaction.status)) {
+                return {
+                    RspCode: "02",
+                    Message: "Order already confirmed",
+                };
+            }
+            if (Number(order.total_price) !== paidAmount) {
+                return {
+                    RspCode: "04",
+                    Message: "Invalid amount",
+                };
+            }
+            const isPaymentSuccess = responseCode === "00" && transactionStatus === "00";
+            if (isPaymentSuccess) {
+                await tx.payment_transactions.update({
+                    where: {
+                        transaction_id: paymentTransaction.transaction_id,
+                    },
+                    data: {
+                        status: payment_transactions_status.SUCCESS,
+                        transaction_code: transactionCode || null,
+                        provider_response: JSON.stringify(query),
+                        paid_at: paidAt,
+                        updated_at: new Date(),
+                    },
+                });
+                if (order.status === orders_status.CANCELLED) {
+                    return {
+                        RspCode: "00",
+                        Message: "Confirm Success",
+                        needRefund: true,
+                    };
+                }
+                await tx.orders.update({
+                    where: {
+                        order_id: orderId,
+                    },
+                    data: {
+                        payment_status: orders_payment_status.PAID,
+                    },
+                });
+                return {
+                    RspCode: "00",
+                    Message: "Confirm Success",
+                };
+            }
+            await tx.payment_transactions.update({
+                where: {
+                    transaction_id: paymentTransaction.transaction_id,
+                },
+                data: {
+                    status: payment_transactions_status.FAILED,
+                    transaction_code: transactionCode || null,
+                    provider_response: JSON.stringify(query),
+                    updated_at: new Date(),
+                },
+            });
+            await tx.orders.update({
+                where: {
+                    order_id: orderId,
+                },
+                data: {
+                    payment_status: orders_payment_status.FAILED,
+                    status: orders_status.CANCELLED,
+                },
+            });
+            return {
+                RspCode: "00",
+                Message: "Confirm Success",
+            };
+        });
+        if ("needRefund" in result && result.needRefund) {
+            try {
+                const { paymentTransaction, refundResult } = await refundPaidVnpayOrder({
+                    orderId,
+                    amount: paidAmount,
+                    userId: "SYSTEM",
+                    ipAddr: ipAddr,
+                });
+                await prisma.$transaction(async (tx) => {
+                    await tx.payment_transactions.update({
+                        where: {
+                            transaction_id: paymentTransaction.transaction_id,
+                        },
+                        data: {
+                            status: payment_transactions_status.REFUNDED,
+                            provider_response: JSON.stringify({
+                                paymentIpn: query,
+                                refund: refundResult,
+                            }),
+                            updated_at: new Date(),
+                        },
+                    });
+                    await tx.orders.update({
+                        where: {
+                            order_id: orderId,
+                        },
+                        data: {
+                            payment_status: orders_payment_status.REFUNDED,
+                        },
+                    });
+                });
+                return {
+                    RspCode: "00",
+                    Message: "Confirm Success",
+                };
+            }
+            catch (error) {
+                await prisma.orders.update({
+                    where: {
+                        order_id: orderId,
+                    },
+                    data: {
+                        payment_status: orders_payment_status.PAID,
+                    },
+                });
+                return {
+                    RspCode: "00",
+                    Message: "Confirm Success",
+                };
+            }
+        }
+        return result;
+    }
+    catch (error) {
+        return {
+            RspCode: "99",
+            Message: "Unknown error",
+        };
+    }
+};

@@ -217,8 +217,11 @@ export const vnpayReturnController = CatchAsync(async(req: Request, res: Respons
 });
 
 export const vnpayIpnController = async(req: Request, res: Response) => {
+    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
+        || req.socket.remoteAddress
+        || "127.0.0.1";
     try{
-        const data = await handleVnpayIpnService(req.query);
+        const data = await handleVnpayIpnService(req.query, ipAddr);
 
         return res.status(200).json(data);
     }catch(error) {
