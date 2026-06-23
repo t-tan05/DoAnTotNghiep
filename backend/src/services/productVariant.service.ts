@@ -169,6 +169,7 @@ export const createProductVariantService = async(
                 variant_id: variantId,
                 product_id: productId,
                 sku: variant?.sku,
+                variant_name: variant?.variantName?.trim() || null,
                 price: variant?.price,
                 quantity_in_stock: variant?.quantityInStock,
                 reserved_quantity: 0,
@@ -262,6 +263,8 @@ export const updateProductVariantService = async(
     const productVariantData: Prisma.product_variantsUpdateInput = {};
 
     if(data.sku !== undefined) productVariantData.sku = data.sku;
+
+    if(data.variantName !== undefined) productVariantData.variant_name = data.variantName?.trim() || null;
 
     if(data.price !== undefined) productVariantData.price = data.price;
 

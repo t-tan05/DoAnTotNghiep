@@ -148,7 +148,7 @@ export default function AdminProductDetailPage() {
                 open={Boolean(deleteVariant)}
                 loading={deleting}
                 title="Xóa biến thể"
-                description={`Bạn có chắc muốn xóa biến thể "${deleteVariant?.sku}" không?`}
+                description={`Bạn có chắc muốn xóa biến thể "${deleteVariant?.variant_name || deleteVariant?.sku}" không?`}
                 onOpenChange={(open) => {
                     if (!open) setDeleteVariant(null);
                 }}

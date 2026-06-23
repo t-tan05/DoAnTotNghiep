@@ -386,6 +386,7 @@ CREATE TABLE `product_variants` (
   `variant_id` varchar(50) NOT NULL,
   `product_id` varchar(50) NOT NULL,
   `sku` varchar(100) DEFAULT NULL,
+  `variant_name` varchar(255) NULL,
   `price` decimal(15,2) NOT NULL,
   `quantity_in_stock` int NOT NULL DEFAULT '0',
   `reserved_quantity` int NOT NULL DEFAULT '0',

@@ -13,6 +13,7 @@ type ExcelRow = {
     description: string | null;
     warrantyPeriod: number;
     sku: string;
+    variantName: string | null;
     price: number;
     quantityInStock: number;
     specs: string;
@@ -36,6 +37,7 @@ const REQUIRED_HEADERS = [
 ];
 
 const OPTIONAL_HEADERS = [
+    "variantName",
     "description",
     "specs",
 ];
@@ -148,6 +150,7 @@ const readRowsFromExcel = (file: Express.Multer.File) => {
             description: getCellText(row, "description") || null,
             warrantyPeriod: parseNumber(row.warrantyPeriod),
             sku: getCellText(row, "sku").toUpperCase(),
+            variantName: getCellText(row, "variantName") || null,
             price: parseNumber(row.price),
             quantityInStock: parseNumber(row.quantityInStock),
             specs: getCellText(row, "specs"),
@@ -508,6 +511,7 @@ export const importProductsFromExcelService = async(
                     variant_id: variantId,
                     product_id: productId,
                     sku: row.sku,
+                    variant_name: row.variantName,
                     price: row.price,
                     quantity_in_stock: row.quantityInStock,
                     reserved_quantity: 0,

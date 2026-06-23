@@ -1,5 +1,6 @@
-import { Heart, ShoppingCart, SquarePen } from "lucide-react";
+import { Heart, SquarePen } from "lucide-react";
 import { Link } from "react-router-dom";
+import CartDropdown from "./CartDropdown";
 import UserDropdown from "./UserDropdown";
 
 type CircleActionType = {
@@ -44,9 +45,7 @@ export default function HeaderActions(){
 
             <UserDropdown />
 
-            <CircleAction to="/cart" label="Giỏ hàng">
-                <ShoppingCart className="size-5 md:size-6"/>
-            </CircleAction>
+            <CartDropdown />
         </div>
     )
 }

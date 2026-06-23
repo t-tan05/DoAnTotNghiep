@@ -50,9 +50,10 @@ export type OrderDetail = {
     quantity: number;
     price: number | string;
     product_variants: {
-        variant_id: string;
-        sku?: string | null;
-        image_url?: string | null;
+       variant_id: string;
+       sku?: string | null;
+       variant_name?: string | null;
+       image_url?: string | null;
         product_images?: OrderProductImage[];
         products: {
             product_id: string;

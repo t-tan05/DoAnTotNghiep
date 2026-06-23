@@ -204,6 +204,7 @@ model product_variants {
   variant_id               String                     @id @db.VarChar(50)
   product_id               String                     @db.VarChar(50)
   sku                      String?                    @unique(map: "sku") @db.VarChar(100)
+  variant_name             String?                    @db.VarChar(255)
   price                    Decimal                    @db.Decimal(15, 2)
   quantity_in_stock        Int                        @default(0)
   reserved_quantity        Int                        @default(0)
@@ -222,6 +223,7 @@ model product_variants {
   variant_attribute_values variant_attribute_values[]
 
   @@index([product_id], map: "fk_variant_product")
+  @@index([variant_name], map: "idx_product_variants_variant_name")
 }
 
 model products {

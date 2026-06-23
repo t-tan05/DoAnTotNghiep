@@ -7,6 +7,7 @@ import VerifyResetCodePage from "@/pages/auth/VerifyResetCodePage";
 import ForbiddenPage from "@/pages/public/ForbiddenPage";
 import HomePage from "@/pages/public/HomePage";
 import NotFoundPage from "@/pages/public/NotFoundPage";
+import ProductDetailPage from "@/pages/public/ProductDetailPage";
 import { Route, Routes } from "react-router-dom";
 import GuestRoute from "./GuestRoute";
 import ProtectedRoute from "./ProtectedRoute";
@@ -48,6 +49,7 @@ export default function AppRoute() {
                 <Route path="/gioi-thieu" element={<div>Gioi thieu</div>} />
                 <Route path="/tin-tuc" element={<BlogListPage />} />
                 <Route path="/tin-tuc/:postId" element={<BlogDetailPage />} />
+                <Route path="/products/:productId" element={<ProductDetailPage />} />
                 <Route element={<ProtectedRoute />}>
                     <Route path="/account" element={<ProfileLayout />}>
                         <Route index element={<AccountProfilePage />} />

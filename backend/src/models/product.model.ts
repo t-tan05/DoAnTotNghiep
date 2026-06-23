@@ -61,6 +61,7 @@ export const findProductById = async(productId: string) => {
                 select: {
                     variant_id: true,
                     sku: true,
+                    variant_name: true,
                     price: true,
                     quantity_in_stock: true,
                     reserved_quantity: true,
@@ -197,6 +198,7 @@ export const getProductWithQuery = async(params: ProductListQuery) => {
                     select: {
                         variant_id: true,
                         sku: true,
+                        variant_name: true,
                         price: true,
                         quantity_in_stock: true,
                         image_url: true,

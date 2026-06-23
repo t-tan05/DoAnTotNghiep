@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import qs from "qs";
 import AppError from "#utils/AppError";
 
 type VnpayParams = Record<string, string | number>;
@@ -14,6 +13,21 @@ function sortObject(obj: VnpayParams) {
         });
 
     return sorted;
+}
+
+function vnpayEncode(value: string | number) {
+    return encodeURIComponent(String(value)).replace(/%20/g, "+");
+}
+
+function buildVnpayQuery(params: VnpayParams) {
+    return Object.keys(params)
+        .sort()
+        .filter((key) => {
+            const value = params[key];
+            return value !== null && value !== undefined && String(value).length > 0;
+        })
+        .map((key) => `${vnpayEncode(key)}=${vnpayEncode(params[key])}`)
+        .join("&");
 }
 
 function formatDate(date: Date) {
@@ -38,10 +52,10 @@ export function createVnpayPaymentUrl(params: {
     amount: number;
     ipAddr: string;
 }) {
-    const tmnCode = process.env.VNPAY_TMN_CODE;
-    const hashSecret = process.env.VNPAY_HASH_SECRET;
-    const vnpUrl = process.env.VNPAY_URL;
-    const returnUrl = process.env.VNPAY_RETURN_URL;
+    const tmnCode = process.env.VNPAY_TMN_CODE?.trim();
+    const hashSecret = process.env.VNPAY_HASH_SECRET?.trim();
+    const vnpUrl = process.env.VNPAY_URL?.trim();
+    const returnUrl = process.env.VNPAY_RETURN_URL?.trim();
 
     if(!tmnCode || !hashSecret || !vnpUrl || !returnUrl) {
         throw new AppError("Thiếu cấu hình VNPay.", 500);
@@ -58,7 +72,7 @@ export function createVnpayPaymentUrl(params: {
         vnp_Locale: "vn",
         vnp_CurrCode: "VND",
         vnp_TxnRef: params.orderId,
-        vnp_OrderInfo: `Thanh toán đơn hàng ${params.orderId}`,
+        vnp_OrderInfo: `Thanh toan don hang ${params.orderId}`,
         vnp_OrderType: "other",
         vnp_Amount: Math.round(params.amount) * 100,
         vnp_ReturnUrl: returnUrl,
@@ -69,20 +83,16 @@ export function createVnpayPaymentUrl(params: {
 
     vnpParams = sortObject(vnpParams);
 
-    const signData = qs.stringify(vnpParams, {
-        encode: false,
-    });
+    const signData = buildVnpayQuery(vnpParams);
 
     const hmac = crypto.createHmac("sha512", hashSecret);
     const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-    vnpParams.vnp_SecureHash = signed;
-
-    return `${vnpUrl}?${qs.stringify(vnpParams, {encode: false})}`;
+    return `${vnpUrl}?${signData}&vnp_SecureHash=${signed}`;
 };
 
 export function verifyVnpayReturn(query: Record<string, any>) {
-    const hashSecret = process.env.VNPAY_HASH_SECRET;
+    const hashSecret = process.env.VNPAY_HASH_SECRET?.trim();
 
     if(!hashSecret) {
         throw new AppError("Thiếu cấu hình VNPay", 500);
@@ -96,16 +106,14 @@ export function verifyVnpayReturn(query: Record<string, any>) {
 
     const sortedParams = sortObject(params);
 
-    const signData = qs.stringify(sortedParams, {
-        encode: false,
-    });
+    const signData = buildVnpayQuery(sortedParams);
 
     const signed = crypto
         .createHmac("sha512", hashSecret)
         .update(Buffer.from(signData, "utf-8"))
         .digest("hex");
 
-    return secureHash === signed;
+    return String(secureHash).toLowerCase() === signed.toLowerCase();
 }
 
 export async function refundVnpayPayment(params: {
@@ -116,9 +124,9 @@ export async function refundVnpayPayment(params: {
     createBy: string;
     ipAddr: string;
 }) {
-    const tmnCode = process.env.VNPAY_TMN_CODE;
-    const hashSecret = process.env.VNPAY_HASH_SECRET;
-    const refundUrl = process.env.VNPAY_REFUND_URL;
+    const tmnCode = process.env.VNPAY_TMN_CODE?.trim();
+    const hashSecret = process.env.VNPAY_HASH_SECRET?.trim();
+    const refundUrl = process.env.VNPAY_REFUND_URL?.trim();
 
     if(!tmnCode || !hashSecret || !refundUrl) {
         throw new AppError("Thiếu cấu hình hoàn tiền VNPay.", 500);
@@ -143,7 +151,7 @@ export async function refundVnpayPayment(params: {
         vnp_CreateBy: params.createBy,
         vnp_CreateDate: createDate,
         vnp_IpAddr: params.ipAddr,
-        vnp_OrderInfo: `Hoàn tiền đơn hàng ${params.orderId}`,
+        vnp_OrderInfo: `Hoan tien don hang ${params.orderId}`,
     };
 
     const signData = [

@@ -231,6 +231,7 @@ export default function OrderHistoryPage() {
                                     {order.orders_details.map((detail) => {
                                         const imageUrl = getVariantImage(detail);
                                         const attributes = getVariantAttributes(detail);
+                                        const displayName = detail.product_variants.variant_name || detail.product_variants.products.product_name;
 
                                         return (
                                             <div key={detail.order_detail_id} className="grid gap-4 p-4 sm:grid-cols-[88px_1fr_auto]">
@@ -238,7 +239,7 @@ export default function OrderHistoryPage() {
                                                     {imageUrl ? (
                                                         <img
                                                             src={imageUrl}
-                                                            alt={detail.product_variants.products.product_name}
+                                                            alt={displayName}
                                                             className="aspect-square w-full object-cover"
                                                         />
                                                     ) : (
@@ -250,7 +251,7 @@ export default function OrderHistoryPage() {
 
                                                 <div className="min-w-0">
                                                     <h2 className="font-semibold">
-                                                        {detail.product_variants.products.product_name}
+                                                        {displayName}
                                                     </h2>
 
                                                     <p className="mt-1 text-sm text-muted-foreground">

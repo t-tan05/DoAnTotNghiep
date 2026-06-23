@@ -29,6 +29,7 @@ export default function ProductVariantList({
             {variants.map((variant) => {
                 const imageUrl = variant.image_url || variant.product_images?.[0]?.image_url;
                 const hasDiscount = variant.discount_price !== null && variant.discount_price !== undefined;
+                const displayName = variant.variant_name || variant.sku;
 
                 return (
                     <div 
@@ -39,7 +40,7 @@ export default function ProductVariantList({
                             {imageUrl ? (
                                 <img 
                                     src={imageUrl}
-                                    alt={variant.sku}
+                                    alt={displayName}
                                     className="h-14 w-14 rounded-md object-cover"
                                 />
                             ) : (
@@ -49,7 +50,12 @@ export default function ProductVariantList({
                             )}
 
                             <div className="min-w-0">
-                                <p className="font-medium">{variant.sku}</p>
+                                <p className="font-medium">{displayName}</p>
+                                {variant.variant_name && (
+                                    <p className="text-xs text-muted-foreground">
+                                        SKU: {variant.sku}
+                                    </p>
+                                )}
                                 <div className="text-sm">
                                     {hasDiscount ? (
                                         <div className="flex flex-wrap items-center gap-2">

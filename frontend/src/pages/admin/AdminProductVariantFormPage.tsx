@@ -39,6 +39,7 @@ export default function AdminProductVariantFormPage() {
 
     const [form, setForm] = useState({
         sku: "",
+        variantName: "",
         price: "",
         quantityInStock: "0",
         stockNote: "",
@@ -67,6 +68,7 @@ export default function AdminProductVariantFormPage() {
 
         setForm({
             sku: loadedVariant.sku ?? "",
+            variantName: loadedVariant.variant_name ?? "",
             price: String(loadedVariant.price ?? ""),
             quantityInStock: String(loadedVariant.quantity_in_stock ?? 0),
             stockNote: "",
@@ -118,6 +120,7 @@ export default function AdminProductVariantFormPage() {
     function validateForm() {
         if (!form.sku.trim()) return "Vui lòng nhập SKU.";
         if (!form.price || Number(form.price) <= 0) return "Giá phải lớn hơn 0.";
+        if (form.variantName.trim().length > 255) return "Tên biến thể tối đa 255 ký tự.";
         if (form.quantityInStock === "" || Number(form.quantityInStock) < 0) {
             return "Tồn kho không hợp lệ.";
         }
@@ -155,6 +158,7 @@ export default function AdminProductVariantFormPage() {
             if(isEdit && variantId) {
                 await productVariantService.update(variantId, {
                     sku: form.sku.trim(),
+                    variantName: form.variantName.trim() || null,
                     price: Number(form.price),
                     quantityInStock: Number(form.quantityInStock),
                     stockNote: form.stockNote.trim() || null,
@@ -175,6 +179,7 @@ export default function AdminProductVariantFormPage() {
                         variants: [
                             {
                                 sku: form.sku.trim(),
+                                variantName: form.variantName.trim() || null,
                                 price: Number(form.price),
                                 quantityInStock: Number(form.quantityInStock),
                                 attributeValueIds: selectedAttributeValueIds,
@@ -193,6 +198,7 @@ export default function AdminProductVariantFormPage() {
                         variants: [
                             {
                                 sku: form.sku.trim(),
+                                variantName: form.variantName.trim() || null,
                                 price: Number(form.price),
                                 quantityInStock: Number(form.quantityInStock),
                                 attributeValueIds: selectedAttributeValueIds,
@@ -257,7 +263,7 @@ export default function AdminProductVariantFormPage() {
                 <div className="rounded-lg border bg-background p-5">
                     <h2 className="text-lg font-semibold">Thông tin cơ bản</h2>
 
-                    <div className="mt-4 grid gap-4 md:grid-cols-3">
+                    <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <div className="space-y-2">
                             <Label>SKU</Label>
                             <Input
@@ -267,6 +273,14 @@ export default function AdminProductVariantFormPage() {
                             />
                         </div>
 
+                        <div className="space-y-2">
+                            <Label>Tên biến thể</Label>
+                            <Input
+                                value={form.variantName}
+                                onChange={(e) => updateField("variantName", e.target.value)}
+                                placeholder="VD: Laptop Acer Nitro Ryzen 5 / RTX 3050"
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label>Giá</Label>
                             <Input

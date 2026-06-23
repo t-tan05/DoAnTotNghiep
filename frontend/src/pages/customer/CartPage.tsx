@@ -172,6 +172,7 @@ export default function CartPage() {
                         const imageUrl = getVariantImage(item);
                         const attributes = getVariantAttributes(item);
                         const isUpdating = updatingId === item.cart_item_id;
+                        const displayName = item.product_variants.variant_name || item.product_variants.products.product_name;
 
                         return (
                             <article
@@ -182,7 +183,7 @@ export default function CartPage() {
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
-                                            alt={item.product_variants.products.product_name}
+                                            alt={displayName}
                                             className="aspect-square w-full object-cover"
                                         />
                                     ) : (
@@ -194,7 +195,7 @@ export default function CartPage() {
 
                                 <div className="min-w-0">
                                     <h2 className="font-semibold">
-                                        {item.product_variants.products.product_name}
+                                        {displayName}
                                     </h2>
 
                                     <p className="mt-1 text-sm text-muted-foreground">

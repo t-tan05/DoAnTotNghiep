@@ -2,6 +2,7 @@ export type CartVariant = {
     variant_id: string;
     product_id: string;
     sku?: string | null;
+    variant_name?: string | null;
     price: number | string;
     quantity_in_stock: number;
     reserved_quantity: number;

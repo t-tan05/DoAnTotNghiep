@@ -15,6 +15,12 @@ export const createProductVariantSchema = Joi.object({
                         "any.required":"Mã SKU là bắt buộc."
                     }),
 
+                variantName: Joi.string()
+                    .trim()
+                    .max(255)
+                    .allow("", null)
+                    .optional(),
+
                 price: Joi.number()
                     .positive()
                     .required()
@@ -58,6 +64,12 @@ export const updateProductVariantSchema = Joi.object({
         .messages({
             "string.empty":"Mã sku không được để trống",
         }),
+
+    variantName: Joi.string()
+        .trim()
+        .max(255)
+        .allow("", null)
+        .optional(),
 
     price: Joi.number()
         .positive()

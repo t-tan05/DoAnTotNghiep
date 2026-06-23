@@ -23,6 +23,7 @@ export const findProductVariantById = async(variantId: string) => {
             variant_id: true,
             product_id: true,
             sku: true,
+            variant_name: true,
             price: true,
             quantity_in_stock: true,
             reserved_quantity: true,
