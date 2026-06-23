@@ -22,6 +22,11 @@ export type AdminProduct = {
         category_id: string;
         category_name: string;
     };
+    product_images?: Array<{
+        image_id: number | string;
+        image_url: string;
+        is_default?: boolean | null;
+    }>;
     product_variants: AdminProductVariant[];
 };
 

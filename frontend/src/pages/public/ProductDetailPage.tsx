@@ -1,4 +1,4 @@
-import PageLoading from "@/components/common/PageLoading";
+﻿import PageLoading from "@/components/common/PageLoading";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -7,28 +7,76 @@ import { productService } from "@/services/product.service";
 import type { AdminProduct } from "@/types/product.type";
 import type { AdminProductVariant } from "@/types/productVariant.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+
+type ProductImage = {
+    image_id: number | string;
+    image_url: string;
+    is_default?: boolean | null;
+};
+
+type AttributeOption = {
+    value: string;
+    imageUrl?: string;
+};
+
+type AttributeGroup = {
+    name: string;
+    options: AttributeOption[];
+};
 
 const formatPrice = (value: number | string) => {
     return Number(value).toLocaleString("vi-VN") + "đ";
 };
 
-function getVariantImage(variant?: AdminProductVariant | null) {
-    return (
-        variant?.image_url ||
-        variant?.product_images?.find((image) => image.is_default)?.image_url ||
-        variant?.product_images?.[0]?.image_url ||
-        ""
-    );
+function getVariantImages(variant?: AdminProductVariant | null): ProductImage[] {
+    if (!variant) return [];
+
+    const images = variant.product_images?.length
+        ? [...variant.product_images].sort((a, b) => Number(b.is_default) - Number(a.is_default))
+        : [];
+
+    if (variant.image_url && !images.some((image) => image.image_url === variant.image_url)) {
+        return [
+            {
+                image_id: `${variant.variant_id}-default`,
+                image_url: variant.image_url,
+                is_default: true,
+            },
+            ...images,
+        ];
+    }
+
+    return images;
 }
 
-function getVariantAttributes(variant?: AdminProductVariant | null) {
-    return variant?.variant_attribute_values
-        ?.map((row) => `${row.attribute_values.product_attributes.attribute_name}: ${row.attribute_values.value}`)
-        .join(" / ");
+function getProductImages(product?: AdminProduct | null): ProductImage[] {
+    return product?.product_images ?? [];
+}
+
+function uniqueImages(images: ProductImage[]) {
+    const seen = new Set<string>();
+
+    return images.filter((image) => {
+        if (seen.has(image.image_url)) return false;
+        seen.add(image.image_url);
+        return true;
+    });
+}
+
+function getVariantAttributeMap(variant?: AdminProductVariant | null) {
+    const map: Record<string, string> = {};
+
+    variant?.variant_attribute_values?.forEach((row) => {
+        const attributeName = row.attribute_values.product_attributes.attribute_name;
+        const value = row.attribute_values.value;
+        map[attributeName] = value;
+    });
+
+    return map;
 }
 
 function getVariantPrice(variant?: AdminProductVariant | null) {
@@ -42,6 +90,51 @@ function getVariantOriginalPrice(variant?: AdminProductVariant | null) {
     return original > current ? original : null;
 }
 
+function getDiscountPercent(originalPrice: number | null, currentPrice: number) {
+    if (!originalPrice || originalPrice <= currentPrice) return null;
+
+    return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+}
+
+function buildAttributeGroups(variants: AdminProductVariant[]): AttributeGroup[] {
+    const groups = new Map<string, Map<string, AttributeOption>>();
+
+    variants.forEach((variant) => {
+        const imageUrl = variant.image_url || variant.product_images?.find((image) => image.is_default)?.image_url || variant.product_images?.[0]?.image_url;
+
+        variant.variant_attribute_values?.forEach((row) => {
+            const attributeName = row.attribute_values.product_attributes.attribute_name;
+            const value = row.attribute_values.value;
+
+            if (!groups.has(attributeName)) {
+                groups.set(attributeName, new Map());
+            }
+
+            const optionMap = groups.get(attributeName)!;
+
+            if (!optionMap.has(value)) {
+                optionMap.set(value, {
+                    value,
+                    imageUrl,
+                });
+            }
+        });
+    });
+
+    return Array.from(groups.entries()).map(([name, optionMap]) => ({
+        name,
+        options: Array.from(optionMap.values()),
+    }));
+}
+
+function variantMatchesSelection(variant: AdminProductVariant, selection: Record<string, string>) {
+    const variantMap = getVariantAttributeMap(variant);
+
+    return Object.entries(selection).every(([attributeName, value]) => {
+        return variantMap[attributeName] === value;
+    });
+}
+
 export default function ProductDetailPage() {
     const { productId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -51,9 +144,12 @@ export default function ProductDetailPage() {
 
     const [product, setProduct] = useState<AdminProduct | null>(null);
     const [selectedVariantId, setSelectedVariantId] = useState("");
+    const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+    const [selectedImageUrl, setSelectedImageUrl] = useState("");
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
+    const [specExpanded, setSpecExpanded] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
@@ -86,15 +182,31 @@ export default function ProductDetailPage() {
         return product?.product_variants.find((variant) => variant.variant_id === selectedVariantId) ?? null;
     }, [product?.product_variants, selectedVariantId]);
 
+    const attributeGroups = useMemo(() => {
+        return buildAttributeGroups(product?.product_variants ?? []);
+    }, [product?.product_variants]);
+
+    const galleryImages = useMemo(() => {
+        return uniqueImages([
+            ...getVariantImages(selectedVariant),
+            ...getProductImages(product),
+        ]);
+    }, [product, selectedVariant]);
+
+    const selectedImageIndex = Math.max(
+        0,
+        galleryImages.findIndex((image) => image.image_url === selectedImageUrl),
+    );
+
     const availableQuantity = Math.max(
         0,
         Number(selectedVariant?.quantity_in_stock ?? 0) - Number(selectedVariant?.reserved_quantity ?? 0),
     );
 
-    const image = getVariantImage(selectedVariant);
-    const attributes = getVariantAttributes(selectedVariant);
-    const originalPrice = getVariantOriginalPrice(selectedVariant);
     const displayName = selectedVariant?.variant_name || product?.product_name || "";
+    const currentPrice = getVariantPrice(selectedVariant);
+    const originalPrice = getVariantOriginalPrice(selectedVariant);
+    const discountPercent = getDiscountPercent(originalPrice, currentPrice);
 
     useEffect(() => {
         if (!product) return;
@@ -109,10 +221,56 @@ export default function ProductDetailPage() {
         setQuantity(1);
     }, [product, searchParams, selectedVariantId]);
 
+    useEffect(() => {
+        setSelectedAttributes(getVariantAttributeMap(selectedVariant));
+        setSelectedImageUrl(galleryImages[0]?.image_url ?? "");
+    }, [selectedVariant, galleryImages]);
+
     function selectVariant(variant: AdminProductVariant) {
         setSelectedVariantId(variant.variant_id);
         setQuantity(1);
         setSearchParams({ variantId: variant.variant_id });
+    }
+
+    function selectAttribute(attributeName: string, value: string) {
+        const nextSelection = {
+            ...selectedAttributes,
+            [attributeName]: value,
+        };
+
+        const exactVariant = product?.product_variants.find((variant) => variantMatchesSelection(variant, nextSelection));
+        const fallbackVariant = product?.product_variants.find((variant) => {
+            return getVariantAttributeMap(variant)[attributeName] === value;
+        });
+
+        const nextVariant = exactVariant ?? fallbackVariant;
+
+        if (nextVariant) {
+            selectVariant(nextVariant);
+            return;
+        }
+
+        setSelectedAttributes(nextSelection);
+    }
+
+    function showPreviousImage() {
+        if (galleryImages.length <= 1) return;
+
+        const previousIndex = selectedImageIndex === 0
+            ? galleryImages.length - 1
+            : selectedImageIndex - 1;
+
+        setSelectedImageUrl(galleryImages[previousIndex].image_url);
+    }
+
+    function showNextImage() {
+        if (galleryImages.length <= 1) return;
+
+        const nextIndex = selectedImageIndex === galleryImages.length - 1
+            ? 0
+            : selectedImageIndex + 1;
+
+        setSelectedImageUrl(galleryImages[nextIndex].image_url);
     }
 
     async function handleAddToCart() {
@@ -166,179 +324,267 @@ export default function ProductDetailPage() {
         );
     }
 
-    return (
-        <section className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
-                <div className="space-y-4">
-                    <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
-                        {image ? (
-                            <img
-                                src={image}
-                                alt={displayName}
-                                className="h-full w-full object-cover"
-                            />
-                        ) : (
-                            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                                Chưa có ảnh sản phẩm
-                            </div>
-                        )}
-                    </div>
+    const specRows = selectedVariant?.product_variant_specs ?? [];
+    const visibleSpecRows = specExpanded ? specRows : specRows.slice(0, 4);
+    const canToggleSpecs = specRows.length > 4;
 
-                    {selectedVariant?.product_images && selectedVariant.product_images.length > 1 && (
-                        <div className="grid grid-cols-5 gap-3">
-                            {selectedVariant.product_images.map((item) => (
-                                <div
-                                    key={item.image_id}
-                                    className="aspect-square overflow-hidden rounded-md border bg-muted"
-                                >
+    return (
+        <section className="bg-[#f5f6fb]">
+            <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+                <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <Link to="/" className="flex items-center gap-1 text-blue-700">
+                        <Home className="h-4 w-4" />
+                        Trang chủ
+                    </Link>
+                    <ChevronRight className="h-4 w-4" />
+                    <span>{product.brands?.brand_name}</span>
+                    <ChevronRight className="h-4 w-4" />
+                    <span>{product.categories?.category_name}</span>
+                    <ChevronRight className="h-4 w-4" />
+                    <span className="line-clamp-1 text-foreground">{displayName}</span>
+                </nav>
+
+                <div className="rounded-lg bg-white p-4 shadow-sm">
+                    <div className="grid gap-8 lg:grid-cols-[minmax(0,58%)_minmax(360px,1fr)]">
+                        <div>
+                            <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md border bg-[#f7f7f7]">
+                                {selectedImageUrl ? (
                                     <img
-                                        src={item.image_url}
+                                        src={selectedImageUrl}
                                         alt={displayName}
-                                        className="h-full w-full object-cover"
+                                        className="h-full w-full object-contain"
                                     />
+                                ) : (
+                                    <div className="text-sm text-muted-foreground">Chưa có ảnh sản phẩm</div>
+                                )}
+                            </div>
+
+                            {galleryImages.length > 0 && (
+                                <div className="mt-4 flex items-center justify-center gap-3">
+                                    {galleryImages.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={showPreviousImage}
+                                            className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
+                                            aria-label="Ảnh trước"
+                                        >
+                                            <ChevronLeft className="h-5 w-5" />
+                                        </button>
+                                    )}
+
+                                    <div className="flex max-w-full flex-wrap justify-center gap-3">
+                                        {galleryImages.map((image) => {
+                                            const selected = image.image_url === selectedImageUrl;
+
+                                            return (
+                                                <button
+                                                    key={`${image.image_id}-${image.image_url}`}
+                                                    type="button"
+                                                    onClick={() => setSelectedImageUrl(image.image_url)}
+                                                    className={cn(
+                                                        "size-20 overflow-hidden rounded-md border bg-white p-1 transition hover:border-blue-600 sm:size-24",
+                                                        selected && "border-blue-700 ring-1 ring-blue-700",
+                                                    )}
+                                                >
+                                                    <img
+                                                        src={image.image_url}
+                                                        alt={displayName}
+                                                        className="h-full w-full object-contain"
+                                                    />
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {galleryImages.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={showNextImage}
+                                            className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
+                                            aria-label="Ảnh tiếp theo"
+                                        >
+                                            <ChevronRight className="h-5 w-5" />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="mt-6 grid gap-3 rounded-md border p-4 text-sm sm:grid-cols-2">
+                                <div className="flex items-start gap-3">
+                                    <Truck className="mt-0.5 h-5 w-5 text-blue-700" />
+                                    <span>Miễn phí giao hàng cho đơn hàng từ 5 triệu</span>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <ShieldCheck className="mt-0.5 h-5 w-5 text-blue-700" />
+                                    <span>Cam kết hàng chính hãng 100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-5">
+                            <div>
+                                <p className="text-sm text-muted-foreground">
+                                    Thương hiệu: <span className="font-medium text-blue-700">{product.brands?.brand_name}</span>
+                                </p>
+                                <h1 className="mt-2 text-2xl font-bold leading-tight text-[#1f2430] md:text-3xl">
+                                    {displayName}
+                                </h1>
+                                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                                    {selectedVariant?.sku && <span>SKU: {selectedVariant.sku}</span>}
+                                    <span className="flex items-center gap-1">
+                                        <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                                        0 <span className="text-blue-700">(0 đánh giá)</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {attributeGroups.map((group) => (
+                                <div key={group.name}>
+                                    <p className="mb-2 font-medium">{group.name}</p>
+                                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                        {group.options.map((option) => {
+                                            const selected = selectedAttributes[group.name] === option.value;
+
+                                            return (
+                                                <button
+                                                    key={`${group.name}-${option.value}`}
+                                                    type="button"
+                                                    onClick={() => selectAttribute(group.name, option.value)}
+                                                    className={cn(
+                                                        "relative flex min-h-14 items-center justify-center gap-2 rounded-md border bg-white px-3 py-2 text-sm transition hover:border-blue-700 hover:bg-blue-50",
+                                                        selected && "border-blue-700 text-blue-700 ring-1 ring-blue-700",
+                                                    )}
+                                                >
+                                                    {option.imageUrl && (
+                                                        <img
+                                                            src={option.imageUrl}
+                                                            alt={option.value}
+                                                            className="h-9 w-9 rounded object-contain"
+                                                        />
+                                                    )}
+                                                    <span>{option.value}</span>
+                                                    {selected && (
+                                                        <span className="absolute bottom-0 right-0 h-0 w-0 border-b-[18px] border-l-[18px] border-b-blue-700 border-l-transparent" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             ))}
+
+                            <div className="border-t pt-5">
+                                <div className="flex flex-wrap items-end gap-3">
+                                    {originalPrice && (
+                                        <span className="text-base text-muted-foreground line-through">
+                                            {formatPrice(originalPrice)}
+                                        </span>
+                                    )}
+                                    {discountPercent && (
+                                        <span className="text-sm font-medium text-red-600">-{discountPercent}%</span>
+                                    )}
+                                </div>
+                                <p className="mt-1 text-4xl font-bold text-blue-700">
+                                    {formatPrice(currentPrice)}
+                                </p>
+                                {selectedVariant?.active_promotion && (
+                                    <p className="mt-2 inline-flex rounded bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                                        {selectedVariant.active_promotion.promotion_name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-4">
+                                <div className="flex items-center rounded-lg border">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={quantity <= 1}
+                                        onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                                        className="cursor-pointer disabled:!pointer-events-auto disabled:!cursor-not-allowed"
+                                    >
+                                        <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <span className="w-12 text-center font-medium">{quantity}</span>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={availableQuantity <= 0 || quantity >= availableQuantity}
+                                        onClick={() => setQuantity((value) => value + 1)}
+                                        className="cursor-pointer disabled:!pointer-events-auto disabled:!cursor-not-allowed"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                <p className="text-sm text-muted-foreground">
+                                    Còn {availableQuantity} sản phẩm có thể mua
+                                </p>
+                            </div>
+
+                            <Button
+                                type="button"
+                                disabled={!selectedVariant || availableQuantity <= 0 || adding}
+                                onClick={handleAddToCart}
+                                className="h-12 w-full cursor-pointer bg-blue-700 text-base hover:bg-blue-800 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
+                            >
+                                <ShoppingCart className="mr-2 h-5 w-5" />
+                                {adding ? "Đang thêm..." : "Thêm vào giỏ"}
+                            </Button>
                         </div>
-                    )}
+                    </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div>
-                        <p className="text-sm text-muted-foreground">
-                            {product.brands?.brand_name} / {product.categories?.category_name}
-                        </p>
-                        <h1 className="mt-2 text-2xl font-semibold md:text-3xl">
-                            {displayName}
-                        </h1>
-                        {selectedVariant?.sku && (
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                SKU: {selectedVariant.sku}
-                            </p>
-                        )}
+                <div className="mt-6 w-full rounded-lg bg-white p-4 shadow-sm lg:w-[58%]">
+                    <div className="border-b text-center text-lg font-semibold">
+                        <button type="button" className="border-b-2 border-blue-700 px-4 py-3 text-blue-700">
+                            Thông số kỹ thuật
+                        </button>
                     </div>
 
-                    <div className="rounded-lg border bg-muted/40 p-4">
-                        <div className="flex flex-wrap items-end gap-3">
-                            <span className="text-3xl font-bold text-blue-700">
-                                {formatPrice(getVariantPrice(selectedVariant))}
-                            </span>
-                            {originalPrice && (
-                                <span className="text-base text-muted-foreground line-through">
-                                    {formatPrice(originalPrice)}
-                                </span>
-                            )}
+                    <div className="mt-4">
+                        <h2 className="mb-3 font-semibold">Thông tin chung</h2>
+                        <div className="overflow-hidden rounded-md border text-sm">
+                            <SpecRow label="Thương hiệu" value={product.brands?.brand_name} shaded />
+                            <SpecRow label="Bảo hành" value={`${product.warranty_period} tháng`} />
+                            <SpecRow label="Nhóm sản phẩm" value={product.categories?.category_name} shaded />
+                            <SpecRow label="Tên" value={product.product_name} />
                         </div>
-                        {selectedVariant?.active_promotion && (
-                            <p className="mt-2 text-sm font-medium text-red-600">
-                                {selectedVariant.active_promotion.promotion_name}
-                            </p>
-                        )}
-                    </div>
 
-                    {attributes && (
-                        <div>
-                            <h2 className="font-semibold">Cấu hình đang chọn</h2>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                {attributes}
-                            </p>
-                        </div>
-                    )}
+                        {specRows.length > 0 && (
+                            <>
+                                <h2 className="mb-3 mt-5 font-semibold">Thông số chi tiết</h2>
+                                <div className="overflow-hidden rounded-md border text-sm">
+                                    {visibleSpecRows.map((spec, index) => (
+                                        <SpecRow
+                                            key={`${spec.spec_key}-${spec.spec_value}-${index}`}
+                                            label={spec.spec_key}
+                                            value={spec.spec_value}
+                                            shaded={index % 2 === 0}
+                                        />
+                                    ))}
+                                </div>
 
-                    {product.product_variants.length > 1 && (
-                        <div>
-                            <h2 className="font-semibold">Phiên bản sản phẩm</h2>
-                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                {product.product_variants.map((variant) => {
-                                    const variantAttributes = getVariantAttributes(variant);
-                                    const selected = variant.variant_id === selectedVariantId;
-
-                                    return (
-                                        <button
-                                            key={variant.variant_id}
+                                {canToggleSpecs && (
+                                    <div className="mt-4 flex justify-center">
+                                        <Button
                                             type="button"
-                                            onClick={() => selectVariant(variant)}
-                                            className={cn(
-                                                "rounded-lg border p-3 text-left transition hover:border-blue-600 hover:bg-blue-50",
-                                                selected && "border-blue-700 bg-blue-50 ring-1 ring-blue-700",
-                                            )}
+                                            variant="outline"
+                                            onClick={() => setSpecExpanded((value) => !value)}
+                                            className="min-w-32 cursor-pointer rounded-full"
                                         >
-                                            <p className="truncate text-sm font-semibold">
-                                                {variant.variant_name || variant.sku || "Biến thể sản phẩm"}
-                                            </p>
-                                            {variantAttributes && (
-                                                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                                                    {variantAttributes}
-                                                </p>
-                                            )}
-                                            <p className="mt-2 text-sm font-bold text-blue-700">
-                                                {formatPrice(getVariantPrice(variant))}
-                                            </p>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center rounded-lg border">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                disabled={quantity <= 1}
-                                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                                className="cursor-pointer disabled:!pointer-events-auto disabled:!cursor-not-allowed"
-                            >
-                                <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="w-12 text-center font-medium">{quantity}</span>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                disabled={availableQuantity <= 0 || quantity >= availableQuantity}
-                                onClick={() => setQuantity((value) => value + 1)}
-                                className="cursor-pointer disabled:!pointer-events-auto disabled:!cursor-not-allowed"
-                            >
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        <p className="text-sm text-muted-foreground">
-                            Còn {availableQuantity} sản phẩm có thể mua
-                        </p>
-                    </div>
-
-                    <Button
-                        type="button"
-                        disabled={!selectedVariant || availableQuantity <= 0 || adding}
-                        onClick={handleAddToCart}
-                        className="h-12 w-full cursor-pointer bg-blue-700 text-base hover:bg-blue-800 disabled:!pointer-events-auto disabled:!cursor-not-allowed sm:w-auto sm:min-w-56"
-                    >
-                        <ShoppingCart className="mr-2 h-5 w-5" />
-                        {adding ? "Đang thêm..." : "Thêm vào giỏ hàng"}
-                    </Button>
-
-                    {(selectedVariant?.product_variant_specs?.length ?? 0) > 0 && (
-                        <div className="rounded-lg border p-4">
-                            <h2 className="font-semibold">Thông số kỹ thuật</h2>
-                            <div className="mt-3 divide-y text-sm">
-                                {selectedVariant?.product_variant_specs?.map((spec) => (
-                                    <div
-                                        key={`${spec.spec_key}-${spec.spec_value}`}
-                                        className="grid grid-cols-[160px_minmax(0,1fr)] gap-4 py-2"
-                                    >
-                                        <span className="text-muted-foreground">{spec.spec_key}</span>
-                                        <span className="font-medium">{spec.spec_value}</span>
+                                            {specExpanded ? "Thu lại" : "Xem thêm"}
+                                        </Button>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                                )}
+                            </>
+                        )}
+                    </div>
 
                     {product.description && (
-                        <div className="rounded-lg border p-4">
+                        <div className="mx-auto mt-6 max-w-3xl border-t pt-5">
                             <h2 className="font-semibold">Mô tả sản phẩm</h2>
                             <p className="mt-3 whitespace-pre-line text-sm leading-6 text-muted-foreground">
                                 {product.description}
@@ -348,5 +594,22 @@ export default function ProductDetailPage() {
                 </div>
             </div>
         </section>
+    );
+}
+
+function SpecRow({
+    label,
+    value,
+    shaded,
+}: {
+    label: string;
+    value?: string | number | null;
+    shaded?: boolean;
+}) {
+    return (
+        <div className={cn("grid grid-cols-[170px_minmax(0,1fr)] gap-4 px-4 py-3", shaded && "bg-muted/60")}>
+            <span className="text-muted-foreground">{label}</span>
+            <span className="font-medium">{value || "-"}</span>
+        </div>
     );
 }

@@ -57,6 +57,20 @@ export const findProductById = async(productId: string) => {
                 }
             },
 
+            product_images: {
+                select: {
+                    image_id: true,
+                    image_url: true,
+                    is_default: true,
+                },
+                where: {
+                    variant_id: null,
+                },
+                orderBy: {
+                    is_default: "desc",
+                },
+            },
+
             product_variants: {
                 select: {
                     variant_id: true,
