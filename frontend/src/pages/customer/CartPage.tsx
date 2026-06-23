@@ -278,8 +278,8 @@ export default function CartPage() {
                         </div>
                     </div>
 
-                    <Button asChild className="mt-5 w-full h-14 cursor-pointer">
-                        <Link to="/checkout">Tiến hành thanh toán</Link>
+                    <Button asChild className="mt-5 w-full h-14 cursor-pointer bg-blue-700 text-white hover:bg-blue-800">
+                        <Link to="/checkout">TIẾP TỤC</Link>
                     </Button>
                 </aside>
             </div>

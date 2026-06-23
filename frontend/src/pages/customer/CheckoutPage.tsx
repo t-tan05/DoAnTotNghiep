@@ -22,6 +22,24 @@ function formatAddress(address: Address) {
     return `${address.street}, ${address.ward}, ${address.province}`;
 }
 
+function getCartItemName(item: CartItem) {
+    return item.product_variants.variant_name || item.product_variants.products.product_name;
+}
+
+function getCartItemImage(item: CartItem) {
+    const variant = item.product_variants;
+    const defaultImage = variant.product_images?.find((image) => image.is_default);
+
+    return variant.image_url || defaultImage?.image_url || variant.product_images?.[0]?.image_url || "";
+}
+
+function getCartItemAttributes(item: CartItem) {
+    return item.product_variants.variant_attribute_values
+        ?.map((row) => row.attribute_values.value)
+        .filter(Boolean)
+        .join(", ");
+}
+
 export default function CheckoutPage() {
     const navigate = useNavigate();
 
@@ -33,8 +51,9 @@ export default function CheckoutPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [addressModalOpen, setAddressModalOpen] = useState(false);
+    const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
-    async function fetchData() {
+    async function fetchData(preferredAddressId?: string) {
         try{
             setLoading(true);
 
@@ -50,7 +69,11 @@ export default function CheckoutPage() {
             setAddresses(addressList);
 
             const defaultAddress = addressList.find((item) => item.is_default);
-            setSelectedAddressId(defaultAddress?.address_id || addressList[0]?.address_id || "");
+            const preferredAddress = preferredAddressId
+                ? addressList.find((item) => item.address_id === preferredAddressId)
+                : null;
+
+            setSelectedAddressId(preferredAddress?.address_id || defaultAddress?.address_id || addressList[0]?.address_id || "");
         }catch(error) {
             toast.error(getErrorMessage(error));
         }finally{
@@ -68,8 +91,26 @@ export default function CheckoutPage() {
         }, 0);
     }, [items]);
 
-    const selectedAddress = addresses.find((item) => item.address_id === selectedAddressId);
     const hasAddress = addresses.length > 0;
+
+    function openCreateAddressModal() {
+        setEditingAddress(null);
+        setAddressModalOpen(true);
+    }
+
+    function openEditAddressModal(address: Address) {
+        setEditingAddress(address);
+        setAddressModalOpen(true);
+    }
+
+    function closeAddressModal() {
+        setAddressModalOpen(false);
+        setEditingAddress(null);
+    }
+
+    async function handleAddressSuccess() {
+        await fetchData(editingAddress?.address_id);
+    }
 
     async function handleCheckout() {
         if(!selectedAddressId) {
@@ -134,24 +175,42 @@ export default function CheckoutPage() {
                                     const selected = address.address_id === selectedAddressId;
 
                                     return (
-                                        <button
+                                        <div
                                             key={address.address_id}
-                                            type="button"
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={() => setSelectedAddressId(address.address_id)}
+                                            onKeyDown={(event) => {
+                                                if(event.key === "Enter" || event.key === " ") {
+                                                    event.preventDefault();
+                                                    setSelectedAddressId(address.address_id);
+                                                }
+                                            }}
                                             className={[
                                                 "relative min-h-[120px] rounded-lg border bg-white p-4 text-left transition hover:border-blue-700 cursor-pointer",
                                                 selected ? "border-blue-700 ring-1 ring-blue-700" : "border-gray-200",
                                             ].join(" ")}
                                         >
                                             {selected && (
-                                                <span className="absolute right-0 top-0 flex size-9 items-start justify-end overflow-hidden rounded-tr-lg bg-blue-700 text-white">
-                                                    <Check className="mr-1 mt-1 size-4" />
-                                                </span>
+                                                <>
+                                                    <span className="absolute right-0 top-0 h-0 w-0 rounded-tr-lg border-l-[42px] border-t-[42px] border-l-transparent border-t-blue-700" />
+                                                    <Check className="absolute right-1 top-1 size-4 text-white" />
+                                                </>
                                             )}
 
-                                            <div className="flex items-center gap-2 font-semibold">
+                                            <div className="flex items-center gap-2 pr-9 font-semibold">
                                                 <span>{address.receiver_name}</span>
-                                                <Edit2 className="size-4 text-muted-foreground" />
+                                                <button
+                                                    type="button"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        openEditAddressModal(address);
+                                                    }}
+                                                    className="rounded-full cursor-pointer p-1 text-muted-foreground transition hover:bg-blue-50 hover:text-blue-700"
+                                                    aria-label={`Sửa địa chỉ của ${address.receiver_name}`}
+                                                >
+                                                    <Edit2 className="size-4" />
+                                                </button>
                                             </div>
 
                                             <p className="mt-1 text-sm">{address.phone_number}</p>
@@ -159,13 +218,13 @@ export default function CheckoutPage() {
                                                 {formatAddress(address)}
                                             </p>
 
-                                        </button>
+                                        </div>
                                     );
                                 })}
 
                                 <button
                                     type="button"
-                                    onClick={() => setAddressModalOpen(true)}
+                                    onClick={openCreateAddressModal}
                                     className="flex min-h-[120px] flex-col cursor-pointer items-center justify-center rounded-lg border border-dashed bg-white text-muted-foreground hover:border-blue-700 hover:text-blue-700"
                                 >
                                     <Plus className="mb-2 size-7" />
@@ -175,7 +234,7 @@ export default function CheckoutPage() {
                         ) : (
                             <button
                                 type="button"
-                                onClick={() => setAddressModalOpen(true)}
+                                onClick={openCreateAddressModal}
                                 className="mt-5 flex min-h-[130px] w-full flex-col cursor-pointer items-center justify-center rounded-lg border border-dashed bg-white text-muted-foreground hover:border-blue-700 hover:text-blue-700"
                             >
                                 <Plus className="mb-2 size-8" />
@@ -215,38 +274,76 @@ export default function CheckoutPage() {
                     </section>
                 </div>
 
-                <aside className="h-fit rounded-lg border bg-background p-5">
-                    <h2 className="text-xl font-semibold">Thông tin đơn hàng</h2>
-
-                    <div className="mt-5 space-y-3 text-sm">
-                        <div className="flex justify-between">
-                            <span>Sản phẩm</span>
-                            <span>{items.length}</span>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <span>Tạm tính</span>
-                            <span>{formatPrice(totalPrice)}</span>
-                        </div>
-
-                        <div className="flex justify-between">
-                            <span>Phí vận chuyển</span>
-                            <span>Miễn phí</span>
-                        </div>
-
-                        <div className="flex justify-between border-t pt-3 text-base font-semibold">
-                            <span>Tổng cộng</span>
-                            <span>{formatPrice(totalPrice)}</span>
-                        </div>
+                <aside className="h-fit rounded-lg bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                        <h2 className="text-xl font-semibold">Thông tin đơn hàng</h2>
+                        <Link to="/cart" className="shrink-0 text-sm font-medium text-blue-700 hover:underline">
+                            Chỉnh sửa
+                        </Link>
                     </div>
 
-                    {selectedAddress && (
-                        <div className="mt-5 rounded-lg bg-muted p-3 text-sm">
-                            <p className="font-medium">{selectedAddress.receiver_name}</p>
-                            <p className="mt-1">{selectedAddress.phone_number}</p>
-                            <p className="mt-1 text-muted-foreground">{formatAddress(selectedAddress)}</p>
+                    <div className="mt-4 max-h-[360px] space-y-4 overflow-y-auto pr-1">
+                        {items.map((item) => {
+                            const imageUrl = getCartItemImage(item);
+                            const attributes = getCartItemAttributes(item);
+                            const itemPrice = Number(item.price_at_add);
+
+                            return (
+                                <div key={item.cart_item_id} className="flex gap-3">
+                                    <div className="flex size-20 shrink-0 items-center justify-center rounded-md border bg-white p-1">
+                                        {imageUrl ? (
+                                            <img
+                                                src={imageUrl}
+                                                alt={getCartItemName(item)}
+                                                className="h-full w-full object-contain"
+                                            />
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">No image</span>
+                                        )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 text-sm">
+                                        <p className="line-clamp-2 font-medium text-gray-900">
+                                            {getCartItemName(item)}
+                                        </p>
+                                        {item.product_variants.sku && (
+                                            <p className="mt-0.5 text-xs text-muted-foreground">
+                                                SKU: {item.product_variants.sku}
+                                            </p>
+                                        )}
+                                        {attributes && (
+                                            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                                                {attributes}
+                                            </p>
+                                        )}
+                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                            Số lượng: {item.quantity}
+                                        </p>
+                                        <p className="mt-1 font-semibold text-gray-900">
+                                            {formatPrice(itemPrice)}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="mt-5 space-y-3 border-t pt-4 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Tạm tính</span>
+                            <span className="font-semibold">{formatPrice(totalPrice)}</span>
                         </div>
-                    )}
+
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Phí vận chuyển</span>
+                            <span className="font-semibold">Miễn phí</span>
+                        </div>
+
+                        <div className="flex justify-between text-base font-semibold">
+                            <span>Thành tiền</span>
+                            <span className="text-xl text-red-600">{formatPrice(totalPrice)}</span>
+                        </div>
+                    </div>
 
                     <SpinnerButton
                         type="button"
@@ -256,17 +353,18 @@ export default function CheckoutPage() {
                         disabled={!selectedAddressId}
                         className="mt-5 h-14 w-full cursor-pointer bg-blue-700 text-white hover:bg-blue-800"
                     >
-                        Đặt hàng
+                        THANH TOÁN
                     </SpinnerButton>
                 </aside>
             </div>
 
             <AddressFormModal
                 open={addressModalOpen}
-                mode="create"
+                mode={editingAddress ? "edit" : "create"}
+                address={editingAddress}
                 initialDefault={!hasAddress}
-                onClose={() => setAddressModalOpen(false)}
-                onSuccess={fetchData}
+                onClose={closeAddressModal}
+                onSuccess={handleAddressSuccess}
             />
         </section>
     );
