@@ -21,6 +21,11 @@ export const createProductVariantSchema = Joi.object({
                     .allow("", null)
                     .optional(),
 
+                detailDescription: Joi.string()
+                    .trim()
+                    .allow(null)
+                    .optional(),
+
                 price: Joi.number()
                     .positive()
                     .required()
@@ -69,6 +74,11 @@ export const updateProductVariantSchema = Joi.object({
         .trim()
         .max(255)
         .allow("", null)
+        .optional(),
+    
+    detailDescription: Joi.string()
+        .trim()
+        .allow(null)
         .optional(),
 
     price: Joi.number()

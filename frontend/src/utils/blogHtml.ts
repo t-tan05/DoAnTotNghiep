@@ -19,7 +19,7 @@ const ALLOWED_TAGS = new Set([
     "UL",
 ]);
 
-const ALLOWED_ATTRIBUTES = new Set(["href", "src", "alt", "title", "target", "rel"]);
+const ALLOWED_ATTRIBUTES = new Set(["href", "src", "alt", "title", "target", "rel", "style"]);
 
 function isSafeUrl(value: string) {
     if (!value) return false;
@@ -30,6 +30,19 @@ function isSafeUrl(value: string) {
     } catch {
         return false;
     }
+}
+
+function sanitizeStyle(value: string) {
+    const safeStyles: string[] = [];
+    const textAlignMatch = value.match(/(?:^|;)\s*text-align\s*:\s*(left|center|right|justify)\s*(?:;|$)/i);
+    const fontSizeMatch = value.match(/(?:^|;)\s*font-size\s*:\s*(14px|16px|18px|22px|28px)\s*(?:;|$)/i);
+    const lineHeightMatch = value.match(/(?:^|;)\s*line-height\s*:\s*(1\.3|1\.5|1\.7|2)\s*(?:;|$)/i);
+
+    if (textAlignMatch) safeStyles.push(`text-align: ${textAlignMatch[1].toLowerCase()};`);
+    if (fontSizeMatch) safeStyles.push(`font-size: ${fontSizeMatch[1].toLowerCase()};`);
+    if (lineHeightMatch) safeStyles.push(`line-height: ${lineHeightMatch[1]};`);
+
+    return safeStyles.join(" ");
 }
 
 export function sanitizeBlogHtml(html: string) {
@@ -56,6 +69,16 @@ export function sanitizeBlogHtml(html: string) {
 
             if ((name === "href" || name === "src") && !isSafeUrl(value)) {
                 element.removeAttribute(attribute.name);
+            }
+
+            if (name === "style") {
+                const safeStyle = sanitizeStyle(value);
+
+                if (safeStyle) {
+                    element.setAttribute("style", safeStyle);
+                } else {
+                    element.removeAttribute(attribute.name);
+                }
             }
         });
 

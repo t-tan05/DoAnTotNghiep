@@ -57,7 +57,7 @@ export default function AccountInfoForm() {
                     type="submit"
                     loading={loading}
                     loadingText="Đang cập nhật..."
-                    className="hover:cursor-pointer"
+                    className="hover:cursor-pointer h-12"
                 >
                     Cập nhật
                 </SpinnerButton>

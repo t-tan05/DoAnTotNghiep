@@ -1,11 +1,11 @@
 import FormError from "@/components/common/FormError";
+import RichTextEditor from "@/components/common/RichTextEditor";
 import SpinnerButton from "@/components/common/SpinnerButton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { productService } from "@/services/product.service";
 import type { Brand } from "@/types/brand.type";
 import type { Category } from "@/types/category.type";
@@ -152,10 +152,11 @@ export default function ProductCreateDialog({
 
                     <div className="space-y-2">
                         <Label>Mô tả</Label>
-                        <Textarea 
+                        <RichTextEditor
                             value={form.description}
-                            onChange={(e) => updateField("description", e.target.value)}
-                            placeholder="Mô tả ngắn về sản phẩm"
+                            onChange={(value) => updateField("description", value)}
+                            placeholder="Nhập mô tả chung cho sản phẩm..."
+                            minHeightClassName="min-h-[240px]"
                         />
                     </div>
 

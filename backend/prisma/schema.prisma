@@ -205,6 +205,7 @@ model product_variants {
   product_id               String                     @db.VarChar(50)
   sku                      String?                    @unique(map: "sku") @db.VarChar(100)
   variant_name             String?                    @db.VarChar(255)
+  detail_description       String?                    @db.LongText
   price                    Decimal                    @db.Decimal(15, 2)
   quantity_in_stock        Int                        @default(0)
   reserved_quantity        Int                        @default(0)

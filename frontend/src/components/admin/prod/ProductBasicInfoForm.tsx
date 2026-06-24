@@ -1,10 +1,11 @@
+import BlogContent from "@/components/blog/BlogContent";
 import FormError from "@/components/common/FormError";
+import RichTextEditor from "@/components/common/RichTextEditor";
 import SpinnerButton from "@/components/common/SpinnerButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { brandService } from "@/services/brand.service";
 import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
@@ -178,7 +179,13 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
 
                 <div className="mt-4">
                     <p className="text-sm text-muted-foreground">Mô tả</p>
-                    <p className="mt-1 text-sm">{product.description || "Không có mô tả"}</p>
+                    {product.description ? (
+                        <div className="mt-2 rounded-md border bg-muted/20 p-3">
+                            <BlogContent html={product.description} />
+                        </div>
+                    ) : (
+                        <p className="mt-1 text-sm">Không có mô tả</p>
+                    )}
                 </div>
             </div>
         );
@@ -255,9 +262,11 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
 
                 <div className="space-y-2">
                     <Label>Mô tả</Label>
-                    <Textarea
+                    <RichTextEditor
                         value={form.description}
-                        onChange={(event) => updateField("description", event.target.value)}
+                        onChange={(value) => updateField("description", value)}
+                        placeholder="Nhập mô tả chung cho sản phẩm..."
+                        minHeightClassName="min-h-[240px]"
                     />
                 </div>
 

@@ -5,6 +5,7 @@ export type AdminProductVariant = {
     product_id?: string;
     sku: string;
     variant_name?: string | null;
+    detail_description?: string | null;
     price: string | number;
     quantity_in_stock: number;
     reserved_quantity?: number;
@@ -46,6 +47,7 @@ export type CreateProductVariantPayload = {
     variants: Array<{
         sku: string;
         variantName?: string | null;
+        detailDescription?: string | null;
         price: number;
         quantityInStock: number;
         attributeValueIds: string[];
@@ -56,6 +58,7 @@ export type CreateProductVariantPayload = {
 export type UpdateProductVariantPayload = {
     sku?: string;
     variantName?: string | null;
+    detailDescription?: string | null;
     price?: number;
     quantityInStock?: number;
     stockNote?: string | null;

@@ -170,6 +170,7 @@ export const createProductVariantService = async(
                 product_id: productId,
                 sku: variant?.sku,
                 variant_name: variant?.variantName?.trim() || null,
+                detail_description: variant?.detailDescription?.trim() || null,
                 price: variant?.price,
                 quantity_in_stock: variant?.quantityInStock,
                 reserved_quantity: 0,
@@ -265,6 +266,8 @@ export const updateProductVariantService = async(
     if(data.sku !== undefined) productVariantData.sku = data.sku;
 
     if(data.variantName !== undefined) productVariantData.variant_name = data.variantName?.trim() || null;
+
+    if(data.detailDescription !== undefined) productVariantData.detail_description = data.detailDescription?.trim() || null;
 
     if(data.price !== undefined) productVariantData.price = data.price;
 

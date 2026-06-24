@@ -103,6 +103,7 @@ export default function ChangePasswordPage() {
                     type="submit"
                     loading={loading}
                     loadingText="Đang đổi mật khẩu..."
+                    className="cursor-pointer h-12"
                 >
                     Đổi mật khẩu
                 </SpinnerButton>

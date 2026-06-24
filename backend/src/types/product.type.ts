@@ -6,6 +6,7 @@ export interface ProductVariantSpecPayload {
 export interface ProductVariantPayload {
     sku: string;
     variantName?: string | null;
+    detailDescription?: string | null;
     price: number;
     quantityInStock: number;
     attributeValueIds: string[];
@@ -37,6 +38,7 @@ export interface CreateProductVariantPayload {
 export interface UpdateProductVariantPayload {
     sku?: string;
     variantName?: string | null;
+    detailDescription?: string | null;
     price?: number;
     quantityInStock?: number;
     stockNote?: string | null;

@@ -83,10 +83,10 @@ export default function ProductVariantList({
                         </div>
 
                         <div className="flex gap-2">
-                            <Button variant={"outline"} size={"sm"} onClick={() => onEdit(variant)}>
+                            <Button variant={"outline"} size={"sm"} onClick={() => onEdit(variant)} className="cursor-pointer">
                                 Chỉnh sửa
                             </Button>
-                            <Button variant="destructive" size="sm" onClick={() => onDelete(variant)}>
+                            <Button variant="destructive" size="sm" onClick={() => onDelete(variant)} className="cursor-pointer">
                                 Xóa
                             </Button>
                         </div>

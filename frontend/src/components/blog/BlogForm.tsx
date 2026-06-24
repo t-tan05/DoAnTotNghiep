@@ -1,5 +1,5 @@
-import BlogEditor from "@/components/blog/BlogEditor";
 import FormError from "@/components/common/FormError";
+import RichTextEditor from "@/components/common/RichTextEditor";
 import SpinnerButton from "@/components/common/SpinnerButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +74,7 @@ export default function BlogForm({
 
                     <div className="space-y-2">
                         <Label>Nội dung</Label>
-                        <BlogEditor
+                        <RichTextEditor
                             value={form.content}
                             onChange={(value) => updateField("content", value)}
                             placeholder="Nhập nội dung bài viết"

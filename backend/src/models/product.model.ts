@@ -76,6 +76,7 @@ export const findProductById = async(productId: string) => {
                     variant_id: true,
                     sku: true,
                     variant_name: true,
+                    detail_description: true,
                     price: true,
                     quantity_in_stock: true,
                     reserved_quantity: true,

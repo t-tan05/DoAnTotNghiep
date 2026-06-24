@@ -1,4 +1,5 @@
 ﻿import PageLoading from "@/components/common/PageLoading";
+import BlogContent from "@/components/blog/BlogContent";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -150,7 +151,9 @@ export default function ProductDetailPage() {
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
     const [specExpanded, setSpecExpanded] = useState(false);
+    const [detailExpanded, setDetailExpanded] = useState(false);
     const [error, setError] = useState("");
+    const [activeInfoTab, setActiveInfoTab] = useState<"specs" | "detail">("specs");
 
     useEffect(() => {
         async function loadProduct() {
@@ -204,6 +207,10 @@ export default function ProductDetailPage() {
     );
 
     const displayName = selectedVariant?.variant_name || product?.product_name || "";
+    const detailContent =
+        selectedVariant?.detail_description
+        || product?.description
+        || "";
     const currentPrice = getVariantPrice(selectedVariant);
     const originalPrice = getVariantOriginalPrice(selectedVariant);
     const discountPercent = getDiscountPercent(originalPrice, currentPrice);
@@ -224,6 +231,7 @@ export default function ProductDetailPage() {
     useEffect(() => {
         setSelectedAttributes(getVariantAttributeMap(selectedVariant));
         setSelectedImageUrl(galleryImages[0]?.image_url ?? "");
+        setDetailExpanded(false);
     }, [selectedVariant, galleryImages]);
 
     function selectVariant(variant: AdminProductVariant) {
@@ -232,25 +240,38 @@ export default function ProductDetailPage() {
         setSearchParams({ variantId: variant.variant_id });
     }
 
-    function selectAttribute(attributeName: string, value: string) {
-        const nextSelection = {
-            ...selectedAttributes,
-            [attributeName]: value,
-        };
+    function buildScopedSelection(attributeName: string, value: string) {
+        const groupIndex = attributeGroups.findIndex((group) => group.name === attributeName);
+        const scopedSelection: Record<string, string> = {};
 
-        const exactVariant = product?.product_variants.find((variant) => variantMatchesSelection(variant, nextSelection));
-        const fallbackVariant = product?.product_variants.find((variant) => {
-            return getVariantAttributeMap(variant)[attributeName] === value;
+        attributeGroups.slice(0, Math.max(groupIndex, 0)).forEach((group) => {
+            const selectedValue = selectedAttributes[group.name];
+
+            if (selectedValue) {
+                scopedSelection[group.name] = selectedValue;
+            }
         });
 
-        const nextVariant = exactVariant ?? fallbackVariant;
+        scopedSelection[attributeName] = value;
+
+        return scopedSelection;
+    }
+
+    function isAttributeOptionAvailable(attributeName: string, value: string) {
+        const scopedSelection = buildScopedSelection(attributeName, value);
+
+        return Boolean(
+            product?.product_variants.some((variant) => variantMatchesSelection(variant, scopedSelection))
+        );
+    }
+
+    function selectAttribute(attributeName: string, value: string) {
+        const scopedSelection = buildScopedSelection(attributeName, value);
+        const nextVariant = product?.product_variants.find((variant) => variantMatchesSelection(variant, scopedSelection));
 
         if (nextVariant) {
             selectVariant(nextVariant);
-            return;
         }
-
-        setSelectedAttributes(nextSelection);
     }
 
     function showPreviousImage() {
@@ -327,6 +348,7 @@ export default function ProductDetailPage() {
     const specRows = selectedVariant?.product_variant_specs ?? [];
     const visibleSpecRows = specExpanded ? specRows : specRows.slice(0, 4);
     const canToggleSpecs = specRows.length > 4;
+    const canToggleDetail = detailContent.length > 900;
 
     return (
         <section className="bg-[#f5f6fb]">
@@ -444,14 +466,20 @@ export default function ProductDetailPage() {
                                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                         {group.options.map((option) => {
                                             const selected = selectedAttributes[group.name] === option.value;
+                                            const available = isAttributeOptionAvailable(group.name, option.value);
 
                                             return (
                                                 <button
                                                     key={`${group.name}-${option.value}`}
                                                     type="button"
+                                                    disabled={!available}
                                                     onClick={() => selectAttribute(group.name, option.value)}
+                                                    title={available ? option.value : "Biến thể này không có với lựa chọn hiện tại"}
                                                     className={cn(
-                                                        "relative flex min-h-14 items-center justify-center gap-2 rounded-md border bg-white px-3 py-2 text-sm transition hover:border-blue-700 hover:bg-blue-50",
+                                                        "relative flex min-h-14 items-center justify-center gap-2 rounded-md border bg-white px-3 py-2 text-sm transition",
+                                                        available
+                                                            ? "cursor-pointer hover:border-blue-700 hover:bg-blue-50"
+                                                            : "cursor-not-allowed opacity-40 grayscale",
                                                         selected && "border-blue-700 text-blue-700 ring-1 ring-blue-700",
                                                     )}
                                                 >
@@ -538,57 +566,109 @@ export default function ProductDetailPage() {
                 </div>
 
                 <div className="mt-6 w-full rounded-lg bg-white p-4 shadow-sm lg:w-[58%]">
-                    <div className="border-b text-center text-lg font-semibold">
-                        <button type="button" className="border-b-2 border-blue-700 px-4 py-3 text-blue-700">
+                    <div className="grid grid-cols-2 border-b text-center text-lg font-semibold">
+                        <button
+                            type="button"
+                            onClick={() => setActiveInfoTab("specs")}
+                            className={cn(
+                                "px-6 py-3",
+                                activeInfoTab === "specs"
+                                    ? "border-b-2 border-blue-700 text-blue-700"
+                                    : "text-muted-foreground"
+                            )}
+                        >
                             Thông số kỹ thuật
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveInfoTab("detail")}
+                            className={cn(
+                                "px-6 py-3",
+                                activeInfoTab === "detail"
+                                    ? "border-b-2 border-blue-700 text-blue-700"
+                                    : "text-muted-foreground"
+                            )}
+                        >
+                            Chi tiết sản phẩm
                         </button>
                     </div>
 
-                    <div className="mt-4">
-                        <h2 className="mb-3 font-semibold">Thông tin chung</h2>
-                        <div className="overflow-hidden rounded-md border text-sm">
-                            <SpecRow label="Thương hiệu" value={product.brands?.brand_name} shaded />
-                            <SpecRow label="Bảo hành" value={`${product.warranty_period} tháng`} />
-                            <SpecRow label="Nhóm sản phẩm" value={product.categories?.category_name} shaded />
-                            <SpecRow label="Tên" value={product.product_name} />
-                        </div>
+                    {activeInfoTab === "specs" && (
+                        <div className="mt-4">
+                            <h2 className="mb-3 font-semibold">Thông tin chung</h2>
+                            <div className="overflow-hidden rounded-md border text-sm">
+                                <SpecRow label="Thương hiệu" value={product.brands?.brand_name} shaded />
+                                <SpecRow label="Bảo hành" value={`${product.warranty_period} tháng`} />
+                                <SpecRow label="Nhóm sản phẩm" value={product.categories?.category_name} shaded />
+                                <SpecRow label="Tên" value={product.product_name} />
+                            </div>
 
-                        {specRows.length > 0 && (
-                            <>
-                                <h2 className="mb-3 mt-5 font-semibold">Thông số chi tiết</h2>
-                                <div className="overflow-hidden rounded-md border text-sm">
-                                    {visibleSpecRows.map((spec, index) => (
-                                        <SpecRow
-                                            key={`${spec.spec_key}-${spec.spec_value}-${index}`}
-                                            label={spec.spec_key}
-                                            value={spec.spec_value}
-                                            shaded={index % 2 === 0}
-                                        />
-                                    ))}
-                                </div>
-
-                                {canToggleSpecs && (
-                                    <div className="mt-4 flex justify-center">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => setSpecExpanded((value) => !value)}
-                                            className="min-w-32 cursor-pointer rounded-full"
-                                        >
-                                            {specExpanded ? "Thu lại" : "Xem thêm"}
-                                        </Button>
+                            {specRows.length > 0 && (
+                                <>
+                                    <h2 className="mb-3 mt-5 font-semibold">Thông số chi tiết</h2>
+                                    <div className="overflow-hidden rounded-md border text-sm">
+                                        {visibleSpecRows.map((spec, index) => (
+                                            <SpecRow
+                                                key={`${spec.spec_key}-${spec.spec_value}-${index}`}
+                                                label={spec.spec_key}
+                                                value={spec.spec_value}
+                                                shaded={index % 2 === 0}
+                                            />
+                                        ))}
                                     </div>
-                                )}
-                            </>
-                        )}
-                    </div>
 
-                    {product.description && (
-                        <div className="mx-auto mt-6 max-w-3xl border-t pt-5">
-                            <h2 className="font-semibold">Mô tả sản phẩm</h2>
-                            <p className="mt-3 whitespace-pre-line text-sm leading-6 text-muted-foreground">
-                                {product.description}
-                            </p>
+                                    {canToggleSpecs && (
+                                        <div className="mt-4 flex justify-center">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setSpecExpanded((value) => !value)}
+                                                className="min-w-32 cursor-pointer rounded-full"
+                                            >
+                                                {specExpanded ? "Thu lại" : "Xem thêm"}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
+                    {activeInfoTab === "detail" && (
+                        <div className="mx-auto mt-5 max-w-3xl">
+                            {detailContent ? (
+                                <>
+                                    <div
+                                        className={cn(
+                                            "relative overflow-hidden",
+                                            canToggleDetail && !detailExpanded && "max-h-[520px]"
+                                        )}
+                                    >
+                                        <BlogContent html={detailContent} />
+
+                                        {canToggleDetail && !detailExpanded && (
+                                            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white to-transparent" />
+                                        )}
+                                    </div>
+
+                                    {canToggleDetail && (
+                                        <div className="mt-4 flex justify-center">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setDetailExpanded((value) => !value)}
+                                                className="min-w-32 cursor-pointer rounded-full"
+                                            >
+                                                {detailExpanded ? "Thu lại" : "Xem thêm"}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Chưa có chi tiết sản phẩm.
+                                </p>
+                            )}
                         </div>
                     )}
                 </div>

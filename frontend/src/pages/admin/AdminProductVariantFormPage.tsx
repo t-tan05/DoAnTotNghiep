@@ -4,6 +4,7 @@ import ProductVariantImageUploader from "@/components/admin/prod/ProductVariantI
 import ProductVariantSpecEditor from "@/components/admin/prod/ProductVariantSpecEditor";
 import FormError from "@/components/common/FormError";
 import PageLoading from "@/components/common/PageLoading";
+import RichTextEditor from "@/components/common/RichTextEditor";
 import SpinnerButton from "@/components/common/SpinnerButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ export default function AdminProductVariantFormPage() {
     const [form, setForm] = useState({
         sku: "",
         variantName: "",
+        detailDescription: "",
         price: "",
         quantityInStock: "0",
         stockNote: "",
@@ -69,6 +71,7 @@ export default function AdminProductVariantFormPage() {
         setForm({
             sku: loadedVariant.sku ?? "",
             variantName: loadedVariant.variant_name ?? "",
+            detailDescription: loadedVariant.detail_description ?? "",
             price: String(loadedVariant.price ?? ""),
             quantityInStock: String(loadedVariant.quantity_in_stock ?? 0),
             stockNote: "",
@@ -159,6 +162,7 @@ export default function AdminProductVariantFormPage() {
                 await productVariantService.update(variantId, {
                     sku: form.sku.trim(),
                     variantName: form.variantName.trim() || null,
+                    detailDescription: form.detailDescription.trim() || null,
                     price: Number(form.price),
                     quantityInStock: Number(form.quantityInStock),
                     stockNote: form.stockNote.trim() || null,
@@ -180,6 +184,7 @@ export default function AdminProductVariantFormPage() {
                             {
                                 sku: form.sku.trim(),
                                 variantName: form.variantName.trim() || null,
+                                detailDescription: form.detailDescription.trim() || null,
                                 price: Number(form.price),
                                 quantityInStock: Number(form.quantityInStock),
                                 attributeValueIds: selectedAttributeValueIds,
@@ -199,6 +204,7 @@ export default function AdminProductVariantFormPage() {
                             {
                                 sku: form.sku.trim(),
                                 variantName: form.variantName.trim() || null,
+                                detailDescription: form.detailDescription.trim() || null,
                                 price: Number(form.price),
                                 quantityInStock: Number(form.quantityInStock),
                                 attributeValueIds: selectedAttributeValueIds,
@@ -279,6 +285,14 @@ export default function AdminProductVariantFormPage() {
                                 value={form.variantName}
                                 onChange={(e) => updateField("variantName", e.target.value)}
                                 placeholder="VD: Laptop Acer Nitro Ryzen 5 / RTX 3050"
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2 xl:col-span-4">
+                            <Label htmlFor="detailDescription">Chi tiết sản phẩm</Label>
+                            <RichTextEditor
+                                value={form.detailDescription}
+                                onChange={(value) => updateField("detailDescription", value)}
+                                placeholder="Nhập chi tiết riêng cho biến thể này..."
                             />
                         </div>
                         <div className="space-y-2">
