@@ -48,9 +48,11 @@ function addMinutes(date: Date, minutes: number) {
 }
 
 export function createVnpayPaymentUrl(params: {
+    txnRef: string;
     orderId: string;
     amount: number;
     ipAddr: string;
+    expireAt?: Date;
 }) {
     const tmnCode = process.env.VNPAY_TMN_CODE?.trim();
     const hashSecret = process.env.VNPAY_HASH_SECRET?.trim();
@@ -63,7 +65,7 @@ export function createVnpayPaymentUrl(params: {
 
     const now = new Date();
     const createDate = formatDate(now);
-    const expireDate = formatDate(addMinutes(now, 15));
+    const expireDate = formatDate(params.expireAt ?? addMinutes(now, 15));
 
     let vnpParams: VnpayParams = {
         vnp_Version: "2.1.0",
@@ -71,7 +73,7 @@ export function createVnpayPaymentUrl(params: {
         vnp_TmnCode: tmnCode,
         vnp_Locale: "vn",
         vnp_CurrCode: "VND",
-        vnp_TxnRef: params.orderId,
+        vnp_TxnRef: params.txnRef,
         vnp_OrderInfo: `Thanh toan don hang ${params.orderId}`,
         vnp_OrderType: "other",
         vnp_Amount: Math.round(params.amount) * 100,
@@ -117,6 +119,7 @@ export function verifyVnpayReturn(query: Record<string, any>) {
 }
 
 export async function refundVnpayPayment(params: {
+    txnRef: string;
     orderId: string;
     amount: number;
     transactionCode: string;
@@ -144,7 +147,7 @@ export async function refundVnpayPayment(params: {
         vnp_Command: "refund",
         vnp_TmnCode: tmnCode,
         vnp_TransactionType: "02",
-        vnp_TxnRef: params.orderId,
+        vnp_TxnRef: params.txnRef,
         vnp_Amount: amount,
         vnp_TransactionNo: params.transactionCode,
         vnp_TransactionDate: transactionDate,

@@ -1,3 +1,4 @@
+import ConfirmDeleteDialog from "@/components/common/ConfirmDeleteDialog";
 import PageLoading from "@/components/common/PageLoading";
 import { Button } from "@/components/ui/button";
 import { orderService } from "@/services/order.service";
@@ -53,7 +54,9 @@ function getOrderTab(order: MyOrder): OrderTab {
 }
 
 function getStatusLabel(order: MyOrder) {
+    if(order.payment_status === "REFUND_PENDING") return "Đang xử lý hoàn tiền";
     if(order.payment_status === "REFUNDED") return "Đã hoàn tiền";
+    if(order.payment_status === "REFUND_FAILED") return "Hoàn tiền cần hỗ trợ";
 
     const statusLabels: Record<string, string> = {
         PENDING: "Chờ xử lý",
@@ -74,12 +77,13 @@ function getPaymentLabel(order: MyOrder) {
         PENDING: "Đang chờ thanh toán",
         PAID: "Đã thanh toán",
         FAILED: "Thanh toán thất bại",
+        REFUND_PENDING: "Đang xử lý hoàn tiền",
         REFUNDED: "Đã hoàn tiền",
+        REFUND_FAILED: "Hoàn tiền cần hỗ trợ",
     };
 
     return paymentLabels[order.payment_status] || order.payment_status;
 }
-
 function getVariantImage(detail: OrderDetail) {
     return (
         detail.product_variants.image_url ||
@@ -100,6 +104,9 @@ export default function OrderHistoryPage() {
     const [activeTab, setActiveTab] = useState<OrderTab>("payment");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [cancelOrder, setCancelOrder] = useState<MyOrder | null>(null);
+    const [cancellingId, setCancellingId] = useState("");
+    const [retryingId, setRetryingId] = useState("");
 
     async function loadOrders() {
         setLoading(true);
@@ -135,6 +142,44 @@ export default function OrderHistoryPage() {
             completed: 0,
         });
     }, [orders]);
+
+    async function handleConfirmCancelOrder() {
+        if(!cancelOrder) return;
+
+        try {
+            setCancellingId(cancelOrder.order_id);
+
+            await orderService.cancelMyOrder(cancelOrder.order_id);
+
+            toast.success("Đã hủy đơn hàng.");
+            setCancelOrder(null);
+            await loadOrders();
+        }catch(error) {
+            toast.error(getErrorMessage(error));
+        }finally{
+            setCancellingId("");
+        }
+    }
+
+    async function handleRetryPayment(orderId: string) {
+        try {
+
+            setRetryingId(orderId);
+
+            const data = await orderService.retryPayment(orderId);
+
+            if(data?.paymentUrl) {
+                window.location.assign(data.paymentUrl);
+                return;
+            }
+
+            toast.error("Không tạo được link thanh toán.");
+        }catch(error) {
+            toast.error(getErrorMessage(error));
+        }finally{
+            setRetryingId("");
+        }
+    }
 
     return (
         <section className="min-w-0">
@@ -204,7 +249,13 @@ export default function OrderHistoryPage() {
 
                 {!loading && !error && filteredOrders.length > 0 && (
                     <div className="space-y-4">
-                        {filteredOrders.map((order) => (
+                        {filteredOrders.map((order) => {
+                            const canRetryPayment =
+                                order.status === "PENDING"
+                                && order.payment_method === "VNPAY"
+                                && order.payment_status === "FAILED";
+
+                            return (
                             <article key={order.order_id} className="overflow-hidden rounded-xl border bg-white">
                                 <div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
                                     <div className="min-w-0">
@@ -282,11 +333,36 @@ export default function OrderHistoryPage() {
                                         Người nhận: {order.receiver_name || "-"} | {order.receiver_phone || "-"}
                                     </div>
 
-                                    <div className="flex items-center justify-between gap-4 md:justify-end">
-                                        <span className="text-sm text-muted-foreground">Tổng tiền</span>
-                                        <span className="text-lg font-bold text-primary">
-                                            {formatPrice(order.total_price)}
-                                        </span>
+                                    <div className="flex flex-wrap items-center justify-between gap-3 md:justify-end">
+                                        {order.status === "PENDING" && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                disabled={cancellingId === order.order_id}
+                                                onClick={() => setCancelOrder(order)}
+                                                className="cursor-pointer border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            >
+                                                Hủy đơn
+                                            </Button>
+                                        )}
+
+                                        {canRetryPayment && (
+                                            <Button
+                                                type="button"
+                                                disabled={retryingId === order.order_id}
+                                                onClick={() => handleRetryPayment(order.order_id)}
+                                                className="cursor-pointer bg-blue-700 text-white hover:bg-blue-800"
+                                            >
+                                                {retryingId === order.order_id ? "Đang tạo link..." : "Thanh toán lại"}
+                                            </Button>
+                                        )}
+
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-sm text-muted-foreground">Tổng tiền</span>
+                                            <span className="text-lg font-bold text-primary">
+                                                {formatPrice(order.total_price)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -297,10 +373,23 @@ export default function OrderHistoryPage() {
                                     </div>
                                 )}
                             </article>
-                        ))}
+                        )})}
                     </div>
                 )}
             </div>
+
+            <ConfirmDeleteDialog
+                open={Boolean(cancelOrder)}
+                loading={cancellingId === cancelOrder?.order_id}
+                title="Hủy đơn hàng"
+                description={`Bạn có chắc muốn hủy đơn hàng #${cancelOrder?.order_id.slice(0, 8)} không?`}
+                confirmText="Hủy đơn"
+                loadingText="Đang hủy..."
+                onOpenChange={(open) => {
+                    if (!open) setCancelOrder(null);
+                }}
+                onConfirm={handleConfirmCancelOrder}
+            />
         </section>
     );
 }

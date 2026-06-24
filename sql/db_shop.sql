@@ -191,6 +191,8 @@ CREATE TABLE `orders` (
     'PENDING',
     'PAID',
     'FAILED',
+    'REFUND_PENDING',
+    'REFUND_FAILED',
     'REFUNDED'
   ) NOT NULL DEFAULT 'UNPAID',
 
@@ -241,6 +243,8 @@ CREATE TABLE `payment_transactions` (
     'SUCCESS',
     'FAILED',
     'CANCELLED',
+    'REFUND_PENDING',
+    'REFUND_FAILED',
     'REFUNDED'
   ) NOT NULL DEFAULT 'PENDING',
 

@@ -12,6 +12,7 @@ import {
     shipOrderService,
     handleVnpayReturnService,
     handleVnpayIpnService,
+    retryPaymentService,
 } from "#services/order.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import {
@@ -231,3 +232,22 @@ export const vnpayIpnController = async(req: Request, res: Response) => {
         });
     }
 };
+
+export const retryPaymentController = CatchAsync(async(req: AuthRequest, res: Response) => {
+    const userId = req.user.user_id;
+    const orderId = req.params.orderId as string;
+
+    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
+        || req.socket.remoteAddress
+        || "127.0.0.1";
+
+    const data = await retryPaymentService(userId, orderId, ipAddr);
+
+    res.status(200).json({
+        success: true,
+        message: "Tạo lại link thanh toán thành công.",
+        data: {
+            ...data,
+        },
+    });
+});

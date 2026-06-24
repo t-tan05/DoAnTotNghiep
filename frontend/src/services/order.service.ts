@@ -3,6 +3,7 @@ import type { BackendSuccess } from "@/types/api.type";
 import type {
     CheckoutPayload,
     CheckoutResponse,
+    MyOrder,
     MyOrdersResponse,
     VnpayReturnResponse,
 } from "@/types/order.type";
@@ -23,5 +24,20 @@ export const orderService = {
             `/orders/payment/vnpay-return${search}`
         );
         return res.data.data;
-    }
+    },
+
+    cancelMyOrder: async(orderId: string) => {
+        const res = await api.patch<BackendSuccess<{order: MyOrder}>>(
+            `/orders/me/${orderId}/cancel`
+        );
+        return res.data.data;
+    },
+
+    retryPayment: async(orderId: string) => {
+        const res = await api.post<BackendSuccess<{paymentUrl: string}>> (
+            `/orders/me/${orderId}/retry-payment`
+        );
+
+        return res.data.data;
+    },
 }

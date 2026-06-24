@@ -50,6 +50,7 @@ export default function AppRoute() {
                 <Route path="/tin-tuc" element={<BlogListPage />} />
                 <Route path="/tin-tuc/:postId" element={<BlogDetailPage />} />
                 <Route path="/products/:productId" element={<ProductDetailPage />} />
+                <Route path="/payment/vnpay-return" element={<PaymentReturnPage />}/>
                 <Route element={<ProtectedRoute />}>
                     <Route path="/account" element={<ProfileLayout />}>
                         <Route index element={<AccountProfilePage />} />
@@ -60,7 +61,6 @@ export default function AppRoute() {
 
                     <Route path="/cart" element={<CartPage />}/>
                     <Route path="/checkout" element={<CheckoutPage />}/>
-                    <Route path="/payment/vnpay-return" element={<PaymentReturnPage />}/>
                 </Route>
             </Route>
 

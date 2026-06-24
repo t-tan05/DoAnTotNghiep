@@ -5,6 +5,8 @@ type Props = {
     title?: string;
     description?: string;
     loading?: boolean;
+    confirmText?: string;
+    loadingText?: string;
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
 };
@@ -14,6 +16,8 @@ export default function ConfirmDeleteDialog({
     title = "Xác nhận xóa",
     description = "Dữ liệu sau khi xóa sẽ không thể khôi phục.",
     loading,
+    confirmText = "Xóa",
+    loadingText = "Đang xóa...",
     onOpenChange,
     onConfirm,
 }: Props) {
@@ -34,7 +38,7 @@ export default function ConfirmDeleteDialog({
                             onConfirm();
                         }}
                     >
-                        {loading ? "Đang xóa..." : "Xóa"}
+                        {loading ? loadingText : confirmText}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

@@ -36,8 +36,7 @@ export default function CartPage() {
 
     async function fetchCart(options?: { silent?: boolean }) {
         try {
-            if (options?.silent) {
-            } else {
+            if (!options?.silent) {
                 setLoading(true);
             }
 
@@ -46,8 +45,7 @@ export default function CartPage() {
         } catch (error) {
             toast.error(getErrorMessage(error));
         } finally {
-            if (options?.silent) {
-            } else {
+            if (!options?.silent) {
                 setLoading(false);
             }
         }

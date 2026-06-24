@@ -502,14 +502,6 @@ enum payment_transactions_payment_method {
   BANK_TRANSFER
 }
 
-enum payment_transactions_status {
-  PENDING
-  SUCCESS
-  FAILED
-  CANCELLED
-  REFUNDED
-}
-
 enum orders_status {
   PENDING
   CONFIRMED
@@ -528,10 +520,22 @@ enum orders_payment_method {
   BANK_TRANSFER
 }
 
+enum payment_transactions_status {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUND_PENDING
+  REFUND_FAILED
+  REFUNDED
+}
+
 enum orders_payment_status {
   UNPAID
   PENDING
   PAID
   FAILED
+  REFUND_PENDING
+  REFUND_FAILED
   REFUNDED
 }

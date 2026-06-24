@@ -11,7 +11,8 @@ import {
     markDeliveryFailedController,
     shipOrderController,
     vnpayReturnController,
-    vnpayIpnController
+    vnpayIpnController,
+    retryPaymentController
 } from "#controllers/order.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { Validate } from "#middlewares/Validate";
@@ -30,6 +31,7 @@ router.post("/checkout", Validate(checkoutOrderSchema), checkoutOrderController)
 router.get("/me", getMyOrdersController);
 router.get("/me/:orderId", getMyOrderDetailController);
 router.patch("/me/:orderId/cancel", cancelMyOrderController);
+router.post("/me/:orderId/retry-payment", retryPaymentController);
 
 router.get("/", CheckRole("ADMIN", "EMPLOYEE"), getAllOrdersController);
 router.get("/:orderId", CheckRole("ADMIN", "EMPLOYEE"), getOrderDetailForStaffController);

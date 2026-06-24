@@ -21,6 +21,11 @@ import {
 } from "#models/order.model";
 import { createVnpayPaymentUrl, refundVnpayPayment, verifyVnpayReturn } from "./vnpay.service.js";
 
+const PAYMENT_TRANSACTION_REFUND_PENDING = "REFUND_PENDING" as payment_transactions_status;
+const PAYMENT_TRANSACTION_REFUND_FAILED = "REFUND_FAILED" as payment_transactions_status;
+const ORDER_PAYMENT_REFUND_PENDING = "REFUND_PENDING" as orders_payment_status;
+const ORDER_PAYMENT_REFUND_FAILED = "REFUND_FAILED" as orders_payment_status;
+
 const getAvailableQuantity = (variant: any) => {
     return Number(variant.quantity_in_stock) - Number(variant.reserved_quantity ?? 0);
 };
@@ -36,6 +41,50 @@ const parseVnpayDate = (value?: string) => {
     const second = Number(value.slice(12, 14));
 
     return new Date(year, month, day, hour, minute, second);
+};
+
+const getVnpayRefundState = (refundResult: any) => {
+    const responseCode = String(refundResult?.vnp_ResponseCode || "");
+    const transactionStatus = String(refundResult?.vnp_TransactionStatus || "");
+    const message = refundResult?.vnp_Message || refundResult?.vnp_ResponseMessage;
+
+    if(responseCode === "00" && transactionStatus === "00") {
+        return {
+            transactionStatus: payment_transactions_status.REFUNDED,
+            orderPaymentStatus: orders_payment_status.REFUNDED,
+            paymentStatus: "REFUNDED",
+            message: "VNPay đã hoàn tiền thành công.",
+        };
+    }
+
+    if(responseCode === "00" && (!transactionStatus || ["05", "06"].includes(transactionStatus))) {
+        return {
+            transactionStatus: PAYMENT_TRANSACTION_REFUND_PENDING,
+            orderPaymentStatus: ORDER_PAYMENT_REFUND_PENDING,
+            paymentStatus: "REFUND_PENDING",
+            message: "Yêu cầu hoàn tiền đã được gửi sang VNPay và đang chờ ngân hàng xử lý.",
+        };
+    }
+
+    if(responseCode === "94") {
+        return {
+            transactionStatus: PAYMENT_TRANSACTION_REFUND_PENDING,
+            orderPaymentStatus: ORDER_PAYMENT_REFUND_PENDING,
+            paymentStatus: "REFUND_PENDING",
+            message: "Yêu cầu hoàn tiền đã tồn tại và VNPay đang xử lý.",
+        };
+    }
+
+    if(responseCode === "95" || transactionStatus === "09") {
+        return {
+            transactionStatus: PAYMENT_TRANSACTION_REFUND_FAILED,
+            orderPaymentStatus: ORDER_PAYMENT_REFUND_FAILED,
+            paymentStatus: "REFUND_FAILED",
+            message: message || "VNPay từ chối hoặc xử lý hoàn tiền thất bại.",
+        };
+    }
+
+    throw new AppError(message || "Hoàn tiền thất bại.", 400);
 };
 
 export const checkoutOrderService = async(
@@ -70,7 +119,6 @@ export const checkoutOrderService = async(
             throw new AppError("Giỏ hàng đang trống.", 400);
         }
 
-        //Duyệt qua từng sản phẩm trong cart_items
         for(const item of cart.carts_items) {
             const variant = item.product_variants;
 
@@ -96,15 +144,13 @@ export const checkoutOrderService = async(
             }
         }
 
-        //Tính tổng thanh toán
         const totalPrice = cart.carts_items.reduce((sum, item) => {
             return sum + Number(item.price_at_add) * item.quantity;
         }, 0);
 
         const orderId = crypto.randomUUID();
-
         const paymentStatus = payload.paymentMethod === "COD"
-            ? orders_payment_status.UNPAID 
+            ? orders_payment_status.UNPAID
             : orders_payment_status.PENDING;
 
         const order = await tx.orders.create({
@@ -167,7 +213,7 @@ export const checkoutOrderService = async(
             }
         }
 
-        await tx.payment_transactions.create({
+        const paymentTransaction = await tx.payment_transactions.create({
             data: {
                 transaction_id: crypto.randomUUID(),
                 order_id: orderId,
@@ -178,9 +224,9 @@ export const checkoutOrderService = async(
             },
         });
 
-        //Thanh toán bằng vnpay
         const paymentUrl = payload.paymentMethod === "VNPAY"
             ? createVnpayPaymentUrl({
+                txnRef: paymentTransaction.transaction_id,
                 orderId,
                 amount: totalPrice,
                 ipAddr,
@@ -239,6 +285,7 @@ const refundPaidVnpayOrder = async(params: {
     }
 
     const refundResult = await refundVnpayPayment({
+        txnRef: paymentTransaction.transaction_id,
         orderId: params.orderId,
         amount: params.amount,
         transactionCode: paymentTransaction.transaction_code,
@@ -246,13 +293,6 @@ const refundPaidVnpayOrder = async(params: {
         createBy: params.userId,
         ipAddr: params.ipAddr,
     });
-
-    if(refundResult.vnp_ResponseCode !== "00") {
-        throw new AppError(
-            refundResult.vnp_Message || "Hoàn tiền thất bại.",
-            400
-        );
-    }
 
     return {
         paymentTransaction,
@@ -289,6 +329,7 @@ export const cancelMyOrderService = async(userId: string, orderId: string, ipAdd
             userId,
             ipAddr,
         });
+        const refundState = getVnpayRefundState(refundResult);
 
         const updatedOrder = await prisma.$transaction(async(tx) => {
             await tx.payment_transactions.update({
@@ -296,7 +337,7 @@ export const cancelMyOrderService = async(userId: string, orderId: string, ipAdd
                     transaction_id: paymentTransaction.transaction_id,
                 },
                 data: {
-                    status: payment_transactions_status.REFUNDED,
+                    status: refundState.transactionStatus,
                     provider_response: JSON.stringify(refundResult),
                     updated_at: new Date(),
                 },
@@ -308,7 +349,7 @@ export const cancelMyOrderService = async(userId: string, orderId: string, ipAdd
                 },
                 data: {
                     status: orders_status.CANCELLED,
-                    payment_status: orders_payment_status.REFUNDED,
+                    payment_status: refundState.orderPaymentStatus,
                 },
             });
         });
@@ -527,6 +568,7 @@ export const cancelOrderForStaffService = async(orderId: string, employeeId: str
             userId: employeeId,
             ipAddr,
         });
+        const refundState = getVnpayRefundState(refundResult);
 
         const updatedOrder = await prisma.$transaction(async(tx) => {
             await tx.payment_transactions.update({
@@ -534,7 +576,7 @@ export const cancelOrderForStaffService = async(orderId: string, employeeId: str
                     transaction_id: paymentTransaction.transaction_id,
                 },
                 data: {
-                    status: payment_transactions_status.REFUNDED,
+                    status: refundState.transactionStatus,
                     provider_response: JSON.stringify(refundResult),
                     updated_at: new Date(),
                 },
@@ -546,7 +588,7 @@ export const cancelOrderForStaffService = async(orderId: string, employeeId: str
                 },
                 data: {
                     status: orders_status.CANCELLED,
-                    payment_status: orders_payment_status.REFUNDED,
+                    payment_status: refundState.orderPaymentStatus,
                     employee_id: employeeId,
                 },
             });
@@ -585,6 +627,7 @@ export const markDeliveryFailedService = async(orderId: string, employeeId: stri
             userId: employeeId,
             ipAddr,
         });
+        const refundState = getVnpayRefundState(refundResult);
 
         const updatedOrder = await prisma.$transaction(async(tx) => {
             await tx.payment_transactions.update({
@@ -592,7 +635,7 @@ export const markDeliveryFailedService = async(orderId: string, employeeId: stri
                     transaction_id: paymentTransaction.transaction_id,
                 },
                 data: {
-                    status: payment_transactions_status.REFUNDED,
+                    status: refundState.transactionStatus,
                     provider_response: JSON.stringify(refundResult),
                     updated_at: new Date(),
                 },
@@ -604,7 +647,7 @@ export const markDeliveryFailedService = async(orderId: string, employeeId: stri
                 },
                 data: {
                     status: orders_status.DELIVERY_FAILED,
-                    payment_status: orders_payment_status.REFUNDED,
+                    payment_status: refundState.orderPaymentStatus,
                     employee_id: employeeId,
                 },
             });
@@ -628,23 +671,33 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
         throw new AppError("Chữ ký VNPay không hợp lệ.", 400);
     }
 
-    const orderId = String(query.vnp_TxnRef || "");
+    const paymentTxnRef = String(query.vnp_TxnRef || "");
     const responseCode = String(query.vnp_ResponseCode || "");
     const transactionStatus = String(query.vnp_TransactionStatus || "");
     const transactionCode = String(query.vnp_TransactionNo || "");
     const paidAmount = Number(query.vnp_Amount || 0) / 100;
     const paidAt = parseVnpayDate(String(query.vnp_PayDate || ""));
 
-    if(!orderId) {
+    if(!paymentTxnRef) {
         throw new AppError("Thiếu mã đơn hàng từ VNPay.", 400);
     }
 
     const isPaymentSuccess = responseCode === "00" && transactionStatus === "00";
 
     const result = await prisma.$transaction(async(tx) => {
+        const paymentTransaction = await tx.payment_transactions.findUnique({
+            where: {
+                transaction_id: paymentTxnRef,
+            },
+        });
+
+        if(!paymentTransaction || paymentTransaction.payment_method !== "VNPAY") {
+            throw new AppError("Không tìm thấy giao dịch thanh toán.", 404);
+        }
+
         const order = await tx.orders.findUnique({
             where: {
-                order_id: orderId,
+                order_id: paymentTransaction.order_id,
             },
         });
 
@@ -656,25 +709,15 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
             throw new AppError("Đơn hàng không sử dụng VNPay.", 400);
         }
 
-        const paymentTransaction = await tx.payment_transactions.findFirst({
-            where: {
-                order_id: orderId,
-                payment_method: "VNPAY",
-            },
-            orderBy: {
-                created_at: "desc"
-            },
-        });
-
-        if(!paymentTransaction) {
-            throw new AppError("Không tìm thấy giao dịch thanh toán.", 404);
-        }
-
-        if(paymentTransaction.status === payment_transactions_status.REFUNDED) {
+        if([
+            PAYMENT_TRANSACTION_REFUND_PENDING,
+            payment_transactions_status.REFUNDED,
+            PAYMENT_TRANSACTION_REFUND_FAILED,
+        ].includes(paymentTransaction.status)) {
             return {
                 order,
                 paymentTransaction,
-                paymentStatus: "REFUNDED",
+                paymentStatus: paymentTransaction.status,
                 alreadyProcessed: true,
             };
         }
@@ -741,7 +784,7 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
 
             const updatedOrder = await tx.orders.update({
                 where: {
-                    order_id: orderId,
+                    order_id: order.order_id,
                 },
                 data: {
                     payment_status: orders_payment_status.PAID,
@@ -775,7 +818,7 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
 
             const updateOrder = await tx.orders.update({
                 where: {
-                    order_id: orderId,
+                    order_id: order.order_id,
                 },
                 data: {
                     payment_status: orders_payment_status.PAID,
@@ -804,11 +847,11 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
 
         const updateOrder = await tx.orders.update({
             where: {
-                order_id: orderId,
+                order_id: order.order_id,
             },
             data: {
                 payment_status: orders_payment_status.FAILED,
-                status: orders_status.CANCELLED
+                //status: orders_status.CANCELLED
             },
         });
 
@@ -826,11 +869,12 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
     ) {
         try {
             const { paymentTransaction, refundResult } = await refundPaidVnpayOrder({
-                orderId,
+                orderId: result.order.order_id,
                 amount: paidAmount,
                 userId: "SYSTEM",
                 ipAddr,
             });
+            const refundState = getVnpayRefundState(refundResult);
 
             const { refundedOrder, updatedPaymentTransaction } = await prisma.$transaction(async(tx) => {
                 const updatedPaymentTransaction = await tx.payment_transactions.update({
@@ -838,7 +882,7 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
                         transaction_id: paymentTransaction.transaction_id,
                     },
                     data: {
-                        status: payment_transactions_status.REFUNDED,
+                        status: refundState.transactionStatus,
                         provider_response: JSON.stringify({
                             paymentReturn: query,
                             refund: refundResult,
@@ -849,10 +893,10 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
 
                 const refundedOrder = await tx.orders.update({
                     where: {
-                        order_id: orderId,
+                        order_id: result.order.order_id,
                     },
                     data: {
-                        payment_status: orders_payment_status.REFUNDED,
+                        payment_status: refundState.orderPaymentStatus,
                     },
                 });
 
@@ -863,16 +907,16 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
                 order: refundedOrder,
                 paymentTransaction: updatedPaymentTransaction,
                 paymentStatus: result.paymentStatus === "PAID_AMOUNT_MISMATCH"
-                    ? "REFUNDED_AMOUNT_MISMATCH"
-                    : "REFUNDED_AFTER_EXPIRED",
+                    ? `${refundState.paymentStatus}_AMOUNT_MISMATCH`
+                    : `${refundState.paymentStatus}_AFTER_EXPIRED`,
                 alreadyProcessed: false,
                 refundResult,
-                message: "Giao dịch VNPay đã được ghi nhận và hệ thống đã tự động hoàn tiền.",
+                message: refundState.message,
             };
         } catch(error: any) {
             const needRefundOrder = await prisma.orders.update({
                 where: {
-                    order_id: orderId,
+                    order_id: result.order.order_id,
                 },
                 data: {
                     payment_status: orders_payment_status.PAID,
@@ -904,14 +948,14 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
         };
     }
 
-    const orderId = String(query.vnp_TxnRef || "");
+    const paymentTxnRef = String(query.vnp_TxnRef || "");
     const responseCode = String(query.vnp_ResponseCode || "");
     const transactionStatus = String(query.vnp_TransactionStatus || "");
     const transactionCode = String(query.vnp_TransactionNo || "");
     const paidAmount = Number(query.vnp_Amount || 0) / 100;
     const paidAt = parseVnpayDate(String(query.vnp_PayDate || ""));
 
-    if(!orderId) {
+    if(!paymentTxnRef) {
         return {
             RspCode: "01",
             Message: "Order not Found",
@@ -920,37 +964,26 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
 
     try {
         const result = await prisma.$transaction(async(tx) => {
+            const paymentTransaction = await tx.payment_transactions.findUnique({
+                where: {
+                    transaction_id: paymentTxnRef,
+                },
+            });
+
+            if(!paymentTransaction || paymentTransaction.payment_method !== "VNPAY") {
+                return {
+                    RspCode: "01",
+                    Message: "Order not Found",
+                };
+            }
+
             const order = await tx.orders.findUnique({
                 where: {
-                    order_id: orderId,
+                    order_id: paymentTransaction.order_id,
                 },
             });
 
-            if(!order) {
-                return {
-                    RspCode: "01",
-                    Message: "Order not Found",
-                };
-            }
-
-            if(order.payment_method !== "VNPAY") {
-                return {
-                    RspCode: "01",
-                    Message: "Order not Found",
-                };
-            }
-
-            const paymentTransaction = await tx.payment_transactions.findFirst({
-                where: {
-                    order_id: orderId,
-                    payment_method: "VNPAY",
-                },
-                orderBy: {
-                    created_at: "desc",
-                },
-            });
-
-            if(!paymentTransaction) {
+            if(!order || order.payment_method !== "VNPAY") {
                 return {
                     RspCode: "01",
                     Message: "Order not Found",
@@ -959,7 +992,9 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
 
             const confirmedPaymentStatuses = new Set<payment_transactions_status>([
                 payment_transactions_status.SUCCESS,
+                PAYMENT_TRANSACTION_REFUND_PENDING,
                 payment_transactions_status.REFUNDED,
+                PAYMENT_TRANSACTION_REFUND_FAILED,
             ]);
 
             if(confirmedPaymentStatuses.has(paymentTransaction.status)) {
@@ -997,13 +1032,14 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                         RspCode: "00",
                         Message: "Confirm Success",
                         needRefund: true,
+                        orderId: order.order_id,
                     };
                 }
 
 
                 await tx.orders.update({
                     where: {
-                        order_id: orderId,
+                        order_id: order.order_id,
                     },
                     data: {
                         payment_status: orders_payment_status.PAID,
@@ -1030,11 +1066,11 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
 
             await tx.orders.update({
                 where: {
-                    order_id: orderId,
+                    order_id: order.order_id,
                 },
                 data: {
                     payment_status: orders_payment_status.FAILED,
-                    status: orders_status.CANCELLED,
+                    //status: orders_status.CANCELLED,
                 },
             });
 
@@ -1047,11 +1083,12 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
         if("needRefund" in result && result.needRefund) {
             try {
                 const { paymentTransaction, refundResult } = await refundPaidVnpayOrder({
-                    orderId,
+                    orderId: result.orderId,
                     amount: paidAmount,
                     userId: "SYSTEM",
                     ipAddr: ipAddr,
                 });
+                const refundState = getVnpayRefundState(refundResult);
 
                 await prisma.$transaction(async(tx) => {
                     await tx.payment_transactions.update({
@@ -1059,7 +1096,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                             transaction_id: paymentTransaction.transaction_id,
                         },
                         data: {
-                            status: payment_transactions_status.REFUNDED,
+                            status: refundState.transactionStatus,
                             provider_response: JSON.stringify({
                                 paymentIpn: query,
                                 refund: refundResult,
@@ -1070,10 +1107,10 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
 
                     await tx.orders.update({
                         where: {
-                            order_id: orderId,
+                            order_id: result.orderId,
                         },
                         data: {
-                            payment_status: orders_payment_status.REFUNDED,
+                            payment_status: refundState.orderPaymentStatus,
                         },
                     });
                 });
@@ -1085,7 +1122,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
             } catch(error) {
                 await prisma.orders.update({
                     where: {
-                        order_id: orderId,
+                        order_id: result.orderId,
                     },
                     data: {
                         payment_status: orders_payment_status.PAID,
@@ -1106,4 +1143,109 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
             Message: "Unknown error",
         };
     }
+};
+
+export const retryPaymentService = async(userId: string, orderId: string, ipAddr: string) => {
+    return prisma.$transaction(async(tx) => {
+        const order = await tx.orders.findFirst({
+            where: {
+                order_id: orderId,
+                user_id: userId,
+            },
+            include: {
+                orders_details: {
+                    include: {
+                        devices: true,
+                    },
+                },
+            },
+        });
+
+        if(!order) throw new AppError("Không tìm thấy đơn hàng.", 404);
+
+        if(order.payment_method !== "VNPAY") {
+            throw new AppError("Chưa áp dụng cho các phương thức khác VNPay.", 400);
+        }
+
+        if(order.payment_status === orders_payment_status.PAID) {
+            throw new AppError("Đơn hàng đã được thanh toán.", 400);
+        }
+
+        if([
+            ORDER_PAYMENT_REFUND_PENDING,
+            orders_payment_status.REFUNDED,
+            ORDER_PAYMENT_REFUND_FAILED,
+        ].includes(order.payment_status)) {
+            throw new AppError("Đơn hàng đã được hoàn tiền, kh6ong thể thanh toán lại.", 400);
+        }
+
+        if(order.status !== orders_status.PENDING) {
+            throw new AppError("Đơn hàng đã hết hạn hoặc không còn ở trạng thái chờ thanh toán.", 400);
+        }
+
+        const orderExpireAt = new Date(new Date(order.order_date).getTime() + 15 * 60 * 1000);
+
+        if(orderExpireAt <= new Date()) {
+            throw new AppError("Đơn hàng đã hết thởi gian thanh toán, vui lòng đặt lại đơn mới.", 400);
+        }
+
+        const hasReserveDevices = order.orders_details.every((detail) => {
+            const reservedDeviceCount = detail.devices.filter((device) => {
+                return device.status === devices_status.RESERVED;
+            }).length;
+
+            return reservedDeviceCount >= Number(detail.quantity);
+        });
+
+        if(!hasReserveDevices) {
+            throw new AppError("Sản phẩm trong đơn không còn được giữ hàng, vui lòng đặt lại đơn mới.", 400);
+        }
+
+        await tx.payment_transactions.updateMany({
+            where: {
+                order_id: orderId,
+                payment_method: "VNPAY",
+                status: payment_transactions_status.PENDING,
+            },
+            data: {
+                status: payment_transactions_status.FAILED,
+                updated_at: new Date(),
+            },
+        });
+
+        const paymentTransaction = await tx.payment_transactions.create({
+            data: {
+                transaction_id: crypto.randomUUID(),
+                order_id: orderId,
+                payment_method: "VNPAY",
+                amount: order.total_price,
+                status: payment_transactions_status.PENDING,
+                provider: "VNPAY",
+            },
+        });
+
+        await tx.orders.update({
+            where: {
+                order_id: orderId,
+            },
+            data: {
+                payment_status: orders_payment_status.PENDING,
+            },
+        });
+
+        const paymentUrl = createVnpayPaymentUrl({
+            txnRef: paymentTransaction.transaction_id,
+            orderId,
+            amount: Number(order.total_price),
+            ipAddr,
+            expireAt: orderExpireAt,
+        });
+
+        return {
+            order,
+            paymentTransaction,
+            paymentUrl,
+            expiredAt: orderExpireAt,
+        };
+    });
 };

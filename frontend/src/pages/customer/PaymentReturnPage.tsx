@@ -21,13 +21,40 @@ export default function PaymentReturnPage() {
         async function verifyPayment() {
             try {
                 const data = await orderService.handleVnpayReturn(location.search);
-                const paymentStatus = data?.paymentStatus;
+                const paymentStatus = String(data?.paymentStatus || "");
 
-                if(["PAID", "REFUNDED_AFTER_EXPIRED", "REFUNDED_AMOUNT_MISMATCH", "REFUNDED"].includes(String(paymentStatus))) {
+                if(paymentStatus === "PAID") {
                     setResult({
-                        status: paymentStatus === "PAID" ? "success" : "failed",
-                        title: paymentStatus === "PAID" ? "Thanh toán thành công": "Đơn đã được hoàn tiền",
+                        status: "success",
+                        title: "Thanh toán thành công",
                         message: data?.message || "Kết quả thanh toán đã được hệ thống ghi nhận.",
+                    });
+                    return;
+                }
+
+                if(paymentStatus.startsWith("REFUND_PENDING")) {
+                    setResult({
+                        status: "pending",
+                        title: "Đang xử lý hoàn tiền",
+                        message: data?.message || "Giao dịch đã được ghi nhận. Yêu cầu hoàn tiền đã gửi sang VNPay và đang chờ ngân hàng xử lý.",
+                    });
+                    return;
+                }
+
+                if(paymentStatus.startsWith("REFUNDED")) {
+                    setResult({
+                        status: "failed",
+                        title: "Đơn đã được hoàn tiền",
+                        message: data?.message || "Giao dịch đã được hoàn tiền do đơn hàng không còn hợp lệ.",
+                    });
+                    return;
+                }
+
+                if(paymentStatus.startsWith("REFUND_FAILED")) {
+                    setResult({
+                        status: "failed",
+                        title: "Hoàn tiền cần hỗ trợ",
+                        message: data?.message || "Hệ thống đã ghi nhận thanh toán nhưng VNPay chưa xử lý được hoàn tiền. Vui lòng liên hệ hỗ trợ.",
                     });
                     return;
                 }
@@ -54,6 +81,7 @@ export default function PaymentReturnPage() {
     if(loading) return <PageLoading text="Đang xác nhận kết quả thanh toán..." />;
 
     const success = result?.status === "success";
+    const pending = result?.status === "pending";
 
     return (
         <section className="mx-auto flex max-w-3xl px-4 py-12">
@@ -61,6 +89,8 @@ export default function PaymentReturnPage() {
                 <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-muted">
                     {success ? (
                         <CheckCircle2 className="size-10 text-green-600" />
+                    ) : pending ? (
+                        <RefreshCw className="size-10 text-blue-600" />
                     ) : (
                         <CircleX className="size-10 text-red-600" />
                     )}

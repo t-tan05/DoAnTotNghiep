@@ -1,6 +1,6 @@
 export type PaymentMethod = "COD" | "VNPAY" | "MOMO" | "ZALOPAY" | "BANK_TRANSFER";
 export type OrderStatus = "PENDING" | "CONFIRMED" | "SHIPPED" | "DELIVERY_FAILED" | "COMPLETED" | "CANCELLED" | "RETURNED";
-export type OrderPaymentStatus = "UNPAID" | "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+export type OrderPaymentStatus = "UNPAID" | "PENDING" | "PAID" | "FAILED" | "REFUND_PENDING" | "REFUNDED" | "REFUND_FAILED";
 
 export type CheckoutPayload = {
     addressId: string;
