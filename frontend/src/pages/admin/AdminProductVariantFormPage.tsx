@@ -27,6 +27,19 @@ type SpecItem = {
     specValue: string;
 };
 
+function getSpecImportLabel(variant: AdminProductVariant) {
+    const name = variant.variant_name || variant.sku || "Biến thể";
+    const attributes = variant.variant_attribute_values
+        ?.map((item) => item.attribute_values?.value)
+        .filter(Boolean)
+        .join(" / ");
+    const specCount = variant.product_variant_specs?.length ?? 0;
+
+    return attributes
+        ? `${name} (${attributes}) - ${specCount} thông số`
+        : `${name} - ${specCount} thông số`;
+}
+
 export default function AdminProductVariantFormPage() {
 
     const { productId, variantId } = useParams();
@@ -230,6 +243,20 @@ export default function AdminProductVariantFormPage() {
     if (!product) return <p>Không tìm thấy sản phẩm.</p>;
 
 
+    const specImportSources = product.product_variants
+        .filter((item) =>
+            item.variant_id !== variantId
+            && (item.product_variant_specs?.length ?? 0) > 0
+        )
+        .map((item) => ({
+            variantId: item.variant_id,
+            label: getSpecImportLabel(item),
+            specs: item.product_variant_specs!.map((spec) => ({
+                specKey: spec.spec_key,
+                specValue: spec.spec_value,
+            })),
+        }));
+
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -338,6 +365,7 @@ export default function AdminProductVariantFormPage() {
                 <ProductVariantSpecEditor
                     specs={specs}
                     onChange={setSpecs}
+                    importSources={specImportSources}
                 />
 
                 {isEdit && (

@@ -13,7 +13,7 @@ export const api = axios.create({
     headers: {
         "Content-Type":"application/json",
     },
-    timeout: 10000 //10 giây
+    timeout: 30000 //10 giây
 });
 
 //Lưu các api cần bỏ qua việc refreshToken

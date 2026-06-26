@@ -228,7 +228,8 @@ export default function RichTextEditor({
     const currentLineHeight = getCurrentLineHeight();
 
     return (
-        <div className="overflow-hidden rounded-lg border bg-background">
+        <div className="rounded-lg border bg-background">
+            <div className="sticky top-16 z-20 overflow-hidden rounded-t-lg border-b bg-background shadow-sm">
             <div className="flex flex-wrap gap-1 border-b bg-muted/40 p-2">
                 <select
                     title="Cỡ chữ"
@@ -417,7 +418,7 @@ export default function RichTextEditor({
                 </EditorButton>
             </div>
 
-            <div className="flex flex-col gap-2 border-b bg-muted/20 p-2 sm:flex-row">
+            <div className="flex flex-col gap-2 bg-muted/20 p-2 sm:flex-row">
                 <Input
                     value={imageUrl}
                     onChange={(event) => setImageUrl(event.target.value)}
@@ -434,6 +435,7 @@ export default function RichTextEditor({
                     <ImagePlus className="mr-2 h-4 w-4" />
                     Chèn ảnh
                 </Button>
+            </div>
             </div>
 
             <div className="relative">

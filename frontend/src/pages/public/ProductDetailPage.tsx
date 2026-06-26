@@ -33,6 +33,8 @@ const formatPrice = (value: number | string) => {
     return Number(value).toLocaleString("vi-VN") + "đ";
 };
 
+const THUMBNAILS_PER_PAGE = 5;
+
 function getVariantImages(variant?: AdminProductVariant | null): ProductImage[] {
     if (!variant) return [];
 
@@ -147,6 +149,7 @@ export default function ProductDetailPage() {
     const [selectedVariantId, setSelectedVariantId] = useState("");
     const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
     const [selectedImageUrl, setSelectedImageUrl] = useState("");
+    const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
@@ -200,6 +203,11 @@ export default function ProductDetailPage() {
         0,
         galleryImages.findIndex((image) => image.image_url === selectedImageUrl),
     );
+    const maxThumbnailStartIndex = Math.max(0, galleryImages.length - THUMBNAILS_PER_PAGE);
+    const visibleThumbnailImages = galleryImages.slice(
+        thumbnailStartIndex,
+        thumbnailStartIndex + THUMBNAILS_PER_PAGE
+    );
 
     const availableQuantity = Math.max(
         0,
@@ -231,8 +239,13 @@ export default function ProductDetailPage() {
     useEffect(() => {
         setSelectedAttributes(getVariantAttributeMap(selectedVariant));
         setSelectedImageUrl(galleryImages[0]?.image_url ?? "");
+        setThumbnailStartIndex(0);
         setDetailExpanded(false);
     }, [selectedVariant, galleryImages]);
+
+    useEffect(() => {
+        setThumbnailStartIndex((currentIndex) => Math.min(currentIndex, maxThumbnailStartIndex));
+    }, [maxThumbnailStartIndex]);
 
     function selectVariant(variant: AdminProductVariant) {
         setSelectedVariantId(variant.variant_id);
@@ -274,24 +287,32 @@ export default function ProductDetailPage() {
         }
     }
 
+    function moveToImage(index: number) {
+        if (galleryImages.length === 0) return;
+
+        const nextIndex = (index + galleryImages.length) % galleryImages.length;
+
+        setSelectedImageUrl(galleryImages[nextIndex].image_url);
+        setThumbnailStartIndex((currentIndex) => {
+            if (nextIndex < currentIndex) return nextIndex;
+            if (nextIndex >= currentIndex + THUMBNAILS_PER_PAGE) {
+                return Math.min(nextIndex - THUMBNAILS_PER_PAGE + 1, maxThumbnailStartIndex);
+            }
+
+            return currentIndex;
+        });
+    }
+
     function showPreviousImage() {
         if (galleryImages.length <= 1) return;
 
-        const previousIndex = selectedImageIndex === 0
-            ? galleryImages.length - 1
-            : selectedImageIndex - 1;
-
-        setSelectedImageUrl(galleryImages[previousIndex].image_url);
+        moveToImage(selectedImageIndex - 1);
     }
 
     function showNextImage() {
         if (galleryImages.length <= 1) return;
 
-        const nextIndex = selectedImageIndex === galleryImages.length - 1
-            ? 0
-            : selectedImageIndex + 1;
-
-        setSelectedImageUrl(galleryImages[nextIndex].image_url);
+        moveToImage(selectedImageIndex + 1);
     }
 
     async function handleAddToCart() {
@@ -387,24 +408,25 @@ export default function ProductDetailPage() {
                                         <button
                                             type="button"
                                             onClick={showPreviousImage}
-                                            className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
+                                            className="flex size-9 cursor-pointer shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
                                             aria-label="Ảnh trước"
                                         >
                                             <ChevronLeft className="h-5 w-5" />
                                         </button>
                                     )}
 
-                                    <div className="flex max-w-full flex-wrap justify-center gap-3">
-                                        {galleryImages.map((image) => {
+                                    <div className="grid min-w-0 flex-1 grid-cols-5 gap-3 overflow-hidden">
+                                        {visibleThumbnailImages.map((image, offset) => {
+                                            const imageIndex = thumbnailStartIndex + offset;
                                             const selected = image.image_url === selectedImageUrl;
 
                                             return (
                                                 <button
                                                     key={`${image.image_id}-${image.image_url}`}
                                                     type="button"
-                                                    onClick={() => setSelectedImageUrl(image.image_url)}
+                                                    onClick={() => moveToImage(imageIndex)}
                                                     className={cn(
-                                                        "size-20 overflow-hidden rounded-md border bg-white p-1 transition hover:border-blue-600 sm:size-24",
+                                                        "aspect-square cursor-pointer min-w-0 overflow-hidden rounded-md border bg-white p-1 transition hover:border-blue-600",
                                                         selected && "border-blue-700 ring-1 ring-blue-700",
                                                     )}
                                                 >
@@ -422,7 +444,7 @@ export default function ProductDetailPage() {
                                         <button
                                             type="button"
                                             onClick={showNextImage}
-                                            className="flex size-9 shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
+                                            className="flex size-9 cursor-pointer shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
                                             aria-label="Ảnh tiếp theo"
                                         >
                                             <ChevronRight className="h-5 w-5" />
@@ -483,13 +505,13 @@ export default function ProductDetailPage() {
                                                         selected && "border-blue-700 text-blue-700 ring-1 ring-blue-700",
                                                     )}
                                                 >
-                                                    {option.imageUrl && (
+                                                    {/* {option.imageUrl && option.value!=="Dung lượng" &&(
                                                         <img
                                                             src={option.imageUrl}
                                                             alt={option.value}
                                                             className="h-9 w-9 rounded object-contain"
                                                         />
-                                                    )}
+                                                    )} */}
                                                     <span>{option.value}</span>
                                                     {selected && (
                                                         <span className="absolute bottom-0 right-0 h-0 w-0 border-b-[18px] border-l-[18px] border-b-blue-700 border-l-transparent" />
@@ -571,7 +593,7 @@ export default function ProductDetailPage() {
                             type="button"
                             onClick={() => setActiveInfoTab("specs")}
                             className={cn(
-                                "px-6 py-3",
+                                "px-6 py-3 cursor-pointer",
                                 activeInfoTab === "specs"
                                     ? "border-b-2 border-blue-700 text-blue-700"
                                     : "text-muted-foreground"
@@ -584,7 +606,7 @@ export default function ProductDetailPage() {
                             type="button"
                             onClick={() => setActiveInfoTab("detail")}
                             className={cn(
-                                "px-6 py-3",
+                                "px-6 py-3 cursor-pointer",
                                 activeInfoTab === "detail"
                                     ? "border-b-2 border-blue-700 text-blue-700"
                                     : "text-muted-foreground"
@@ -689,7 +711,7 @@ function SpecRow({
     return (
         <div className={cn("grid grid-cols-[170px_minmax(0,1fr)] gap-4 px-4 py-3", shaded && "bg-muted/60")}>
             <span className="text-muted-foreground">{label}</span>
-            <span className="font-medium">{value || "-"}</span>
+            <span className="whitespace-pre-line font-medium">{value || "-"}</span>
         </div>
     );
 }

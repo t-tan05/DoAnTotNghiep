@@ -109,6 +109,7 @@ export default function CategoryFormDialog({
                             variant="outline"
                             disabled={loading}
                             onClick={() => onOpenChange(false)}
+                            className="h-12 cursor-pointer"
                         >
                             Hủy
                         </Button>
@@ -117,6 +118,7 @@ export default function CategoryFormDialog({
                             type="submit"
                             loading={loading}
                             loadingText={isEdit ? "Đang cập nhật..." : "Đang tạo..."}
+                            className="h-12 cursor-pointer"
                         >
                             {isEdit ? "Cập nhật" : "Tạo mới"}
                         </SpinnerButton>

@@ -25,7 +25,7 @@ export const navItems = [
 export const productCategories = [
     {
         title: "Laptop",
-        items: ["Laptop Gaming", "Laptop Văn phòng", "MacBook"],
+        items: ["Laptop Gaming", "Laptop Văn phòng", "Laptop Đồ họa"],
     },
     {
         title: "Điện thoại & Tablet",
