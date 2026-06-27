@@ -115,6 +115,13 @@ export const getOrderWithQuery = async (params) => {
                         },
                     },
                     {
+                        users_orders_user_idTousers: {
+                            name: {
+                                contains: search,
+                            },
+                        },
+                    },
+                    {
                         users_orders_employee_idTousers: {
                             name: {
                                 contains: search,

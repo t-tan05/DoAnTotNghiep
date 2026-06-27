@@ -1,5 +1,6 @@
 import prisma from "#config/prisma";
 import type { 
+    BuyNowRequest,
     CheckoutOrderPayload, 
     OrderListQuery
 } from "#types/order.type";
@@ -20,6 +21,7 @@ import {
     update,
 } from "#models/order.model";
 import { createVnpayPaymentUrl, refundVnpayPayment, verifyVnpayReturn } from "./vnpay.service.js";
+import { findUserById } from "#models/user.model";
 
 const PAYMENT_TRANSACTION_REFUND_PENDING = "REFUND_PENDING" as payment_transactions_status;
 const PAYMENT_TRANSACTION_REFUND_FAILED = "REFUND_FAILED" as payment_transactions_status;
@@ -28,6 +30,31 @@ const ORDER_PAYMENT_REFUND_FAILED = "REFUND_FAILED" as orders_payment_status;
 
 const getAvailableQuantity = (variant: any) => {
     return Number(variant.quantity_in_stock) - Number(variant.reserved_quantity ?? 0);
+};
+
+const getActivePromotion = (product: any) => {
+    const now = new Date();
+
+    return product.products_promotions
+        ?.map((item: any) => item.promotions)
+        ?.filter((promotion: any) => {
+            return new Date(promotion.start_date) <= now && new Date(promotion.end_date) >= now;
+        })?.[0];
+};
+
+const calculatePrice = (variant: any) => {
+    const originalPrice = Number(variant.price);
+    const promotion = getActivePromotion(variant.products);
+
+    if(!promotion) return originalPrice;
+
+    const discountValue = Number(promotion.discount_value);
+
+    if(promotion.discount_type === "PERCENT") {
+        return Math.max(originalPrice - originalPrice * discountValue / 100, 0);
+    }
+
+    return Math.max(originalPrice - discountValue, 0);
 };
 
 const parseVnpayDate = (value?: string) => {
@@ -1247,5 +1274,144 @@ export const retryPaymentService = async(userId: string, orderId: string, ipAddr
             paymentUrl,
             expiredAt: orderExpireAt,
         };
+    });
+};
+
+export const checkoutBuyNowRequest = async(userId: string, request: BuyNowRequest, ipAddr: string) => {
+    const user = await findUserById(userId);
+
+    if(!user) throw new AppError("Không tìm thấy thông tin người dùng.", 404);
+
+    return prisma.$transaction(async(tx) => {
+        const address = await tx.addresses.findFirst({
+            where: {
+                address_id: request.addressId,
+                user_id: userId,
+            },
+        });
+
+        if(!address) throw new AppError("Địa chỉ giao hàng không tồn tại.", 404);
+
+        const variant = await tx.product_variants.findUnique({
+            where: {
+                variant_id: request.variantId,
+            },
+            include: {
+                products: {
+                    include: {
+                        products_promotions: {
+                            include: {
+                                promotions: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if(!variant) throw new AppError("Biến thể sản phẩm không tồn tại.", 404);
+
+        const availableQuantity = getAvailableQuantity(variant);
+
+        if(request.quantity > availableQuantity) {
+            throw new AppError(`Chỉ còn ${availableQuantity} sản phẩm trong kho.`, 400);
+        }
+
+        const availableDeviceCount = await tx.devices.count({
+            where: {
+                variant_id: request.variantId,
+                status: devices_status.AVAILABLE,
+            },
+        });
+
+        if(availableDeviceCount < request.quantity) {
+            throw new AppError(`SKU ${variant.sku} không đủ thiết bị khả dụng.`, 400);
+        }
+
+        const itemPrice = calculatePrice(variant);
+        const totalPrice = itemPrice * request.quantity;
+        const orderId = crypto.randomUUID();
+        const orderDetailId = crypto.randomUUID();
+        const paymentStatus = request.paymentMethod === "COD"
+            ? orders_payment_status.UNPAID
+            : orders_payment_status.PENDING;
+
+        const order = await tx.orders.create({
+            data: {
+                order_id: orderId,
+                user_id: userId,
+                address_id: address.address_id,
+                total_price: totalPrice,
+                status: orders_status.PENDING,
+                payment_method: request.paymentMethod,
+                payment_status: paymentStatus,
+                receiver_name: address.receiver_name,
+                receiver_phone: address.phone_number,
+            },
+        });
+
+        await tx.orders_details.create({
+            data: {
+                order_detail_id: orderDetailId,
+                order_id: orderId,
+                variant_id: request.variantId,
+                quantity: request.quantity,
+                price: itemPrice,
+            },
+        });
+
+        const devices = await tx.devices.findMany({
+            where: {
+                variant_id: request.variantId,
+                status: devices_status.AVAILABLE,
+            },
+            take: request.quantity,
+            orderBy: {
+                device_id: "asc",
+            },
+        });
+
+        if(devices.length < request.quantity) {
+            throw new AppError("Không đủ thiết bị khả dụng để giữ hàng.", 400);
+        }
+
+        const updated = await tx.devices.updateMany({
+            where: {
+                device_id: {
+                    in: devices.map((device) => device.device_id),
+                },
+                status: devices_status.AVAILABLE,
+            },
+            data: {
+                status: devices_status.RESERVED,
+                order_detail_id: orderDetailId,
+            },
+        });
+
+        if(updated.count !== request.quantity) {
+            throw new AppError("Thiết bị vừa được giữ bởi đơn hàng khác, vui lòng thử lại.", 409);
+        }
+
+        const paymentTransaction = await tx.payment_transactions.create({
+            data: {
+                transaction_id: crypto.randomUUID(),
+                order_id: orderId,
+                payment_method: request.paymentMethod,
+                amount: totalPrice,
+                status: payment_transactions_status.PENDING,
+                provider: request.paymentMethod,
+            },
+        });
+
+        const paymentUrl = request.paymentMethod === "VNPAY"
+            ? createVnpayPaymentUrl({
+                txnRef: paymentTransaction.transaction_id,
+                orderId,
+                amount: totalPrice,
+                ipAddr,
+            })
+            : null;
+
+        return {order, paymentUrl};
     });
 };

@@ -34,6 +34,7 @@ const formatPrice = (value: number | string) => {
 };
 
 const THUMBNAILS_PER_PAGE = 5;
+const BUY_NOW_STORAGE_KEY = "checkout:buy-now";
 
 function getVariantImages(variant?: AdminProductVariant | null): ProductImage[] {
     if (!variant) return [];
@@ -153,6 +154,7 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
+    const [buyingNow, setBuyingNow] = useState(false);
     const [specExpanded, setSpecExpanded] = useState(false);
     const [detailExpanded, setDetailExpanded] = useState(false);
     const [error, setError] = useState("");
@@ -338,6 +340,45 @@ export default function ProductDetailPage() {
             toast.error(getErrorMessage(error));
         } finally {
             setAdding(false);
+        }
+    }
+
+    function handleBuyNow() {
+        if (!selectedVariant) return;
+
+        if (!isAuthenticated) {
+            navigate("/login", {
+                state: {
+                    from: `${location.pathname}${location.search}`,
+                },
+            });
+            return;
+        }
+
+        try {
+            setBuyingNow(true);
+
+            const buyNowItem = {
+                variantId: selectedVariant.variant_id,
+                productId: product?.product_id ?? "",
+                quantity,
+                price: currentPrice,
+                name: displayName,
+                sku: selectedVariant.sku ?? "",
+                imageUrl: selectedImageUrl || galleryImages[0]?.image_url || "",
+                attributes: Object.values(getVariantAttributeMap(selectedVariant)).filter(Boolean).join(", "),
+            };
+
+            sessionStorage.setItem(BUY_NOW_STORAGE_KEY, JSON.stringify(buyNowItem));
+            navigate("/checkout?mode=buy-now", {
+                state: {
+                    buyNowItem,
+                },
+            });
+        } catch (error) {
+            toast.error(getErrorMessage(error));
+        } finally {
+            setBuyingNow(false);
         }
     }
 
@@ -574,15 +615,26 @@ export default function ProductDetailPage() {
                                 </p>
                             </div>
 
-                            <Button
-                                type="button"
-                                disabled={!selectedVariant || availableQuantity <= 0 || adding}
-                                onClick={handleAddToCart}
-                                className="h-12 w-full cursor-pointer bg-blue-700 text-base hover:bg-blue-800 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
-                            >
-                                <ShoppingCart className="mr-2 h-5 w-5" />
-                                {adding ? "Đang thêm..." : "Thêm vào giỏ"}
-                            </Button>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <Button
+                                    type="button"
+                                    disabled={!selectedVariant || availableQuantity <= 0 || adding || buyingNow}
+                                    onClick={handleAddToCart}
+                                    className="h-12 w-full cursor-pointer bg-blue-700 text-base hover:bg-blue-800 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
+                                >
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                    {adding ? "Đang thêm..." : "Thêm vào giỏ"}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    disabled={!selectedVariant || availableQuantity <= 0 || adding || buyingNow}
+                                    onClick={handleBuyNow}
+                                    className="h-12 w-full cursor-pointer bg-red-600 text-base hover:bg-red-700 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
+                                >
+                                    {buyingNow ? "Đang xử lý..." : "Mua ngay"}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

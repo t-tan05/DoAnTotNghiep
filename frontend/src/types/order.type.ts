@@ -7,6 +7,11 @@ export type CheckoutPayload = {
     paymentMethod: PaymentMethod;
 };
 
+export type BuyNowPayload = CheckoutPayload & {
+    variantId: string;
+    quantity: number;
+};
+
 export type CheckoutResponse = {
     order: {
         order_id: string;

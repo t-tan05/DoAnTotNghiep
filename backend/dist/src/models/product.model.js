@@ -43,10 +43,25 @@ export const findProductById = async (productId) => {
                     category_name: true
                 }
             },
+            product_images: {
+                select: {
+                    image_id: true,
+                    image_url: true,
+                    is_default: true,
+                },
+                where: {
+                    variant_id: null,
+                },
+                orderBy: {
+                    is_default: "desc",
+                },
+            },
             product_variants: {
                 select: {
                     variant_id: true,
                     sku: true,
+                    variant_name: true,
+                    detail_description: true,
                     price: true,
                     quantity_in_stock: true,
                     reserved_quantity: true,
@@ -175,6 +190,7 @@ export const getProductWithQuery = async (params) => {
                     select: {
                         variant_id: true,
                         sku: true,
+                        variant_name: true,
                         price: true,
                         quantity_in_stock: true,
                         image_url: true,

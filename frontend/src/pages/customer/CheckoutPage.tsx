@@ -11,12 +11,44 @@ import type { PaymentMethod } from "@/types/order.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Check, Edit2, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const formatPrice = (value: number | string) => {
     return Number(value).toLocaleString("vi-VN") + "đ";
 };
+
+const BUY_NOW_STORAGE_KEY = "checkout:buy-now";
+
+type BuyNowCheckoutItem = {
+    variantId: string;
+    productId: string;
+    quantity: number;
+    price: number | string;
+    name: string;
+    sku?: string;
+    imageUrl?: string;
+    attributes?: string;
+};
+
+type CheckoutSummaryItem = {
+    id: string;
+    name: string;
+    sku?: string | null;
+    attributes?: string;
+    imageUrl?: string;
+    quantity: number;
+    price: number | string;
+};
+
+function readBuyNowItem() {
+    try {
+        const raw = sessionStorage.getItem(BUY_NOW_STORAGE_KEY);
+        return raw ? JSON.parse(raw) as BuyNowCheckoutItem : null;
+    } catch {
+        return null;
+    }
+}
 
 function formatAddress(address: Address) {
     return `${address.street}, ${address.ward}, ${address.province}`;
@@ -42,8 +74,12 @@ function getCartItemAttributes(item: CartItem) {
 
 export default function CheckoutPage() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const isBuyNow = searchParams.get("mode") === "buy-now";
 
     const [items, setItems] = useState<CartItem[]>([]);
+    const [buyNowItem, setBuyNowItem] = useState<BuyNowCheckoutItem | null>(null);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
@@ -57,15 +93,15 @@ export default function CheckoutPage() {
         try{
             setLoading(true);
 
-            const [cartData, addressRes] = await Promise.all([
-                cartService.getMyCart(),
-                addressService.getAddresses(),
-            ]);
+            const addressRes = await addressService.getAddresses();
+            const cartData = isBuyNow ? null : await cartService.getMyCart();
 
+            const stateItem = (location.state as { buyNowItem?: BuyNowCheckoutItem } | null)?.buyNowItem;
             const cartItems = cartData?.cart?.carts_items ?? [];
             const addressList: Address[] = addressRes.data.data?.addresses ?? [];
 
             setItems(cartItems);
+            setBuyNowItem(isBuyNow ? stateItem ?? readBuyNowItem() : null);
             setAddresses(addressList);
 
             const defaultAddress = addressList.find((item) => item.is_default);
@@ -85,11 +121,37 @@ export default function CheckoutPage() {
         fetchData();
     }, []);
 
+    const summaryItems = useMemo<CheckoutSummaryItem[]>(() => {
+        if(isBuyNow) {
+            if(!buyNowItem) return [];
+
+            return [{
+                id: buyNowItem.variantId,
+                name: buyNowItem.name,
+                sku: buyNowItem.sku,
+                attributes: buyNowItem.attributes,
+                imageUrl: buyNowItem.imageUrl,
+                quantity: buyNowItem.quantity,
+                price: buyNowItem.price,
+            }];
+        }
+
+        return items.map((item) => ({
+            id: item.cart_item_id,
+            name: getCartItemName(item),
+            sku: item.product_variants.sku,
+            attributes: getCartItemAttributes(item),
+            imageUrl: getCartItemImage(item),
+            quantity: item.quantity,
+            price: item.price_at_add,
+        }));
+    }, [buyNowItem, isBuyNow, items]);
+
     const totalPrice = useMemo(() => {
-        return items.reduce((sum, item) => {
-            return sum + Number(item.price_at_add) * item.quantity;
+        return summaryItems.reduce((sum, item) => {
+            return sum + Number(item.price) * item.quantity;
         }, 0);
-    }, [items]);
+    }, [summaryItems]);
 
     const hasAddress = addresses.length > 0;
 
@@ -118,13 +180,25 @@ export default function CheckoutPage() {
             return;
         }
 
+        if(isBuyNow && !buyNowItem) {
+            toast.error("Không tìm thấy sản phẩm mua ngay.");
+            return;
+        }
+
         try {
             setSubmitting(true);
 
-            const data = await orderService.checkout({
-                addressId: selectedAddressId,
-                paymentMethod,
-            });
+            const data = isBuyNow && buyNowItem
+                ? await orderService.buyNow({
+                    variantId: buyNowItem.variantId,
+                    quantity: buyNowItem.quantity,
+                    addressId: selectedAddressId,
+                    paymentMethod,
+                })
+                : await orderService.checkout({
+                    addressId: selectedAddressId,
+                    paymentMethod,
+                });
 
             if(paymentMethod === "VNPAY" && data?.paymentUrl) {
                 window.location.href = data.paymentUrl;
@@ -132,6 +206,10 @@ export default function CheckoutPage() {
             }
 
             toast.success("Đặt hàng thành công.");
+            if(isBuyNow) {
+                sessionStorage.removeItem(BUY_NOW_STORAGE_KEY);
+            }
+
             navigate("/account/orders");
         }catch(error) {
             toast.error(getErrorMessage(error));
@@ -142,7 +220,7 @@ export default function CheckoutPage() {
 
     if(loading) return <PageLoading text="Đang tải trang thanh toán..."/>;
 
-    if(items.length === 0) {
+    if(summaryItems.length === 0) {
         return (
             <section className="mx-auto max-w-6xl px-4 py-10">
                 <div className="rounded-lg border bg-background p-8 text-center">
@@ -277,24 +355,26 @@ export default function CheckoutPage() {
                 <aside className="h-fit rounded-lg bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                         <h2 className="text-xl font-semibold">Thông tin đơn hàng</h2>
-                        <Link to="/cart" className="shrink-0 text-sm font-medium text-blue-700 hover:underline">
+                        <Link
+                            to={isBuyNow && buyNowItem?.productId
+                                ? `/products/${buyNowItem.productId}?variantId=${buyNowItem.variantId}`
+                                : "/cart"
+                            }
+                            className="shrink-0 text-sm font-medium text-blue-700 hover:underline"
+                        >
                             Chỉnh sửa
                         </Link>
                     </div>
 
                     <div className="mt-4 max-h-[360px] space-y-4 overflow-y-auto pr-1">
-                        {items.map((item) => {
-                            const imageUrl = getCartItemImage(item);
-                            const attributes = getCartItemAttributes(item);
-                            const itemPrice = Number(item.price_at_add);
-
+                        {summaryItems.map((item) => {
                             return (
-                                <div key={item.cart_item_id} className="flex gap-3">
+                                <div key={item.id} className="flex gap-3">
                                     <div className="flex size-20 shrink-0 items-center justify-center rounded-md border bg-white p-1">
-                                        {imageUrl ? (
+                                        {item.imageUrl ? (
                                             <img
-                                                src={imageUrl}
-                                                alt={getCartItemName(item)}
+                                                src={item.imageUrl}
+                                                alt={item.name}
                                                 className="h-full w-full object-contain"
                                             />
                                         ) : (
@@ -304,23 +384,23 @@ export default function CheckoutPage() {
 
                                     <div className="min-w-0 flex-1 text-sm">
                                         <p className="line-clamp-2 font-medium text-gray-900">
-                                            {getCartItemName(item)}
+                                            {item.name}
                                         </p>
-                                        {item.product_variants.sku && (
+                                        {item.sku && (
                                             <p className="mt-0.5 text-xs text-muted-foreground">
-                                                SKU: {item.product_variants.sku}
+                                                SKU: {item.sku}
                                             </p>
                                         )}
-                                        {attributes && (
+                                        {item.attributes && (
                                             <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                                                {attributes}
+                                                {item.attributes}
                                             </p>
                                         )}
                                         <p className="mt-0.5 text-xs text-muted-foreground">
                                             Số lượng: {item.quantity}
                                         </p>
                                         <p className="mt-1 font-semibold text-gray-900">
-                                            {formatPrice(itemPrice)}
+                                            {formatPrice(item.price)}
                                         </p>
                                     </div>
                                 </div>

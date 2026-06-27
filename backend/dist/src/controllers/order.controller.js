@@ -1,4 +1,4 @@
-import { cancelMyOrderService, checkoutOrderService, getMyOrderDetailService, getMyOrdersService, cancelOrderForStaffService, completeOrderService, confirmOrderService, getAllOrdersService, getOrderDetailForStaffService, markDeliveryFailedService, shipOrderService, handleVnpayReturnService, handleVnpayIpnService, } from "#services/order.service";
+import { cancelMyOrderService, checkoutOrderService, getMyOrderDetailService, getMyOrdersService, cancelOrderForStaffService, completeOrderService, confirmOrderService, getAllOrdersService, getOrderDetailForStaffService, markDeliveryFailedService, shipOrderService, handleVnpayReturnService, handleVnpayIpnService, retryPaymentService, checkoutBuyNowRequest, } from "#services/order.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { orders_payment_method, orders_payment_status, orders_status, } from "@prisma/client";
 const getEnumQuery = (value, values) => {
@@ -15,6 +15,20 @@ export const checkoutOrderController = CatchAsync(async (req, res) => {
     res.status(201).json({
         success: true,
         message: "Đặt hàng thành công.",
+        data: {
+            ...data,
+        },
+    });
+});
+export const buyNowOrderController = CatchAsync(async (req, res) => {
+    const userId = req.user.user_id;
+    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
+        || req.socket.remoteAddress
+        || "127.0.0.1";
+    const data = await checkoutBuyNowRequest(userId, req.body, ipAddr);
+    res.status(201).json({
+        success: true,
+        message: "Dat hang thanh cong.",
         data: {
             ...data,
         },
@@ -175,3 +189,18 @@ export const vnpayIpnController = async (req, res) => {
         });
     }
 };
+export const retryPaymentController = CatchAsync(async (req, res) => {
+    const userId = req.user.user_id;
+    const orderId = req.params.orderId;
+    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
+        || req.socket.remoteAddress
+        || "127.0.0.1";
+    const data = await retryPaymentService(userId, orderId, ipAddr);
+    res.status(200).json({
+        success: true,
+        message: "Tạo lại link thanh toán thành công.",
+        data: {
+            ...data,
+        },
+    });
+});

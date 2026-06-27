@@ -21,3 +21,10 @@ export interface OrderListQuery {
     sortBy: "order_date" | "total_price" | "status";
     sortOrder: "asc" | "desc";
 }
+
+export interface BuyNowRequest {
+    variantId: string;
+    addressId: string;
+    quantity: number;
+    paymentMethod: orders_payment_method;
+}

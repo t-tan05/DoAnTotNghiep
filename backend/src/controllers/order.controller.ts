@@ -13,6 +13,7 @@ import {
     handleVnpayReturnService,
     handleVnpayIpnService,
     retryPaymentService,
+    checkoutBuyNowRequest,
 } from "#services/order.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import {
@@ -39,6 +40,23 @@ export const checkoutOrderController = CatchAsync(async(req: AuthRequest, res: R
         || "127.0.0.1";
 
     const data = await checkoutOrderService(userId, req.body, ipAddr);
+
+    res.status(201).json({
+        success: true,
+        message: "Đặt hàng thành công.",
+        data: {
+            ...data,
+        },
+    });
+});
+
+export const buyNowOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
+    const userId = req.user.user_id;
+    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
+        || req.socket.remoteAddress
+        || "127.0.0.1";
+
+    const data = await checkoutBuyNowRequest(userId, req.body, ipAddr);
 
     res.status(201).json({
         success: true,

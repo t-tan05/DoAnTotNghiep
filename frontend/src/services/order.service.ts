@@ -1,6 +1,7 @@
 import { api } from "./api";
 import type { BackendSuccess } from "@/types/api.type";
 import type {
+    BuyNowPayload,
     CheckoutPayload,
     CheckoutResponse,
     MyOrder,
@@ -20,6 +21,11 @@ export const orderService = {
 
     checkout: async(payload: CheckoutPayload) => {
         const res = await api.post<BackendSuccess<CheckoutResponse>>("/orders/checkout", payload);
+        return res.data.data;
+    },
+
+    buyNow: async(payload: BuyNowPayload) => {
+        const res = await api.post<BackendSuccess<CheckoutResponse>>("/orders/buy-now", payload);
         return res.data.data;
     },
 

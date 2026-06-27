@@ -12,11 +12,12 @@ import {
     shipOrderController,
     vnpayReturnController,
     vnpayIpnController,
-    retryPaymentController
+    retryPaymentController,
+    buyNowOrderController
 } from "#controllers/order.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { Validate } from "#middlewares/Validate";
-import { checkoutOrderSchema } from "#validations/order.validation";
+import { buyNowOrderSchema, checkoutOrderSchema } from "#validations/order.validation";
 import { Router } from "express";
 import { CheckRole } from "#middlewares/CheckRole";
 
@@ -28,6 +29,7 @@ router.get("/payment/vnpay-return", vnpayReturnController);
 router.use(VerifyToken);
 
 router.post("/checkout", Validate(checkoutOrderSchema), checkoutOrderController);
+router.post("/buy-now", Validate(buyNowOrderSchema), buyNowOrderController);
 router.get("/me", getMyOrdersController);
 router.get("/me/:orderId", getMyOrderDetailController);
 router.patch("/me/:orderId/cancel", cancelMyOrderController);
