@@ -39,6 +39,11 @@ import EmployeeLayout from "@/components/employee/layout/EmployeeLayout";
 import CartPage from "@/pages/customer/CartPage";
 import CheckoutPage from "@/pages/customer/CheckoutPage";
 import PaymentReturnPage from "@/pages/customer/PaymentReturnPage";
+import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import EmployeeOrdersPage from "@/pages/employee/EmployeeOrdersPage";
+import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
+import EmployeeOrderDetailPage from "@/pages/employee/EmployeeOrderDetailPage";
+
 
 
 export default function AppRoute() {
@@ -85,7 +90,8 @@ export default function AppRoute() {
                     <Route path="categories" element={<AdminCategoriesPage />} />
                     <Route path="brands" element={<AdminBrandPage />} />
                     <Route path="promotions" element={<AdminPromotionsPage />} />
-                    <Route path="orders" element={<div>Quản lý đơn hàng</div>} />
+                    <Route path="orders" element={<AdminOrdersPage />} />
+                    <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
                     <Route path="users" element={<div>Quản lý người dùng</div>} />
                     <Route path="statistics" element={<div>Thống kê</div>} />
                     <Route path="blogs" element={<AdminBlogsPage />} />
@@ -100,6 +106,8 @@ export default function AppRoute() {
                     <Route path="blogs/new" element={<EmployeeBlogFormPage />} />
                     <Route path="blogs/:postId/edit" element={<EmployeeBlogFormPage />} />
                     <Route path="blogs/:postId/preview" element={<EmployeeBlogPreviewPage />} />
+                    <Route path="orders" element={<EmployeeOrdersPage />} />
+                    <Route path="orders/:orderId" element={<EmployeeOrderDetailPage />} />
                     <Route path="external-news" element={<EmployeeExternalNewsPage />} />
                 </Route>
             </Route>

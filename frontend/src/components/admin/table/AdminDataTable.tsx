@@ -38,7 +38,7 @@ type Props<T> = {
     onAdd?: () => void;
     headerActions?: ReactNode;
     onEdit?: (item: T) => void;
-    onDelete: (item: T) => void;
+    onDelete?: (item: T) => void;
     onView?: (item: T) => void;
 };
 
@@ -175,14 +175,16 @@ export default function AdminDataTable<T>({
                                             </Button>
                                         )}
 
-                                        <Button
-                                            variant="destructive"
-                                            size="icon"
-                                            onClick={() => onDelete(item)}
-                                            className="cursor-pointer"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        {onDelete && (
+                                            <Button
+                                                variant="destructive"
+                                                size="icon"
+                                                onClick={() => onDelete(item)}
+                                                className="cursor-pointer"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>

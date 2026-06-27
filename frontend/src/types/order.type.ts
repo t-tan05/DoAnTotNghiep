@@ -79,3 +79,74 @@ export type MyOrder = {
 export type MyOrdersResponse = {
     orders: MyOrder[];
 };
+
+export type StaffOrderListQuery = {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: OrderStatus | "";
+    paymentStatus?: OrderPaymentStatus | "";
+    paymentMethod?: PaymentMethod | "";
+    fromDate?: string;
+    toDate?: string;
+    sortBy?: "order_date" | "total_price" | "status";
+    sortOrder?: "asc" | "desc";
+};
+
+export type StaffOrder = MyOrder & {
+    users_orders_user_idTousers?: {
+        user_id: string;
+        name: string;
+        email: string;
+    };
+
+    users_orders_employee_idTousers?: {
+        user_id: string;
+        name: string;
+        email: string;
+    } | null;
+
+    addresses?: {
+        address_id?: string;
+        receiver_name?: string;
+        receiver_phone?: string;
+        address_line?: string;
+        province?: string;
+        district?: string;
+        ward?: string;
+    } | null;
+
+    payment_transactions?: Array<{
+        transaction_id: string;
+        order_id: string;
+        payment_method: PaymentMethod;
+        amount: number | string;
+        status: string;
+        transaction_code?: string | null;
+        provider_response?: string | null;
+        paid_at?: string | null;
+        created_at?: string | null;
+        updated_at?: string | null;
+    }>;
+};
+
+export type StaffOrderListResponse = {
+    orders: StaffOrder[];
+    meta: {
+        pagination: {
+            page: number;
+            limit: number;
+            totalItems: number;
+            totalPages: number;
+        }
+    };
+    sort: {
+        sortBy: "order_date" | "total_price" | "status";
+        sortOrder: "asc" | "desc";
+    };
+    filters: StaffOrderListQuery;
+};
+
+export type StaffOrderDetailResponse = {
+    order: StaffOrder;
+};
