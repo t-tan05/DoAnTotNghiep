@@ -1158,7 +1158,7 @@ export const checkoutBuyNowRequest = async (userId, request, ipAddr) => {
             },
         });
         if (devices.length < request.quantity) {
-            throw new AppError("Khong du thiet bi kha dung de giu hang.", 400);
+            throw new AppError("Không đủ thiết bị khả dụng để giữ hàng.", 400);
         }
         const updated = await tx.devices.updateMany({
             where: {
@@ -1173,7 +1173,7 @@ export const checkoutBuyNowRequest = async (userId, request, ipAddr) => {
             },
         });
         if (updated.count !== request.quantity) {
-            throw new AppError("Thiet bi vua duoc giu boi don hang khac, vui long thu lai.", 409);
+            throw new AppError("Thiết bị vừa được giữ bởi đơn hàng khác, vui lòng thử lại.", 409);
         }
         const paymentTransaction = await tx.payment_transactions.create({
             data: {

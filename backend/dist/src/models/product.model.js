@@ -269,3 +269,210 @@ export const findProductByBrandId = async (brandId) => {
         },
     });
 };
+export const getPublicProductVariantsWithQuery = async (params) => {
+    const { page, limit, search, categoryId, brandId, minPrice, maxPrice, sortBy, } = params;
+    const skip = (page - 1) * limit;
+    const where = {
+        ...(minPrice !== undefined || maxPrice !== undefined
+            ? {
+                price: {
+                    ...(minPrice !== undefined ? { gte: minPrice } : {}),
+                    ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
+                },
+            }
+            : {}),
+        products: {
+            ...(categoryId ? { category_id: categoryId } : {}),
+            ...(brandId ? { brand_id: brandId } : {}),
+        },
+        ...(search
+            ? {
+                OR: [
+                    {
+                        products: {
+                            product_name: {
+                                contains: search,
+                            },
+                        },
+                    },
+                    {
+                        products: {
+                            normalized_name: {
+                                contains: normalizeText(search),
+                            },
+                        },
+                    },
+                    {
+                        products: {
+                            brands: {
+                                brand_name: {
+                                    contains: search,
+                                },
+                            },
+                        },
+                    },
+                    {
+                        products: {
+                            categories: {
+                                category_name: {
+                                    contains: search,
+                                },
+                            },
+                        },
+                    },
+                    {
+                        variant_name: {
+                            contains: search,
+                        },
+                    },
+                    {
+                        sku: {
+                            contains: search,
+                        },
+                    },
+                    {
+                        variant_attribute_values: {
+                            some: {
+                                attribute_values: {
+                                    value: {
+                                        contains: search,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    {
+                        product_variant_specs: {
+                            some: {
+                                spec_value: {
+                                    contains: search,
+                                },
+                            },
+                        },
+                    },
+                ],
+            }
+            : {}),
+    };
+    let orderBy = {
+        created_at: "desc",
+    };
+    if (sortBy === "price_asc") {
+        orderBy = { price: "asc" };
+    }
+    if (sortBy === "price_desc") {
+        orderBy = { price: "desc" };
+    }
+    if (sortBy === "name_asc") {
+        orderBy = { variant_name: "asc" };
+    }
+    const [variants, totalItems] = await prisma.$transaction([
+        prisma.product_variants.findMany({
+            where,
+            skip,
+            take: limit,
+            orderBy,
+            select: {
+                variant_id: true,
+                product_id: true,
+                sku: true,
+                variant_name: true,
+                price: true,
+                quantity_in_stock: true,
+                image_url: true,
+                created_at: true,
+                product_images: {
+                    select: {
+                        image_url: true,
+                        is_default: true,
+                    },
+                    orderBy: {
+                        is_default: "desc",
+                    },
+                    take: 1,
+                },
+                variant_attribute_values: {
+                    select: {
+                        attribute_values: {
+                            select: {
+                                attribute_value_id: true,
+                                value: true,
+                                product_attributes: {
+                                    select: {
+                                        attribute_id: true,
+                                        attribute_name: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                products: {
+                    select: {
+                        product_id: true,
+                        product_name: true,
+                        warranty_period: true,
+                        brands: {
+                            select: {
+                                brand_id: true,
+                                brand_name: true,
+                            },
+                        },
+                        categories: {
+                            select: {
+                                category_id: true,
+                                category_name: true,
+                            },
+                        },
+                        products_promotions: {
+                            select: {
+                                promotions: {
+                                    select: {
+                                        promotion_id: true,
+                                        promotion_name: true,
+                                        discount_type: true,
+                                        discount_value: true,
+                                        start_date: true,
+                                        end_date: true,
+                                        is_active: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        }),
+        prisma.product_variants.count({ where }),
+    ]);
+    return {
+        variants,
+        totalItems,
+    };
+};
+export const getPublicProductFilterOptions = async () => {
+    const [brands, categories] = await prisma.$transaction([
+        prisma.brands.findMany({
+            select: {
+                brand_id: true,
+                brand_name: true,
+            },
+            orderBy: {
+                brand_name: "asc",
+            },
+        }),
+        prisma.categories.findMany({
+            select: {
+                category_id: true,
+                category_name: true,
+            },
+            orderBy: {
+                category_name: "asc",
+            },
+        }),
+    ]);
+    return {
+        brands,
+        categories,
+    };
+};

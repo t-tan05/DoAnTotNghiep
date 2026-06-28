@@ -1,4 +1,4 @@
-import { createProductService, deleteProductService, getAllProductsService, getProductDetailService, updateProductService } from "#services/product.service";
+import { createProductService, deleteProductService, getAllProductsService, getProductDetailService, getPublicProductsService, updateProductService } from "#services/product.service";
 import { importProductsFromExcelService } from "#services/productImport.service";
 import { createProductImportTemplateService } from "#services/productImportTemplate.service";
 import { CatchAsync } from "#utils/CatchAsync";
@@ -82,4 +82,29 @@ export const downloadProductImportTemplateController = CatchAsync(async (req, re
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", 'attachment; filename="product-import-template.xlsx"');
     res.status(200).send(buffer);
+});
+const getPublicSortBy = (value) => {
+    const allowed = ["newest", "price_asc", "price_desc", "name_asc"];
+    return typeof value === "string" && allowed.includes(value)
+        ? value
+        : "newest";
+};
+export const getPublicProductsController = CatchAsync(async (req, res) => {
+    const data = await getPublicProductsService({
+        page: Number(req.query.page) || 1,
+        limit: Number(req.query.limit) || 20,
+        search: typeof req.query.search === "string" ? req.query.search : undefined,
+        categoryId: typeof req.query.categoryId === "string" ? req.query.categoryId : undefined,
+        brandId: typeof req.query.brandId === "string" ? req.query.brandId : undefined,
+        minPrice: req.query.minPrice ? Number(req.query.minPrice) : undefined,
+        maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
+        sortBy: getPublicSortBy(req.query.sortBy),
+    });
+    res.status(200).json({
+        success: true,
+        message: "Lấy danh sách sản phẩm public thành công.",
+        data: {
+            ...data,
+        },
+    });
 });

@@ -28,7 +28,7 @@ export const buyNowOrderController = CatchAsync(async (req, res) => {
     const data = await checkoutBuyNowRequest(userId, req.body, ipAddr);
     res.status(201).json({
         success: true,
-        message: "Dat hang thanh cong.",
+        message: "Đặt hàng thành công.",
         data: {
             ...data,
         },

@@ -14,24 +14,24 @@ export const checkoutOrderSchema = Joi.object({
 });
 export const buyNowOrderSchema = Joi.object({
     variantId: Joi.string().trim().required().messages({
-        "string.empty": "Vui long chon san pham.",
-        "any.required": "Vui long chon san pham.",
+        "string.empty": "Vui lòng chọn sản phẩm.",
+        "any.required": "Vui lòng chọn sản phẩm.",
     }),
     addressId: Joi.string().trim().required().messages({
-        "string.base": "Ma dia chi phai la chuoi.",
-        "string.empty": "Ma dia chi khong duoc de trong.",
-        "any.required": "Ma dia chi la bat buoc.",
+        "string.base": "Mã địa chỉ phải là chuỗi.",
+        "string.empty": "Mã địa chỉ không được để trống.",
+        "any.required": "Mã địa chỉ là bắt buộc.",
     }),
     quantity: Joi.number().integer().min(1).required().messages({
-        "number.base": "So luong khong hop le.",
-        "number.integer": "So luong phai la so nguyen.",
-        "number.min": "So luong toi thieu la 1.",
-        "any.required": "Vui long nhap so luong.",
+        "number.base": "Số lượng không hợp lệ.",
+        "number.integer": "Số lượng phải là số nguyên.",
+        "number.min": "Số lượng tối thiểu là 1.",
+        "any.required": "Vui lòng nhập số lượng.",
     }),
     paymentMethod: Joi.string()
         .valid("COD", "VNPAY", "MOMO", "ZALOPAY", "BANK_TRANSFER")
         .required().messages({
-        "any.only": "Phuong thuc thanh toan khong hop le.",
-        "any.required": "Vui long chon phuong thuc thanh toan.",
+        "any.only": "Phương thức thanh toán không hợp lệ.",
+        "any.required": "Vui lòng chọn phương thức thanh toán.",
     }),
 });

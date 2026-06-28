@@ -45,3 +45,20 @@ export interface UpdateProductVariantPayload {
     attributeValueIds?: string[];
     specs?: ProductVariantSpecPayload[];
 }
+
+export type PublicProductSortBy = 
+    | "newest"
+    | "price_asc"
+    | "price_desc"
+    | "name_asc";
+
+export interface PublicProductListQuery {
+    page: number;
+    limit: number;
+    search?: string;
+    categoryId?: string;
+    brandId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy: PublicProductSortBy;
+};

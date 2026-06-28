@@ -6,6 +6,8 @@ import {
     findProductById, 
     findProductByNormalizeName, 
     getProductWithQuery, 
+    getPublicProductFilterOptions, 
+    getPublicProductVariantsWithQuery, 
     ProductListQuery, 
     updateProduct 
 } from "#models/product.model";
@@ -13,7 +15,7 @@ import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
 import { Prisma } from "@prisma/client";
-import type { CreateProductPayload, UpdateProductPayload } from "#types/product.type";
+import type { CreateProductPayload, PublicProductListQuery, UpdateProductPayload } from "#types/product.type";
 
 
 export const createProductService = async(data: CreateProductPayload) => {
@@ -199,5 +201,279 @@ const applyPromotionToProduct = (product: any) => {
     return {
         ...product,
         product_variants: productVariants,
+    };
+};
+
+const getVariantActivePromotion = (variant: any) => {
+    const now = new Date();
+
+    return variant.products.products_promotions
+        ?.map((item: any) => item.promotions)
+        .filter((promotion: any) => {
+            return promotion
+                && promotion.is_active
+                && new Date(promotion.start_date) <= now
+                && new Date(promotion.end_date) >= now;
+        }) ?? [];
+};
+
+const mapPublicVariantCard = (variant: any) => {
+    const originalPrice = Number(variant.price);
+    const activePromotions = getVariantActivePromotion(variant);
+
+    let bestPromotion = null;
+    let bestDiscountPrice = originalPrice;
+
+    for(const promotion of activePromotions) {
+        const nextPrice = calculateDiscountPrice(originalPrice, promotion);
+
+        if(nextPrice < bestDiscountPrice) {
+            bestDiscountPrice = nextPrice;
+            bestPromotion = promotion;
+        }
+    }
+
+    const imageUrl =
+        variant.image_url
+        || variant.product_images?.find((image: any) => image.is_default)?.image_url
+        || variant.product_images?.[0]?.image_url
+        || null;
+
+    return {
+        product_id: variant.products.product_id,
+        product_name: variant.products.product_name,
+        brand: {
+            brand_id: variant.products.brands.brand_id,
+            brand_name: variant.products.brands.brand_name,
+        },
+        category: {
+            category_id: variant.products.categories.category_id,
+            category_name: variant.products.categories.category_name,
+        },
+        variant: {
+            variant_id: variant.variant_id,
+            sku: variant.sku,
+            variant_name: variant.variant_name,
+            price: originalPrice,
+            original_price: originalPrice,
+            discount_price: bestPromotion ? bestDiscountPrice : null,
+            quantity_in_stock: variant.quantity_in_stock,
+            image_url: imageUrl,
+            attributes: variant.variant_attribute_values?.map((item: any) => ({
+                attribute_id: item.attribute_values.product_attributes.attribute_id,
+                attribute_name: item.attribute_values.product_attributes.attribute_name,
+                attribute_value_id: item.attribute_values.attribute_value_id,
+                value: item.attribute_values.value,
+            })) ?? [],
+            active_promotion: bestPromotion
+                ? {
+                    promotion_id: bestPromotion.promotion_id,
+                    promotion_name: bestPromotion.promotion_name,
+                    discount_type: bestPromotion.discount_type,
+                    discount_value: bestPromotion.discount_value,
+                }
+                : null,
+        },
+    };
+};
+
+const normalizeAttributeText = (value: unknown) => {
+    return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+};
+
+const isColorAttributeName = (attributeName: unknown) => {
+    const normalizedName = normalizeAttributeText(attributeName);
+
+    return normalizedName.includes("mau")
+        || normalizedName.includes("color");
+};
+
+const getVariantGroupingAttributes = (variant: any) => {
+    return variant.variant_attribute_values
+        ?.map((item: any) => ({
+            name: item.attribute_values.product_attributes.attribute_name,
+            value: item.attribute_values.value,
+        }))
+        .filter((attribute: any) => !isColorAttributeName(attribute.name))
+        .sort((a: any, b: any) =>
+            normalizeAttributeText(a.name).localeCompare(normalizeAttributeText(b.name), "vi")
+        ) ?? [];
+};
+
+const getPublicVariantGroupKey = (variant: any) => {
+    const productId = variant.products.product_id;
+    const variantName = variant.variant_name?.trim();
+
+    if(variantName) {
+        return `${productId}__name:${normalizeAttributeText(variantName)}`;
+    }
+
+    const groupingAttributes = getVariantGroupingAttributes(variant);
+
+    if(groupingAttributes.length > 0) {
+        const attributeKey = groupingAttributes
+            .map((attribute: any) =>
+                `${normalizeAttributeText(attribute.name)}:${normalizeAttributeText(attribute.value)}`
+            )
+            .join("|");
+
+        return `${productId}__attrs:${attributeKey}`;
+    }
+
+    return `${productId}__product`;
+};
+
+const getVariantImageUrl = (variant: any) => {
+    return variant.image_url
+        || variant.product_images?.find((image: any) => image.is_default)?.image_url
+        || variant.product_images?.[0]?.image_url
+        || null;
+};
+
+const pickRepresentativeVariant = (variants: any[]) => {
+    return [...variants].sort((a, b) => {
+        const aInStock = Number(a.quantity_in_stock) > 0 ? 1 : 0;
+        const bInStock = Number(b.quantity_in_stock) > 0 ? 1 : 0;
+
+        if(aInStock !== bInStock) {
+            return bInStock - aInStock;
+        }
+
+        const aHasImage = getVariantImageUrl(a) ? 1 : 0;
+        const bHasImage = getVariantImageUrl(b) ? 1 : 0;
+
+        if(aHasImage !== bHasImage) {
+            return bHasImage - aHasImage;
+        }
+
+        return Number(a.price) - Number(b.price);
+    })[0];
+};
+
+const findColorAttribute = (variant: any) => {
+    const colorAttribute = variant.variant_attribute_values?.find((item: any) =>
+        isColorAttributeName(item.attribute_values.product_attributes.attribute_name)
+    );
+
+    if(colorAttribute) {
+        return colorAttribute;
+    }
+
+    return variant.variant_attribute_values?.find((item: any) => {
+        const attributeName = String(item.attribute_values.product_attributes.attribute_name || "").toLowerCase();
+
+        return attributeName.includes("màu")
+            || attributeName.includes("mau")
+            || attributeName.includes("color");
+    });
+};
+
+const groupPublicVariants = (variants: any[]) => {
+    const groups = new Map<string, any[]>();
+
+    for(const variant of variants) {
+        const key = getPublicVariantGroupKey(variant);
+
+        if(!groups.has(key)) {
+            groups.set(key, []);
+        }
+
+        groups.get(key)!.push(variant);
+    }
+
+    return Array.from(groups.values()).map((groupVariants) => {
+        const representativeVariant = pickRepresentativeVariant(groupVariants);
+        const card = mapPublicVariantCard(representativeVariant);
+
+        return {
+            ...card,
+            variant_count: groupVariants.length,
+            color_options: groupVariants.map((variant) => {
+                const colorAttribute = findColorAttribute(variant);
+
+                return {
+                    variant_id: variant.variant_id,
+                    image_url: getVariantImageUrl(variant),
+                    color: colorAttribute?.attribute_values.value || null,
+                };
+            }),
+        };
+    });
+};
+
+const sortPublicProductCards = (products: any[], sortBy: PublicProductListQuery["sortBy"]) => {
+    if(sortBy === "price_asc") {
+        return [...products].sort((a, b) =>
+            Number(a.variant.discount_price ?? a.variant.price)
+            - Number(b.variant.discount_price ?? b.variant.price)
+        );
+    }
+
+    if(sortBy === "price_desc") {
+        return [...products].sort((a, b) =>
+            Number(b.variant.discount_price ?? b.variant.price)
+            - Number(a.variant.discount_price ?? a.variant.price)
+        );
+    }
+
+    if(sortBy === "name_asc") {
+        return [...products].sort((a, b) =>
+            String(a.variant.variant_name || a.product_name)
+                .localeCompare(String(b.variant.variant_name || b.product_name), "vi")
+        );
+    }
+
+    return products;
+};
+
+export const getPublicProductsService = async(params: PublicProductListQuery) => {
+    const { variants } = await getPublicProductVariantsWithQuery({
+        ...params,
+        page: 1,
+        limit: 10000,
+    });
+    const filterOptions = await getPublicProductFilterOptions();
+    const groupedProducts = sortPublicProductCards(groupPublicVariants(variants), params.sortBy);
+    const totalItems = groupedProducts.length;
+    const start = (params.page - 1) * params.limit;
+    const paginatedProducts = groupedProducts.slice(start, start + params.limit);
+
+    return {
+        products: paginatedProducts,
+
+        filters: {
+            brands: filterOptions.brands.map((brand) => ({
+                id: brand.brand_id,
+                name: brand.brand_name
+            })),
+
+            categories: filterOptions.categories.map((category) => ({
+                id: category.category_id,
+                name: category.category_name,
+            })),
+        },
+
+        meta: {
+            pagination: {
+                page: params.page,
+                limit: params.limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / params.limit),
+            },
+            sort: {
+                sortBy: params.sortBy,
+            },
+            filters: {
+                search: params.search,
+                brandId: params.brandId,
+                categoryId: params.categoryId,
+                minPrice: params.minPrice,
+                maxPrice: params.maxPrice,
+            },
+        },
     };
 };

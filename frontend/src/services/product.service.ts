@@ -1,4 +1,4 @@
-import type { CreateProductPayload, ProductDetailData, ProductListData, ProductListQuery, UpdateProductPayload } from "@/types/product.type";
+import type { CreateProductPayload, ProductDetailData, ProductListData, ProductListQuery, PublicProductQuery, PublicProductsResponse, UpdateProductPayload } from "@/types/product.type";
 import { api } from "./api";
 import type { BackendSuccess } from "@/types/api.type";
 
@@ -22,6 +22,21 @@ export const productService = {
         const res = await api.get<BackendSuccess<ProductListData>>("/products", {
             params: query,
         });
+
+        return res.data.data;
+    },
+
+    getAllPublic: async(query: PublicProductQuery) => {
+        const res = await api.get<BackendSuccess<PublicProductsResponse>>(
+            "/products/public",
+            {
+                params: query,
+            }
+        );
+
+        if(!res.data.data) {
+            throw new Error("Không lấy được danh sách sản phẩm.");
+        }
 
         return res.data.data;
     },

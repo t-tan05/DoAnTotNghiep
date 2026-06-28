@@ -4,6 +4,7 @@ import {
     downloadProductImportTemplateController,
     getAllProductsController, 
     getProductDetailController, 
+    getPublicProductsController, 
     importProductsFromExcelController,
     updateProductController 
 } from "#controllers/product.controller";
@@ -19,7 +20,9 @@ const router = Router();
 router.post("/", VerifyToken, CheckRole("ADMIN"), Validate(createProductSchema), createProductController);
 router.post("/import-excel", VerifyToken, CheckRole("ADMIN"), excelUpload.single("file"), importProductsFromExcelController);
 router.get("/import-template", VerifyToken, CheckRole("ADMIN"), downloadProductImportTemplateController);
-router.get("/", getAllProductsController);
+router.get("/", VerifyToken, CheckRole("ADMIN"), getAllProductsController);
+
+router.get("/public", getPublicProductsController);
 router.get("/:productId", getProductDetailController);
 router.patch("/:productId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductSchema), updateProductController);
 router.delete("/:productId", VerifyToken, CheckRole("ADMIN"), deleteProductController);

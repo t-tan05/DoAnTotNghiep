@@ -1,6 +1,6 @@
 import prisma from "#config/prisma";
 import type {
-    OrderListQuery
+    OrderListQuery,
 } from "#types/order.type";
 
 import type { Prisma } from "@prisma/client";

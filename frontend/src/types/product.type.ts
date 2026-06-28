@@ -54,3 +54,78 @@ export type UpdateProductPayload = {
     description?: string | null;
     warrantyPeriod?: number;
 };
+
+export type PublicProductAttribute = {
+    attribute_id: string;
+    attribute_name: string;
+    attribute_value_id: string;
+    value: string;
+};
+
+export type PublicProductCardItem = {
+    product_id: string;
+    product_name: string;
+    brand: {
+        brand_id: string;
+        brand_name: string;
+    };
+    category: {
+        category_id: string;
+        category_name: string;
+    };
+    variant_count?: number;
+    color_options?: Array<{
+        variant_id: string;
+        image_url?: string | null;
+        color?: string | null;
+    }>;
+    variant: {
+        variant_id: string;
+        sku: string;
+        variant_name: string;
+        price: number | string;
+        original_price: number | string;
+        discount_price?: number | string | null;
+        quantity_in_stock: number;
+        image_url?: string | null;
+        attributes: PublicProductAttribute[];
+        active_promotion?: {
+            promotion_id: string;
+            promotion_name: string;
+            discount_type: "PERCENT" | "FIXED";
+            discount_value: number | string;
+        } | null;
+    };
+};
+
+export type PublicProductFilterOption = {
+    id: string;
+    name: string;
+};
+
+export type PublicProductQuery = {
+    page?: number;
+    limit?: number;
+    search?: string;
+    categoryId?: string;
+    brandId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: "newest" | "price_asc" | "price_desc" | "name_asc";
+};
+
+export type PublicProductsResponse = {
+    products: PublicProductCardItem[];
+    filters: {
+        brands: PublicProductFilterOption[];
+        categories: PublicProductFilterOption[];
+    };
+    meta: {
+        pagination: {
+            page: number;
+            limit: number;
+            totalItems: number;
+            totalPages: number;
+        };
+    };
+};

@@ -456,7 +456,7 @@ export default function ProductDetailPage() {
                                         </button>
                                     )}
 
-                                    <div className="grid min-w-0 flex-1 grid-cols-5 gap-3 overflow-hidden">
+                                    <div className="flex min-w-0 flex-1 justify-center gap-3 overflow-hidden">
                                         {visibleThumbnailImages.map((image, offset) => {
                                             const imageIndex = thumbnailStartIndex + offset;
                                             const selected = image.image_url === selectedImageUrl;
@@ -467,7 +467,7 @@ export default function ProductDetailPage() {
                                                     type="button"
                                                     onClick={() => moveToImage(imageIndex)}
                                                     className={cn(
-                                                        "aspect-square cursor-pointer min-w-0 overflow-hidden rounded-md border bg-white p-1 transition hover:border-blue-600",
+                                                        "size-20 shrink-0 cursor-pointer overflow-hidden rounded-md border bg-white p-1 transition hover:border-blue-600 sm:size-24",
                                                         selected && "border-blue-700 ring-1 ring-blue-700",
                                                     )}
                                                 >
