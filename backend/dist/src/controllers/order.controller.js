@@ -1,10 +1,21 @@
 import { cancelMyOrderService, checkoutOrderService, getMyOrderDetailService, getMyOrdersService, cancelOrderForStaffService, completeOrderService, confirmOrderService, getAllOrdersService, getOrderDetailForStaffService, markDeliveryFailedService, shipOrderService, handleVnpayReturnService, handleVnpayIpnService, retryPaymentService, checkoutBuyNowRequest, } from "#services/order.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { orders_payment_method, orders_payment_status, orders_status, } from "@prisma/client";
+import { getIO } from "../socket.js";
 const getEnumQuery = (value, values) => {
     return typeof value === "string" && values.includes(value)
         ? value
         : undefined;
+};
+const emitOrderUpdated = (order, eventType = "updated") => {
+    getIO().to("admin").emit("order:updated", {
+        eventType,
+        orderId: order.order_id,
+        status: order.status,
+        paymentStatus: order.payment_status,
+        employeeId: order.employee_id,
+        updatedAt: order.updated_at || new Date(),
+    });
 };
 export const checkoutOrderController = CatchAsync(async (req, res) => {
     const userId = req.user.user_id;
@@ -12,6 +23,13 @@ export const checkoutOrderController = CatchAsync(async (req, res) => {
         || req.socket.remoteAddress
         || "127.0.0.1";
     const data = await checkoutOrderService(userId, req.body, ipAddr);
+    getIO().to("admin").emit("order:new", {
+        orderId: data.order.order_id,
+        status: data.order.status,
+        paymentStatus: data.order.payment_status,
+        totalPrice: data.order.total_price,
+        createdAt: data.order.order_date,
+    });
     res.status(201).json({
         success: true,
         message: "Đặt hàng thành công.",
@@ -26,6 +44,13 @@ export const buyNowOrderController = CatchAsync(async (req, res) => {
         || req.socket.remoteAddress
         || "127.0.0.1";
     const data = await checkoutBuyNowRequest(userId, req.body, ipAddr);
+    getIO().to("admin").emit("order:new", {
+        orderId: data.order.order_id,
+        status: data.order.status,
+        paymentStatus: data.order.payment_status,
+        totalPrice: data.order.total_price,
+        createdAt: data.order.order_date,
+    });
     res.status(201).json({
         success: true,
         message: "Đặt hàng thành công.",
@@ -64,6 +89,7 @@ export const cancelMyOrderController = CatchAsync(async (req, res) => {
         || req.socket.remoteAddress
         || "127.0.0.1";
     const data = await cancelMyOrderService(userId, orderId, ipAddr);
+    emitOrderUpdated(data.order, "customer_cancelled");
     res.status(200).json({
         success: true,
         message: "Hủy đơn hàng thành công.",
@@ -107,6 +133,7 @@ export const getOrderDetailForStaffController = CatchAsync(async (req, res) => {
 });
 export const confirmOrderController = CatchAsync(async (req, res) => {
     const data = await confirmOrderService(req.params.orderId, req.user.user_id);
+    emitOrderUpdated(data.order, "confirmed");
     res.status(200).json({
         success: true,
         message: "Xác nhận đơn hàng thành công.",
@@ -117,6 +144,7 @@ export const confirmOrderController = CatchAsync(async (req, res) => {
 });
 export const shipOrderController = CatchAsync(async (req, res) => {
     const data = await shipOrderService(req.params.orderId, req.user.user_id);
+    emitOrderUpdated(data.order, "shipped");
     res.status(200).json({
         success: true,
         message: "Cập nhật đơn hàng sang đang giao thành công.",
@@ -127,6 +155,7 @@ export const shipOrderController = CatchAsync(async (req, res) => {
 });
 export const completeOrderController = CatchAsync(async (req, res) => {
     const data = await completeOrderService(req.params.orderId, req.user.user_id);
+    emitOrderUpdated(data.order, "completed");
     res.status(200).json({
         success: true,
         message: "Hoàn tất đơn hàng thành công.",
@@ -140,6 +169,7 @@ export const cancelOrderForStaffController = CatchAsync(async (req, res) => {
         || req.socket.remoteAddress
         || "127.0.0.1";
     const data = await cancelOrderForStaffService(req.params.orderId, req.user.user_id, ipAddr);
+    emitOrderUpdated(data.order, "cancelled");
     res.status(200).json({
         success: true,
         message: "Hủy đơn hàng thành công.",
@@ -153,6 +183,7 @@ export const markDeliveryFailedController = CatchAsync(async (req, res) => {
         || req.socket.remoteAddress
         || "127.0.0.1";
     const data = await markDeliveryFailedService(req.params.orderId, req.user.user_id, ipAddr);
+    emitOrderUpdated(data.order, "delivery_failed");
     res.status(200).json({
         success: true,
         message: "Cập nhật giao hàng thất bại thành công.",
@@ -166,6 +197,9 @@ export const vnpayReturnController = CatchAsync(async (req, res) => {
         || req.socket.remoteAddress
         || "127.0.0.1";
     const data = await handleVnpayReturnService(req.query, ipAddr);
+    if (data?.order) {
+        emitOrderUpdated(data.order, "payment_updated");
+    }
     res.status(200).json({
         success: true,
         message: "Xử lý kết quả thanh toán VNPay thành công.",
@@ -180,7 +214,13 @@ export const vnpayIpnController = async (req, res) => {
         || "127.0.0.1";
     try {
         const data = await handleVnpayIpnService(req.query, ipAddr);
-        return res.status(200).json(data);
+        if ("order" in data && data.order) {
+            emitOrderUpdated(data.order, "payment_updated");
+        }
+        return res.status(200).json({
+            RspCode: data.RspCode,
+            Message: data.Message,
+        });
     }
     catch (error) {
         return res.status(200).json({

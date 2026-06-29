@@ -91,18 +91,18 @@ export default function CartDropdown() {
             onMouseEnter={() => loadCart({ silent: true })}
             onFocus={() => loadCart({ silent: true })}
         >
-            <Link
-                to={isAuthenticated ? "/cart" : "/login"}
-                aria-label="Giỏ hàng"
-                className="relative flex size-10 items-center justify-center rounded-full bg-blue-700 text-white transition hover:bg-blue-800 md:size-12"
-            >
-                <ShoppingCart className="size-5 md:size-6" />
+            <Link to="/cart" className="relative flex min-w-14 flex-col items-center justify-center gap-1 text-muted-foreground hover:text-blue-700">
+                <div className="relative">
+                    <ShoppingCart className="size-6" />
 
-                {totalQuantity > 0 && (
-                    <span className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-bold leading-5 text-white ring-2 ring-white">
-                        {totalQuantity > 99 ? "99+" : totalQuantity}
-                    </span>
-                )}
+                    {totalQuantity > 0 && (
+                        <span className="absolute -right-5 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1 text-xs font-semibold leading-none text-white">
+                            {totalQuantity > 99 ? "99+" : totalQuantity}
+                        </span>
+                    )}
+                </div>
+
+                <span className="text-xs leading-none">Giỏ hàng</span>
             </Link>
 
             <div

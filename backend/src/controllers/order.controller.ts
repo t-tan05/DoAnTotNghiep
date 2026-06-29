@@ -22,6 +22,7 @@ import {
     orders_status,
 } from "@prisma/client";
 import { Request, Response } from "express";
+import { getIO } from "../socket.js";
 
 interface AuthRequest extends Request {
     user?: any;
@@ -33,6 +34,17 @@ const getEnumQuery = <T extends string>(value: unknown, values: T[]) => {
         : undefined;
 };
 
+const emitOrderUpdated = (order: any, eventType = "updated") => {
+    getIO().to("admin").emit("order:updated", {
+        eventType,
+        orderId: order.order_id,
+        status: order.status,
+        paymentStatus: order.payment_status,
+        employeeId: order.employee_id,
+        updatedAt: order.updated_at || new Date(),
+    });
+};
+
 export const checkoutOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
     const userId = req.user.user_id;
     const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
@@ -40,6 +52,14 @@ export const checkoutOrderController = CatchAsync(async(req: AuthRequest, res: R
         || "127.0.0.1";
 
     const data = await checkoutOrderService(userId, req.body, ipAddr);
+
+    getIO().to("admin").emit("order:new", {
+        orderId: data.order.order_id,
+        status: data.order.status,
+        paymentStatus: data.order.payment_status,
+        totalPrice: data.order.total_price,
+        createdAt: data.order.order_date,
+    });
 
     res.status(201).json({
         success: true,
@@ -57,6 +77,14 @@ export const buyNowOrderController = CatchAsync(async(req: AuthRequest, res: Res
         || "127.0.0.1";
 
     const data = await checkoutBuyNowRequest(userId, req.body, ipAddr);
+
+    getIO().to("admin").emit("order:new", {
+        orderId: data.order.order_id,
+        status: data.order.status,
+        paymentStatus: data.order.payment_status,
+        totalPrice: data.order.total_price,
+        createdAt: data.order.order_date,
+    });
 
     res.status(201).json({
         success: true,
@@ -104,6 +132,8 @@ export const cancelMyOrderController = CatchAsync(async(req: AuthRequest, res: R
         || "127.0.0.1";
 
     const data = await cancelMyOrderService(userId, orderId, ipAddr);
+
+    emitOrderUpdated(data.order, "customer_cancelled");
 
     res.status(200).json({
         success: true,
@@ -154,6 +184,8 @@ export const getOrderDetailForStaffController = CatchAsync(async(req: Request, r
 export const confirmOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
     const data = await confirmOrderService(req.params.orderId as string, req.user.user_id);
 
+    emitOrderUpdated(data.order, "confirmed");
+
     res.status(200).json({
         success: true,
         message: "Xác nhận đơn hàng thành công.",
@@ -166,6 +198,8 @@ export const confirmOrderController = CatchAsync(async(req: AuthRequest, res: Re
 export const shipOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
     const data = await shipOrderService(req.params.orderId as string, req.user.user_id);
 
+    emitOrderUpdated(data.order, "shipped");
+
     res.status(200).json({
         success: true,
         message: "Cập nhật đơn hàng sang đang giao thành công.",
@@ -177,6 +211,8 @@ export const shipOrderController = CatchAsync(async(req: AuthRequest, res: Respo
 
 export const completeOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
     const data = await completeOrderService(req.params.orderId as string, req.user.user_id);
+
+    emitOrderUpdated(data.order, "completed");
 
     res.status(200).json({
         success: true,
@@ -194,6 +230,8 @@ export const cancelOrderForStaffController = CatchAsync(async(req: AuthRequest, 
 
     const data = await cancelOrderForStaffService(req.params.orderId as string, req.user.user_id, ipAddr);
 
+    emitOrderUpdated(data.order, "cancelled");
+
     res.status(200).json({
         success: true,
         message: "Hủy đơn hàng thành công.",
@@ -209,6 +247,8 @@ export const markDeliveryFailedController = CatchAsync(async(req: AuthRequest, r
         || "127.0.0.1";
 
     const data = await markDeliveryFailedService(req.params.orderId as string, req.user.user_id, ipAddr);
+
+    emitOrderUpdated(data.order, "delivery_failed");
 
     res.status(200).json({
         success: true,
@@ -226,6 +266,10 @@ export const vnpayReturnController = CatchAsync(async(req: Request, res: Respons
 
     const data = await handleVnpayReturnService(req.query, ipAddr);
 
+    if(data?.order) {
+        emitOrderUpdated(data.order, "payment_updated");
+    }
+
     res.status(200).json({
         success: true,
         message: "Xử lý kết quả thanh toán VNPay thành công.",
@@ -242,7 +286,14 @@ export const vnpayIpnController = async(req: Request, res: Response) => {
     try{
         const data = await handleVnpayIpnService(req.query, ipAddr);
 
-        return res.status(200).json(data);
+        if("order" in data && data.order) {
+            emitOrderUpdated(data.order, "payment_updated");
+        }
+
+        return res.status(200).json({
+            RspCode: data.RspCode,
+            Message: data.Message,
+        });
     }catch(error) {
         return res.status(200).json({
             RspCode: "99",

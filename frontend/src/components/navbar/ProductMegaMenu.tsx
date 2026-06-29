@@ -22,7 +22,7 @@ export default function ProductMegaMenu(){
                             {group.items.map((item) => (
                                 <li key={item}>
                                     <Link 
-                                        to={`/products?category=${encodeURIComponent(item)}`}
+                                        to={`/products?search=${encodeURIComponent(item)}`}
                                         className="text-base text-muted-foreground transition hover:text-blue-700"
                                     >
                                         {item}

@@ -14,10 +14,11 @@ export default function UserDropdown() {
         <div className="group relative">
             <Link
                 to={isAuthenticated ? "/account" : "/login"}
-                className="flex size-10 items-center justify-center rounded-full bg-blue-700 text-white transition hover:bg-blue-800 md:size-12"
+                className="flex min-w-14 flex-col items-center justify-center gap-1 text-muted-foreground transition hover:text-blue-700"
                 aria-label="Tài khoản"
             >
-                <UserRound className="size-5 md:size-6" />
+                <UserRound className="size-6" />
+                <span className="text-xs leading-none">Tài khoản</span>
             </Link>
 
             <div

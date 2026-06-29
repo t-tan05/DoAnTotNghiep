@@ -724,7 +724,7 @@ export const handleVnpayReturnService = async (query, ipAddr = "127.0.0.1") => {
             },
             data: {
                 payment_status: orders_payment_status.FAILED,
-                //status: orders_status.CANCELLED
+                status: orders_status.CANCELLED
             },
         });
         return {
@@ -885,7 +885,7 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                         orderId: order.order_id,
                     };
                 }
-                await tx.orders.update({
+                const updatedOrder = await tx.orders.update({
                     where: {
                         order_id: order.order_id,
                     },
@@ -896,6 +896,7 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                 return {
                     RspCode: "00",
                     Message: "Confirm Success",
+                    order: updatedOrder,
                 };
             }
             await tx.payment_transactions.update({
@@ -909,18 +910,19 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                     updated_at: new Date(),
                 },
             });
-            await tx.orders.update({
+            const updatedOrder = await tx.orders.update({
                 where: {
                     order_id: order.order_id,
                 },
                 data: {
                     payment_status: orders_payment_status.FAILED,
-                    //status: orders_status.CANCELLED,
+                    status: orders_status.CANCELLED,
                 },
             });
             return {
                 RspCode: "00",
                 Message: "Confirm Success",
+                order: updatedOrder,
             };
         });
         if ("needRefund" in result && result.needRefund) {
@@ -932,6 +934,7 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                     ipAddr: ipAddr,
                 });
                 const refundState = getVnpayRefundState(refundResult);
+                let updatedOrder = null;
                 await prisma.$transaction(async (tx) => {
                     await tx.payment_transactions.update({
                         where: {
@@ -946,7 +949,7 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                             updated_at: new Date(),
                         },
                     });
-                    await tx.orders.update({
+                    updatedOrder = await tx.orders.update({
                         where: {
                             order_id: result.orderId,
                         },
@@ -958,10 +961,11 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                 return {
                     RspCode: "00",
                     Message: "Confirm Success",
+                    order: updatedOrder,
                 };
             }
             catch (error) {
-                await prisma.orders.update({
+                const updatedOrder = await prisma.orders.update({
                     where: {
                         order_id: result.orderId,
                     },
@@ -972,6 +976,7 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                 return {
                     RspCode: "00",
                     Message: "Confirm Success",
+                    order: updatedOrder,
                 };
             }
         }

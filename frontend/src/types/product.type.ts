@@ -119,6 +119,7 @@ export type PublicProductsResponse = {
     filters: {
         brands: PublicProductFilterOption[];
         categories: PublicProductFilterOption[];
+        maxPrice: number;
     };
     meta: {
         pagination: {

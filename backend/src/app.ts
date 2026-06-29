@@ -24,6 +24,7 @@ import blogRoute from "#routes/blog.route";
 import externalNewsRoute from "#routes/externalNews.route";
 import cartRoute from "#routes/cart.route";
 import orderRoute from "#routes/order.route";
+import reviewRoute from "#routes/review.route";
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use("/api/blogs", blogRoute);
 app.use("/api/external-news", externalNewsRoute);
 app.use("/api/carts", cartRoute);
 app.use("/api/orders", orderRoute);
+app.use("/api/reviews", reviewRoute);
 
 app.use(globalErrorHandler);
 

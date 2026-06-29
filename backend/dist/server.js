@@ -2,6 +2,8 @@ import 'dotenv/config';
 import app from '#app';
 import prisma from '#config/prisma';
 import bcrypt from "bcrypt";
+import http from "http";
+import { initSocket } from './src/socket.js';
 //Test connect database
 async function testDB() {
     try {
@@ -55,6 +57,8 @@ const seedAdmin = async () => {
 };
 seedAdmin();
 const PORT = Number(process.env.PORT ?? 3000);
-app.listen(PORT, "0.0.0.0", () => {
+const server = http.createServer(app);
+initSocket(server);
+server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is running at http://0.0.0.0:${PORT}`);
 });

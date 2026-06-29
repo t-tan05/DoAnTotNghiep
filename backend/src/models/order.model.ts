@@ -267,3 +267,23 @@ export const update = async(orderId: string, data: Prisma.ordersUncheckedUpdateI
         data,
     });
 };
+
+export const findOrderByReview = async(orderId: string, userId: string) => {
+    return await prisma.orders.findFirst({
+        where: {
+            order_id: orderId,
+            user_id: userId,
+        },
+        include: {
+            orders_details: {
+                include: {
+                    product_variants: {
+                        select: {
+                            product_id: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+};

@@ -12,6 +12,8 @@ import { ChevronLeft, ChevronRight, Home, Minus, Plus, ShieldCheck, ShoppingCart
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import ProductReviews from "@/components/prod/ProductReviews";
+import type { ProductReviewSummary } from "@/types/review.type";
 
 type ProductImage = {
     image_id: number | string;
@@ -159,6 +161,7 @@ export default function ProductDetailPage() {
     const [detailExpanded, setDetailExpanded] = useState(false);
     const [error, setError] = useState("");
     const [activeInfoTab, setActiveInfoTab] = useState<"specs" | "detail">("specs");
+    const [reviewSummary, setReviewSummary] = useState<ProductReviewSummary | null> (null);
 
     useEffect(() => {
         async function loadProduct() {
@@ -518,7 +521,18 @@ export default function ProductDetailPage() {
                                     {selectedVariant?.sku && <span>SKU: {selectedVariant.sku}</span>}
                                     <span className="flex items-center gap-1">
                                         <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                                        0 <span className="text-blue-700">(0 đánh giá)</span>
+                                        {reviewSummary && reviewSummary.totalReviews > 0 ? (
+                                            <>
+                                                {reviewSummary.averageRating.toFixed(1)}
+                                                <span className="text-blue-700">
+                                                    ({reviewSummary.totalReviews} đánh giá)
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                0 <span className="text-blue-700">(0 đánh giá)</span>
+                                            </>
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -746,6 +760,12 @@ export default function ProductDetailPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Review */}
+                <ProductReviews
+                    productId={product.product_id}
+                    onSummaryChange={setReviewSummary}
+                />
             </div>
         </section>
     );

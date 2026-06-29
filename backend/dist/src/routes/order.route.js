@@ -1,4 +1,4 @@
-import { cancelMyOrderController, checkoutOrderController, getMyOrderDetailController, getMyOrdersController, cancelOrderForStaffController, completeOrderController, confirmOrderController, getAllOrdersController, getOrderDetailForStaffController, markDeliveryFailedController, shipOrderController, vnpayReturnController, vnpayIpnController, retryPaymentController, buyNowOrderController } from "#controllers/order.controller";
+import { cancelMyOrderController, checkoutOrderController, getMyOrderDetailController, getMyOrdersController, cancelOrderForStaffController, completeOrderController, confirmOrderController, getAllOrdersController, getOrderDetailForStaffController, markDeliveryFailedController, shipOrderController, vnpayReturnController, vnpayIpnController, buyNowOrderController } from "#controllers/order.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { Validate } from "#middlewares/Validate";
 import { buyNowOrderSchema, checkoutOrderSchema } from "#validations/order.validation";
@@ -13,7 +13,6 @@ router.post("/buy-now", Validate(buyNowOrderSchema), buyNowOrderController);
 router.get("/me", getMyOrdersController);
 router.get("/me/:orderId", getMyOrderDetailController);
 router.patch("/me/:orderId/cancel", cancelMyOrderController);
-router.post("/me/:orderId/retry-payment", retryPaymentController);
 router.get("/", CheckRole("ADMIN", "EMPLOYEE"), getAllOrdersController);
 router.get("/:orderId", CheckRole("ADMIN", "EMPLOYEE"), getOrderDetailForStaffController);
 router.patch("/:orderId/confirm", CheckRole("ADMIN", "EMPLOYEE"), confirmOrderController);

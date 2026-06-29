@@ -349,6 +349,7 @@ export const getPublicProductsService = async (params) => {
                 id: category.category_id,
                 name: category.category_name,
             })),
+            maxPrice: filterOptions.maxPrice,
         },
         meta: {
             pagination: {

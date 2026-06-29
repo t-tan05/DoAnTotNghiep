@@ -878,7 +878,7 @@ export const handleVnpayReturnService = async(query: Record<string, any>, ipAddr
             },
             data: {
                 payment_status: orders_payment_status.FAILED,
-                //status: orders_status.CANCELLED
+                status: orders_status.CANCELLED
             },
         });
 
@@ -1064,7 +1064,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                 }
 
 
-                await tx.orders.update({
+                const updatedOrder = await tx.orders.update({
                     where: {
                         order_id: order.order_id,
                     },
@@ -1076,6 +1076,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                 return {
                     RspCode: "00",
                     Message: "Confirm Success",
+                    order: updatedOrder,
                 };
             }
 
@@ -1091,19 +1092,20 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                 },
             });
 
-            await tx.orders.update({
+            const updatedOrder = await tx.orders.update({
                 where: {
                     order_id: order.order_id,
                 },
                 data: {
                     payment_status: orders_payment_status.FAILED,
-                    //status: orders_status.CANCELLED,
+                    status: orders_status.CANCELLED,
                 },
             });
 
             return {
                 RspCode: "00",
                 Message: "Confirm Success",
+                order: updatedOrder,
             };
         });
 
@@ -1116,6 +1118,8 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                     ipAddr: ipAddr,
                 });
                 const refundState = getVnpayRefundState(refundResult);
+
+                let updatedOrder: any = null;
 
                 await prisma.$transaction(async(tx) => {
                     await tx.payment_transactions.update({
@@ -1132,7 +1136,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                         },
                     });
 
-                    await tx.orders.update({
+                    updatedOrder = await tx.orders.update({
                         where: {
                             order_id: result.orderId,
                         },
@@ -1145,9 +1149,10 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                 return {
                     RspCode: "00",
                     Message: "Confirm Success",
+                    order: updatedOrder,
                 };
             } catch(error) {
-                await prisma.orders.update({
+                const updatedOrder = await prisma.orders.update({
                     where: {
                         order_id: result.orderId,
                     },
@@ -1159,6 +1164,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                 return {
                     RspCode: "00",
                     Message: "Confirm Success",
+                    order: updatedOrder,
                 };
             }
         }

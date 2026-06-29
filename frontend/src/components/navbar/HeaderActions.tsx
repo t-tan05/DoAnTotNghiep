@@ -1,29 +1,6 @@
-import { Heart, SquarePen } from "lucide-react";
-import { Link } from "react-router-dom";
+import { SquarePen } from "lucide-react";
 import CartDropdown from "./CartDropdown";
 import UserDropdown from "./UserDropdown";
-
-type CircleActionType = {
-    to: string,
-    children: React.ReactNode,
-    label: string,
-};
-
-function CircleAction({
-    to,
-    children,
-    label,
-}: CircleActionType) {
-    return (
-        <Link
-            to={to}
-            aria-label={label}
-            className="flex size-10 items-center justify-center rounded-full bg-blue-700 text-white transition hover:bg-blue-800 md:size-12"
-        >
-            {children}
-        </Link>
-    )
-};
 
 export default function HeaderActions(){
     return (
@@ -38,10 +15,6 @@ export default function HeaderActions(){
                     <span className="block text-base font-bold">0909493175</span>
                 </span>
             </a>
-
-            <CircleAction to="/wishlist" label="Yêu thích">
-                <Heart className="size-5 md:size-6"/>
-            </CircleAction>
 
             <UserDropdown />
 

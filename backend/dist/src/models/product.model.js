@@ -451,7 +451,7 @@ export const getPublicProductVariantsWithQuery = async (params) => {
     };
 };
 export const getPublicProductFilterOptions = async () => {
-    const [brands, categories] = await prisma.$transaction([
+    const [brands, categories, priceAggregate] = await prisma.$transaction([
         prisma.brands.findMany({
             select: {
                 brand_id: true,
@@ -470,9 +470,15 @@ export const getPublicProductFilterOptions = async () => {
                 category_name: "asc",
             },
         }),
+        prisma.product_variants.aggregate({
+            _max: {
+                price: true,
+            },
+        }),
     ]);
     return {
         brands,
         categories,
+        maxPrice: Number(priceAggregate._max.price ?? 0),
     };
 };

@@ -34,6 +34,18 @@ export default function ProductListPage() {
     const maxPrice = searchParams.get("maxPrice") || "";
     const sortBy = searchParams.get("sortBy") || "newest";
 
+    const [draftSearch, setDraftSearch] = useState(search);
+    const [draftMinPrice, setDraftMinPrice] = useState(minPrice);
+    const [draftMaxPrice, setDraftMaxPrice] = useState(maxPrice);
+
+    const [maxAvailablePrice, setMaxAvailablePrice] = useState(0);
+
+    useEffect(() => {
+        setDraftSearch(search);
+        setDraftMinPrice(minPrice);
+        setDraftMaxPrice(maxPrice);
+    }, [search, minPrice, maxPrice]);
+
     function updateParam(key: string, value: string) {
         const next = new URLSearchParams(searchParams);
 
@@ -51,12 +63,58 @@ export default function ProductListPage() {
     }
 
     function clearFilters() {
-        const next = new URLSearchParams();
+        setSearchParams(new URLSearchParams());
+    }
 
-        if (search) {
-            next.set("search", search);
+    function applyFilters() {
+        const next = new URLSearchParams(searchParams);
+
+        if(draftSearch.trim()) {
+            next.set("search", draftSearch.trim());
+        }else {
+            next.delete("search");
         }
 
+        if(draftMinPrice) {
+            next.set("minPrice", draftMinPrice);
+        }else {
+            next.delete("minPrice");
+        }
+
+        if(draftMaxPrice) {
+            next.set("maxPrice", draftMaxPrice);
+        }else {
+            next.delete("maxPrice");
+        }
+
+        next.set("page", "1");
+        setSearchParams(next);
+    }
+
+    function applyPriceRange(nextMinPrice: string, nextMaxPrice: string) {
+        const next = new URLSearchParams(searchParams);
+
+        if(draftSearch.trim()) {
+            next.set("search", draftSearch.trim());
+        }else {
+            next.delete("search");
+        }
+
+        if(nextMinPrice) {
+            next.set("minPrice", nextMinPrice);
+        }else {
+            next.delete("minPrice");
+        }
+
+        if(nextMaxPrice) {
+            next.set("maxPrice", nextMaxPrice);
+        }else {
+            next.delete("maxPrice");
+        }
+
+        next.set("page", "1");
+        setDraftMinPrice(nextMinPrice);
+        setDraftMaxPrice(nextMaxPrice);
         setSearchParams(next);
     }
 
@@ -74,6 +132,16 @@ export default function ProductListPage() {
                 maxPrice: maxPrice ? Number(maxPrice) : undefined,
                 sortBy: sortBy as any,
             });
+
+            setMaxAvailablePrice(Number(data.filters.maxPrice ?? 0));
+
+            if(!searchParams.has("minPrice")) {
+                setDraftMinPrice("0");
+            }
+
+            if(!searchParams.has("maxPrice")) {
+                setDraftMaxPrice(String(Number(data.filters.maxPrice ?? 0)));
+            }
 
             setProducts(data.products);
             setBrands(data.filters.brands);
@@ -105,7 +173,7 @@ export default function ProductListPage() {
                     </p>
                 </div>
 
-                <div className="mb-4 rounded-md border bg-white p-4">
+                <div className="hidden">
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
@@ -124,12 +192,17 @@ export default function ProductListPage() {
                             categories={categories}
                             brandId={brandId}
                             categoryId={categoryId}
-                            minPrice={minPrice}
-                            maxPrice={maxPrice}
+                            search={draftSearch}
+                            minPrice={draftMinPrice}
+                            maxPrice={draftMaxPrice}
+                            maxAvailablePrice={maxAvailablePrice}
+                            onSearchChange={setDraftSearch}
                             onBrandChange={(value) => updateParam("brandId", value)}
                             onCategoryChange={(value) => updateParam("categoryId", value)}
-                            onMinPriceChange={(value) => updateParam("minPrice", value)}
-                            onMaxPriceChange={(value) => updateParam("maxPrice", value)}
+                            onMinPriceChange={setDraftMinPrice}
+                            onMaxPriceChange={setDraftMaxPrice}
+                            onApply={applyFilters}
+                            onPriceRangeSelect={applyPriceRange}
                             onClear={clearFilters}
                         />
                     </div>

@@ -1,5 +1,6 @@
 import ConfirmDeleteDialog from "@/components/common/ConfirmDeleteDialog";
 import PageLoading from "@/components/common/PageLoading";
+import OrderReviewButton from "@/components/profile/OrderReviewButton";
 import { Button } from "@/components/ui/button";
 import { orderService } from "@/services/order.service";
 import type { MyOrder, OrderDetail } from "@/types/order.type";
@@ -250,11 +251,6 @@ export default function OrderHistoryPage() {
                 {!loading && !error && filteredOrders.length > 0 && (
                     <div className="space-y-4">
                         {filteredOrders.map((order) => {
-                            const canRetryPayment =
-                                order.status === "PENDING"
-                                && order.payment_method === "VNPAY"
-                                && order.payment_status === "FAILED";
-
                             return (
                             <article key={order.order_id} className="overflow-hidden rounded-xl border bg-white">
                                 <div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
@@ -346,7 +342,7 @@ export default function OrderHistoryPage() {
                                             </Button>
                                         )}
 
-                                        {canRetryPayment && (
+                                        {false && (
                                             <Button
                                                 type="button"
                                                 disabled={retryingId === order.order_id}
@@ -355,6 +351,13 @@ export default function OrderHistoryPage() {
                                             >
                                                 {retryingId === order.order_id ? "Đang tạo link..." : "Thanh toán lại"}
                                             </Button>
+                                        )}
+
+                                        {order.status === "COMPLETED" && (
+                                            <OrderReviewButton
+                                                order={order}
+                                                onReviewed={loadOrders}
+                                            />
                                         )}
 
                                         <div className="flex items-center gap-4">

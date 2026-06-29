@@ -12,13 +12,14 @@ import {
     getPaymentStatusLabel,
 } from "@/utils/orderFormat";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { AdminColumn } from "@/components/admin/table/AdminDataTable";
 import type { SortOrder } from "@/types/admin-table.type";
 import OrderFilterBar from "@/components/admin/order/OrderFilterBar";
 import AdminDataTable from "@/components/admin/table/AdminDataTable";
+import { socket } from "@/lib/socket";
 
 type Props = {
     basePath: string;
@@ -124,7 +125,7 @@ export default function StaffOrdersPage({basePath}: Props) {
     const [sortBy, setSortBy] = useState<"order_date" | "total_price" | "status">("order_date");
     const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-    async function loadOrders() {
+    const loadOrders = useCallback(async() => {
         try {
             setLoading(true);
 
@@ -145,12 +146,29 @@ export default function StaffOrdersPage({basePath}: Props) {
 
             setOrders(data.orders);
             setTotalPages(data.meta.pagination.totalPages);
-        }catch(error) {
+        } catch(error) {
             toast.error(getErrorMessage(error));
-        }finally{
+        } finally {
             setLoading(false);
         }
-    }
+    }, [page, search, status, paymentStatus, paymentMethod, fromDate, toDate, sortBy, sortOrder]);
+
+    useEffect(() => {
+        socket.connect();
+        socket.emit("join_admin");
+
+        function handleOrderChanged() {
+            loadOrders();
+        }
+
+        socket.on("order:new", handleOrderChanged);
+        socket.on("order:updated", handleOrderChanged);
+
+        return () => {
+            socket.off("order:new", handleOrderChanged);
+            socket.off("order:updated", handleOrderChanged);
+        };
+    }, [loadOrders]);
 
     useEffect(() => {
         setLoading(true);

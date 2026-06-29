@@ -455,6 +455,8 @@ export const getPublicProductsService = async(params: PublicProductListQuery) =>
                 id: category.category_id,
                 name: category.category_name,
             })),
+
+            maxPrice: filterOptions.maxPrice,
         },
 
         meta: {

@@ -239,3 +239,22 @@ export const update = async (orderId, data) => {
         data,
     });
 };
+export const findOrderByReview = async (orderId, userId) => {
+    return await prisma.orders.findFirst({
+        where: {
+            order_id: orderId,
+            user_id: userId,
+        },
+        include: {
+            orders_details: {
+                include: {
+                    product_variants: {
+                        select: {
+                            product_id: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+};
