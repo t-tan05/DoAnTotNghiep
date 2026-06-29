@@ -7,6 +7,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { authService } from "@/services/auth.service";
 import type { AuthUser } from "@/types/auth.type";
+import { socket } from "@/lib/socket";
 
 type AuthContextValue = {
     user: AuthUser | null;
@@ -84,6 +85,7 @@ export function AuthProvider({children}:AuthProviderProps) {
             await authService.logout();
         }finally{
             localStorage.removeItem("accessToken");
+            socket.disconnect();
             setUser(null);
             navigate("/");
         }

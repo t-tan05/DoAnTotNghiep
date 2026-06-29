@@ -154,17 +154,38 @@ export default function StaffOrdersPage({basePath}: Props) {
     }, [page, search, status, paymentStatus, paymentMethod, fromDate, toDate, sortBy, sortOrder]);
 
     useEffect(() => {
-        socket.connect();
-        socket.emit("join_admin");
+        const token = localStorage.getItem("accessToken");
+
+        if(!token) return;
+
+        function handleConnect() {
+            socket.emit("join_admin");
+        }
+
+        function handleConnectError() {
+            toast.error("Không thể kết nối realtime. Vui lòng đăng nhập lại.");
+        }
 
         function handleOrderChanged() {
             loadOrders();
         }
 
+        socket.auth = { token };
+
+        socket.on("connect", handleConnect);
+        socket.on("connect_error", handleConnectError);
         socket.on("order:new", handleOrderChanged);
         socket.on("order:updated", handleOrderChanged);
 
+        if(!socket.connected) {
+            socket.connect();
+        } else {
+            socket.emit("join_admin");
+        }
+
         return () => {
+            socket.off("connect", handleConnect);
+            socket.off("connect_error", handleConnectError);
             socket.off("order:new", handleOrderChanged);
             socket.off("order:updated", handleOrderChanged);
         };

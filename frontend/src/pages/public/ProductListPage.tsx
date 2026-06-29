@@ -253,6 +253,7 @@ export default function ProductListPage() {
                                 variant="outline"
                                 disabled={page <= 1}
                                 onClick={() => updateParam("page", String(page - 1))}
+                                className="cursor-pointer"
                             >
                                 Trước
                             </Button>
@@ -266,6 +267,7 @@ export default function ProductListPage() {
                                 variant="outline"
                                 disabled={page >= totalPages}
                                 onClick={() => updateParam("page", String(page + 1))}
+                                className="cursor-pointer"
                             >
                                 Sau
                             </Button>

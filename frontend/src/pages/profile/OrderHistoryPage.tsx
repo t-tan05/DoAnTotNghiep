@@ -88,6 +88,10 @@ function getVariantAttributes(detail: OrderDetail) {
         .join(" / ");
 }
 
+function getProductDetailLink(detail: OrderDetail) {
+    return `/products/${detail.product_variants.products.product_id}?variantId=${detail.product_variants.variant_id}`;
+}
+
 export default function OrderHistoryPage() {
     const [orders, setOrders] = useState<MyOrder[]>([]);
     const [activeTab, setActiveTab] = useState<OrderTab>("payment");
@@ -255,10 +259,15 @@ export default function OrderHistoryPage() {
                                         const imageUrl = getVariantImage(detail);
                                         const attributes = getVariantAttributes(detail);
                                         const displayName = detail.product_variants.variant_name || detail.product_variants.products.product_name;
+                                        const productLink = getProductDetailLink(detail);
 
                                         return (
                                             <div key={detail.order_detail_id} className="grid gap-4 p-4 sm:grid-cols-[88px_1fr_auto]">
-                                                <div className="overflow-hidden rounded-lg border bg-muted">
+                                                <Link
+                                                    to={productLink}
+                                                    className="overflow-hidden rounded-lg border bg-muted transition hover:border-blue-700"
+                                                    aria-label={`Xem chi tiết ${displayName}`}
+                                                >
                                                     {imageUrl ? (
                                                         <img
                                                             src={imageUrl}
@@ -270,11 +279,16 @@ export default function OrderHistoryPage() {
                                                             No image
                                                         </div>
                                                     )}
-                                                </div>
+                                                </Link>
 
                                                 <div className="min-w-0">
                                                     <h2 className="font-semibold">
-                                                        {displayName}
+                                                        <Link
+                                                            to={productLink}
+                                                            className="hover:text-blue-700 hover:underline"
+                                                        >
+                                                            {displayName}
+                                                        </Link>
                                                     </h2>
 
                                                     <p className="mt-1 text-sm text-muted-foreground">

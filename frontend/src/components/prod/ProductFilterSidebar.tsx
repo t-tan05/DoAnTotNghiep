@@ -194,7 +194,7 @@ export default function ProductFilterSidebar({
                 <select
                     value={categoryId}
                     onChange={(e) => onCategoryChange(e.target.value)}
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm cursor-pointer"
                 >
                     <option value="">Tất cả danh mục</option>
                     {categories.map((category) => (
@@ -210,7 +210,7 @@ export default function ProductFilterSidebar({
                 <select
                     value={brandId}
                     onChange={(e) => onBrandChange(e.target.value)}
-                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm cursor-pointer"
                 >
                     <option value="">Tất cả thương hiệu</option>
                     {brands.map((brand) => (

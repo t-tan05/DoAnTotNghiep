@@ -2,24 +2,6 @@
 
 Tài liệu này mô tả các bảng chính trong file [`db_shop.sql`](../sql/db_shop.sql). Schema dùng MySQL/InnoDB, charset `utf8mb4`, khóa chính phần lớn là `varchar(50)`.
 
-## Nhận xét về `orders` và `payment_transactions`
-
-Thiết kế mới tách rõ 2 luồng:
-
-- `orders.status`: trạng thái xử lý/giao hàng của đơn.
-- `orders.payment_status`: trạng thái thanh toán tổng hợp của đơn.
-- `payment_transactions.status`: trạng thái từng giao dịch thanh toán cụ thể.
-
-Cách tách này phù hợp hơn so với việc nhét các trạng thái như `PAID`, `PAYMENT_FAILED`, `REFUNDED` vào `orders.status`.
-
-Các điểm cần lưu ý:
-
-- `payment_transactions` đang hợp lý cho cổng thanh toán vì có `transaction_code`, `provider`, `provider_response`, `paid_at`, `created_at`, `updated_at`.
-- `orders.payment_status` nên được đồng bộ từ giao dịch mới nhất/thành công trong `payment_transactions` ở tầng service hoặc trigger riêng nếu muốn xử lý tại database.
-- Trigger quản lý kho đang dùng nhóm hoàn kho khớp enum `orders.status`: `CANCELLED`, `RETURNED`, `DELIVERY_FAILED`.
-- Prisma schema hiện chưa khớp SQL mới: còn enum cũ của `orders_status`, `orders_payment_method`, thiếu `orders.payment_status` và thiếu model `payment_transactions`.
-- `orders.address_id` là FK tới `addresses`. Nếu địa chỉ người dùng bị sửa sau khi đặt hàng, lịch sử đơn có thể bị ảnh hưởng. Nên cân nhắc lưu snapshot địa chỉ giao hàng trực tiếp trong `orders` hoặc bảng riêng cho địa chỉ đơn hàng.
-
 ## Bảng `addresses`
 
 - `address_id`: ID duy nhất của địa chỉ.
@@ -70,6 +52,15 @@ Các điểm cần lưu ý:
 - `user_id`: FK tới `users.user_id`.
 - `role_name`: FK tới `roles.role_name`.
 - Khóa chính kép: `user_id`, `role_name`.
+
+## Bảng `wishlists`
+
+- `wishlist_id`: ID dòng sản phẩm yêu thích.
+- `user_id`: Người dùng sở hữu wishlist item, FK tới `users.user_id`; xóa user thì xóa wishlist item.
+- `variant_id`: Biến thể sản phẩm được yêu thích, FK tới `product_variants.variant_id`; xóa variant thì xóa wishlist item.
+- `created_at`: Thời điểm thêm vào danh sách yêu thích.
+- Có unique key `user_id`, `variant_id` để mỗi user chỉ yêu thích một biến thể một lần.
+- Có index riêng cho `user_id` và `variant_id` để tối ưu truy vấn danh sách yêu thích của user và thống kê số lượt yêu thích theo biến thể.
 
 ## Bảng `carts`
 
@@ -317,9 +308,3 @@ Các điểm cần lưu ý:
 - `trg_promotions_before_insert`, `trg_promotions_before_update`: Chặn giá trị khuyến mãi âm.
 - `sp_cancel_expired_orders`: Tự hủy đơn `PENDING` quá 24 giờ.
 - `evt_auto_cancel_pending_orders`: Chạy `sp_cancel_expired_orders` mỗi giờ.
-
-## Gợi ý chỉnh tiếp
-
-- Cập nhật `backend/prisma/schema.prisma` bằng introspection hoặc sửa tay để khớp `db_shop.sql`.
-- Cân nhắc thêm ràng buộc/check logic cho `orders.total_price >= 0`, `payment_transactions.amount >= 0`.
-- Cân nhắc unique/index cho `payment_transactions.transaction_code` nếu mỗi mã giao dịch từ provider phải là duy nhất.

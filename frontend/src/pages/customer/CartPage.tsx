@@ -28,6 +28,10 @@ function getVariantAttributes(item: CartItem) {
         .join(" / ");
 }
 
+function getProductDetailLink(item: CartItem) {
+    return `/products/${item.product_variants.products.product_id}?variantId=${item.product_variants.variant_id}`;
+}
+
 export default function CartPage() {
     const [items, setItems] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -177,7 +181,11 @@ export default function CartPage() {
                                 key={item.cart_item_id}
                                 className="grid gap-4 rounded-lg border bg-background p-4 sm:grid-cols-[120px_1fr_auto]"
                             >
-                                <div className="overflow-hidden rounded-lg border bg-muted">
+                                <Link
+                                    to={getProductDetailLink(item)}
+                                    className="overflow-hidden rounded-lg border bg-muted transition hover:border-blue-700"
+                                    aria-label={`Xem chi tiết ${displayName}`}
+                                >
                                     {imageUrl ? (
                                         <img
                                             src={imageUrl}
@@ -189,11 +197,16 @@ export default function CartPage() {
                                             No image
                                         </div>
                                     )}
-                                </div>
+                                </Link>
 
                                 <div className="min-w-0">
                                     <h2 className="font-semibold">
-                                        {displayName}
+                                        <Link
+                                            to={getProductDetailLink(item)}
+                                            className="hover:text-blue-700 hover:underline"
+                                        >
+                                            {displayName}
+                                        </Link>
                                     </h2>
 
                                     <p className="mt-1 text-sm text-muted-foreground">

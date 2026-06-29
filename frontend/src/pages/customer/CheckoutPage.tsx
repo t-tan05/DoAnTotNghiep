@@ -33,6 +33,8 @@ type BuyNowCheckoutItem = {
 
 type CheckoutSummaryItem = {
     id: string;
+    productId: string;
+    variantId: string;
     name: string;
     sku?: string | null;
     attributes?: string;
@@ -127,6 +129,8 @@ export default function CheckoutPage() {
 
             return [{
                 id: buyNowItem.variantId,
+                productId: buyNowItem.productId,
+                variantId: buyNowItem.variantId,
                 name: buyNowItem.name,
                 sku: buyNowItem.sku,
                 attributes: buyNowItem.attributes,
@@ -138,6 +142,8 @@ export default function CheckoutPage() {
 
         return items.map((item) => ({
             id: item.cart_item_id,
+            productId: item.product_variants.products.product_id,
+            variantId: item.product_variants.variant_id,
             name: getCartItemName(item),
             sku: item.product_variants.sku,
             attributes: getCartItemAttributes(item),
@@ -368,9 +374,15 @@ export default function CheckoutPage() {
 
                     <div className="mt-4 max-h-[360px] space-y-4 overflow-y-auto pr-1">
                         {summaryItems.map((item) => {
+                            const productLink = `/products/${item.productId}?variantId=${item.variantId}`;
+
                             return (
                                 <div key={item.id} className="flex gap-3">
-                                    <div className="flex size-20 shrink-0 items-center justify-center rounded-md border bg-white p-1">
+                                    <Link
+                                        to={productLink}
+                                        className="flex size-20 shrink-0 items-center justify-center rounded-md border bg-white p-1 transition hover:border-blue-700"
+                                        aria-label={`Xem chi tiết ${item.name}`}
+                                    >
                                         {item.imageUrl ? (
                                             <img
                                                 src={item.imageUrl}
@@ -380,11 +392,13 @@ export default function CheckoutPage() {
                                         ) : (
                                             <span className="text-xs text-muted-foreground">No image</span>
                                         )}
-                                    </div>
+                                    </Link>
 
                                     <div className="min-w-0 flex-1 text-sm">
                                         <p className="line-clamp-2 font-medium text-gray-900">
-                                            {item.name}
+                                            <Link to={productLink} className="hover:text-blue-700 hover:underline">
+                                                {item.name}
+                                            </Link>
                                         </p>
                                         {item.sku && (
                                             <p className="mt-0.5 text-xs text-muted-foreground">
