@@ -11,11 +11,14 @@ import type {
     StaffOrderDetailResponse,
     StaffOrderListQuery,
     StaffOrderListResponse,
+    MyOrdersQuery,
 } from "@/types/order.type";
 
 export const orderService = {
-    getMyOrders: async() => {
-        const res = await api.get<BackendSuccess<MyOrdersResponse>>("/orders/me");
+    getMyOrders: async(query?: MyOrdersQuery) => {
+        const res = await api.get<BackendSuccess<MyOrdersResponse>>("/orders/me", {
+            params: query,
+        });
         return res.data.data;
     },
 
@@ -40,14 +43,6 @@ export const orderService = {
         const res = await api.patch<BackendSuccess<{order: MyOrder}>>(
             `/orders/me/${orderId}/cancel`
         );
-        return res.data.data;
-    },
-
-    retryPayment: async(orderId: string) => {
-        const res = await api.post<BackendSuccess<{paymentUrl: string}>> (
-            `/orders/me/${orderId}/retry-payment`
-        );
-
         return res.data.data;
     },
 

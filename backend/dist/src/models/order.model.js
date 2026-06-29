@@ -1,42 +1,128 @@
 import prisma from "#config/prisma";
-export const findMyOrders = async (userId) => {
-    return await prisma.orders.findMany({
-        where: {
-            user_id: userId,
-        },
-        include: {
-            orders_details: {
-                include: {
-                    product_variants: {
-                        include: {
-                            products: true,
-                            product_images: {
-                                where: {
-                                    is_default: true,
+export const findMyOrders = async (userId, params) => {
+    const { page, limit, tab } = params;
+    const skip = (page - 1) * limit;
+    const baseWhere = {
+        user_id: userId,
+    };
+    const tabWhere = tab === "completed"
+        ? {
+            status: "COMPLETED",
+        }
+        : tab === "cancelled"
+            ? {
+                status: "CANCELLED",
+            }
+            : tab === "payment"
+                ? {
+                    status: "PENDING",
+                    payment_status: {
+                        in: ["UNPAID", "PENDING", "FAILED"],
+                    },
+                }
+                : tab === "shipping"
+                    ? {
+                        NOT: [
+                            { status: "COMPLETED" },
+                            { status: "CANCELLED" },
+                            {
+                                status: "PENDING",
+                                payment_status: {
+                                    in: ["UNPAID", "PENDING", "FAILED"],
                                 },
-                                take: 1,
                             },
-                            variant_attribute_values: {
-                                include: {
-                                    attribute_values: {
-                                        include: {
-                                            product_attributes: true,
+                        ],
+                    }
+                    : {};
+    const where = {
+        AND: [baseWhere, tabWhere],
+    };
+    const [orders, totalItems, paymentCount, shippingCount, completedCount, cancelledCount] = await prisma.$transaction([
+        prisma.orders.findMany({
+            where,
+            skip,
+            take: limit,
+            include: {
+                orders_details: {
+                    include: {
+                        product_variants: {
+                            include: {
+                                products: true,
+                                product_images: {
+                                    where: {
+                                        is_default: true,
+                                    },
+                                    take: 1,
+                                },
+                                variant_attribute_values: {
+                                    include: {
+                                        attribute_values: {
+                                            include: {
+                                                product_attributes: true,
+                                            },
                                         },
                                     },
                                 },
                             },
                         },
+                        devices: true,
                     },
-                    devices: true,
+                },
+                addresses: true,
+                payment_transactions: true,
+            },
+            orderBy: {
+                order_date: "desc",
+            },
+        }),
+        prisma.orders.count({ where }),
+        prisma.orders.count({
+            where: {
+                user_id: userId,
+                status: "PENDING",
+                payment_status: {
+                    in: ["UNPAID", "PENDING", "FAILED"],
                 },
             },
-            addresses: true,
-            payment_transactions: true,
+        }),
+        prisma.orders.count({
+            where: {
+                user_id: userId,
+                NOT: [
+                    { status: "COMPLETED" },
+                    { status: "CANCELLED" },
+                    {
+                        status: "PENDING",
+                        payment_status: {
+                            in: ["UNPAID", "PENDING", "FAILED"],
+                        },
+                    },
+                ],
+            },
+        }),
+        prisma.orders.count({
+            where: {
+                user_id: userId,
+                status: "COMPLETED",
+            },
+        }),
+        prisma.orders.count({
+            where: {
+                user_id: userId,
+                status: "CANCELLED",
+            },
+        }),
+    ]);
+    return {
+        orders,
+        totalItems,
+        counts: {
+            payment: paymentCount,
+            shipping: shippingCount,
+            completed: completedCount,
+            cancelled: cancelledCount,
         },
-        orderBy: {
-            order_date: "desc",
-        },
-    });
+    };
 };
 export const findOrderDetailForUser = async (orderId, userId) => {
     return await prisma.orders.findFirst({

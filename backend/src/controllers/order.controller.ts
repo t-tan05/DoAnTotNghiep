@@ -12,7 +12,6 @@ import {
     shipOrderService,
     handleVnpayReturnService,
     handleVnpayIpnService,
-    retryPaymentService,
     checkoutBuyNowRequest,
 } from "#services/order.service";
 import { CatchAsync } from "#utils/CatchAsync";
@@ -33,7 +32,6 @@ const getEnumQuery = <T extends string>(value: unknown, values: T[]) => {
         ? value as T
         : undefined;
 };
-
 const emitOrderUpdated = (order: any, eventType = "updated") => {
     getIO().to("admin").emit("order:updated", {
         eventType,
@@ -98,7 +96,15 @@ export const buyNowOrderController = CatchAsync(async(req: AuthRequest, res: Res
 export const getMyOrdersController = CatchAsync(async(req: AuthRequest, res: Response) => {
     const userId = req.user.user_id;
 
-    const data = await getMyOrdersService(userId);
+    const tab = ["payment", "shipping", "completed", "cancelled"].includes(String(req.query.tab))
+        ? String(req.query.tab) as "payment" | "shipping" | "completed" | "cancelled"
+        : undefined;
+
+    const data = await getMyOrdersService(userId, {
+        page: Number(req.query.page) || 1,
+        limit: Number(req.query.limit) || 5,
+        tab,
+    });
 
     res.status(200).json({
         success: true,
@@ -301,22 +307,3 @@ export const vnpayIpnController = async(req: Request, res: Response) => {
         });
     }
 };
-
-export const retryPaymentController = CatchAsync(async(req: AuthRequest, res: Response) => {
-    const userId = req.user.user_id;
-    const orderId = req.params.orderId as string;
-
-    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
-        || req.socket.remoteAddress
-        || "127.0.0.1";
-
-    const data = await retryPaymentService(userId, orderId, ipAddr);
-
-    res.status(200).json({
-        success: true,
-        message: "Tạo lại link thanh toán thành công.",
-        data: {
-            ...data,
-        },
-    });
-});

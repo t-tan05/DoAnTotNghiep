@@ -1,6 +1,7 @@
 export type PaymentMethod = "COD" | "VNPAY" | "MOMO" | "ZALOPAY" | "BANK_TRANSFER";
 export type OrderStatus = "PENDING" | "CONFIRMED" | "SHIPPED" | "DELIVERY_FAILED" | "COMPLETED" | "CANCELLED" | "RETURNED";
 export type OrderPaymentStatus = "UNPAID" | "PENDING" | "PAID" | "FAILED" | "REFUND_PENDING" | "REFUNDED" | "REFUND_FAILED";
+export type OrderHistoryTab = "payment" | "shipping" | "completed" | "cancelled";
 
 export type CheckoutPayload = {
     addressId: string;
@@ -83,6 +84,21 @@ export type MyOrder = {
 
 export type MyOrdersResponse = {
     orders: MyOrder[];
+    counts: Record<OrderHistoryTab, number>;
+    meta: {
+        pagination: {
+            page: number;
+            limit: number;
+            totalItems: number;
+            totalPages: number;
+        };
+    };
+};
+
+export type MyOrdersQuery = {
+    page?: number;
+    limit?: number;
+    tab?: OrderHistoryTab;
 };
 
 export type StaffOrderListQuery = {

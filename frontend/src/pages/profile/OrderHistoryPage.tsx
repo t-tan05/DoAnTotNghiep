@@ -3,14 +3,14 @@ import PageLoading from "@/components/common/PageLoading";
 import OrderReviewButton from "@/components/profile/OrderReviewButton";
 import { Button } from "@/components/ui/button";
 import { orderService } from "@/services/order.service";
-import type { MyOrder, OrderDetail } from "@/types/order.type";
+import type { MyOrder, OrderDetail, OrderHistoryTab } from "@/types/order.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Clock3, PackageSearch, RotateCcw, Truck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-type OrderTab = "payment" | "shipping" | "completed";
+type OrderTab = OrderHistoryTab;
 
 const tabs: Array<{
     key: OrderTab;
@@ -28,6 +28,7 @@ const tabs: Array<{
         key: "completed",
         label: "Đã hoàn thành",
     },
+    { key: "cancelled", label: "Đã hủy" },
 ];
 
 const formatPrice = (value: number | string) => {
@@ -40,19 +41,6 @@ const formatDate = (value: string) => {
         timeStyle: "short",
     });
 };
-
-function getOrderTab(order: MyOrder): OrderTab {
-    if(order.status === "COMPLETED") return "completed";
-
-    if(
-        order.status === "PENDING"
-        && ["UNPAID", "PENDING", "FAILED"].includes(order.payment_status)
-    ) {
-        return "payment";
-    }
-
-    return "shipping";
-}
 
 function getStatusLabel(order: MyOrder) {
     if(order.payment_status === "REFUND_PENDING") return "Đang xử lý hoàn tiền";
@@ -107,15 +95,35 @@ export default function OrderHistoryPage() {
     const [error, setError] = useState("");
     const [cancelOrder, setCancelOrder] = useState<MyOrder | null>(null);
     const [cancellingId, setCancellingId] = useState("");
-    const [retryingId, setRetryingId] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [counts, setCounts] = useState<Record<OrderTab, number>>({
+        payment: 0,
+        shipping: 0,
+        completed: 0,
+        cancelled: 0,
+    });
 
-    async function loadOrders() {
+    async function loadOrders(nextPage = page, nextTab = activeTab) {
         setLoading(true);
         setError("");
 
         try {
-            const data = await orderService.getMyOrders();
+            const data = await orderService.getMyOrders({
+                page: nextPage,
+                limit: 5,
+                tab: nextTab,
+            });
+
             setOrders(data?.orders ?? []);
+            setCounts(data?.counts ?? {
+                payment: 0,
+                shipping: 0,
+                completed: 0,
+                cancelled: 0,
+            });
+
+            setTotalPages(data?.meta.pagination.totalPages ?? 1);
         } catch(error) {
             setOrders([]);
             setError(getErrorMessage(error));
@@ -126,23 +134,8 @@ export default function OrderHistoryPage() {
     }
 
     useEffect(() => {
-        loadOrders();
-    }, []);
-
-    const filteredOrders = useMemo(() => {
-        return orders.filter((order) => getOrderTab(order) === activeTab);
-    }, [activeTab, orders]);
-
-    const counts = useMemo(() => {
-        return tabs.reduce<Record<OrderTab, number>>((acc, tab) => {
-            acc[tab.key] = orders.filter((order) => getOrderTab(order) === tab.key).length;
-            return acc;
-        }, {
-            payment: 0,
-            shipping: 0,
-            completed: 0,
-        });
-    }, [orders]);
+        loadOrders(page, activeTab);
+    }, [page, activeTab]);
 
     async function handleConfirmCancelOrder() {
         if(!cancelOrder) return;
@@ -162,26 +155,6 @@ export default function OrderHistoryPage() {
         }
     }
 
-    async function handleRetryPayment(orderId: string) {
-        try {
-
-            setRetryingId(orderId);
-
-            const data = await orderService.retryPayment(orderId);
-
-            if(data?.paymentUrl) {
-                window.location.assign(data.paymentUrl);
-                return;
-            }
-
-            toast.error("Không tạo được link thanh toán.");
-        }catch(error) {
-            toast.error(getErrorMessage(error));
-        }finally{
-            setRetryingId("");
-        }
-    }
-
     return (
         <section className="min-w-0">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -192,7 +165,7 @@ export default function OrderHistoryPage() {
                     </p>
                 </div>
 
-                <div className="flex overflow-hidden rounded-lg border bg-white shadow-sm">
+                <div className="grid w-full grid-cols-2 overflow-hidden rounded-lg border bg-white shadow-sm sm:grid-cols-4 lg:w-auto">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.key;
 
@@ -200,9 +173,12 @@ export default function OrderHistoryPage() {
                             <button
                                 key={tab.key}
                                 type="button"
-                                onClick={() => setActiveTab(tab.key)}
+                                onClick={() => {
+                                    setActiveTab(tab.key);
+                                    setPage(1);
+                                }}
                                 className={[
-                                    "h-12 min-w-[142px] px-4 text-sm font-medium transition cursor-pointer",
+                                    "flex h-12 min-w-0 items-center justify-center gap-2 px-3 text-sm font-medium transition cursor-pointer sm:min-w-[132px]",
                                     isActive
                                         ? "bg-blue-50 text-blue-700"
                                         : "text-muted-foreground hover:bg-muted",
@@ -210,7 +186,7 @@ export default function OrderHistoryPage() {
                             >
                                 {tab.label}
                                 {counts[tab.key] > 0 && (
-                                    <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">
+                                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-xs text-foreground">
                                         {counts[tab.key]}
                                     </span>
                                 )}
@@ -231,7 +207,7 @@ export default function OrderHistoryPage() {
                     </div>
                 )}
 
-                {!loading && !error && filteredOrders.length === 0 && (
+                {!loading && !error && orders.length === 0 && (
                     <div className="flex min-h-[420px] flex-col items-center justify-center rounded-xl border bg-white p-8 text-center">
                         <div className="flex size-32 items-center justify-center rounded-full bg-muted">
                             <PackageSearch className="size-16 text-muted-foreground/60" />
@@ -248,9 +224,9 @@ export default function OrderHistoryPage() {
                     </div>
                 )}
 
-                {!loading && !error && filteredOrders.length > 0 && (
+                {!loading && !error && orders.length > 0 && (
                     <div className="space-y-4">
-                        {filteredOrders.map((order) => {
+                        {orders.map((order) => {
                             return (
                             <article key={order.order_id} className="overflow-hidden rounded-xl border bg-white">
                                 <div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center md:justify-between">
@@ -342,16 +318,6 @@ export default function OrderHistoryPage() {
                                             </Button>
                                         )}
 
-                                        {false && (
-                                            <Button
-                                                type="button"
-                                                disabled={retryingId === order.order_id}
-                                                onClick={() => handleRetryPayment(order.order_id)}
-                                                className="cursor-pointer bg-blue-700 text-white hover:bg-blue-800"
-                                            >
-                                                {retryingId === order.order_id ? "Đang tạo link..." : "Thanh toán lại"}
-                                            </Button>
-                                        )}
 
                                         {order.status === "COMPLETED" && (
                                             <OrderReviewButton
@@ -377,6 +343,34 @@ export default function OrderHistoryPage() {
                                 )}
                             </article>
                         )})}
+                    </div>
+                )}
+
+                {totalPages > 1 && (
+                    <div className="mt-5 flex items-center justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={page <= 1}
+                            onClick={() => setPage((current) => Math.max(1, current - 1))}
+                            className="cursor-pointer disabled:cursor-not-allowed"
+                        >
+                            Trước
+                        </Button>
+
+                        <span className="text-sm text-muted-foreground">
+                            Trang {page} / {totalPages}
+                        </span>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={page >= totalPages}
+                            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                            className="cursor-pointer disabled:cursor-not-allowed"
+                        >
+                            Sau
+                        </Button>
                     </div>
                 )}
             </div>

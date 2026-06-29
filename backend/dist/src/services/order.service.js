@@ -210,9 +210,26 @@ export const checkoutOrderService = async (userId, payload, ipAddr) => {
         return { order, paymentUrl };
     });
 };
-export const getMyOrdersService = async (userId) => {
-    const orders = await findMyOrders(userId);
-    return { orders };
+export const getMyOrdersService = async (userId, query) => {
+    const page = Math.max(Number(query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(query.limit) || 5, 1), 20);
+    const data = await findMyOrders(userId, {
+        page,
+        limit,
+        tab: query.tab,
+    });
+    return {
+        orders: data.orders,
+        counts: data.counts,
+        meta: {
+            pagination: {
+                page,
+                limit,
+                totalItems: data.totalItems,
+                totalPages: Math.max(1, Math.ceil(data.totalItems / limit)),
+            },
+        },
+    };
 };
 export const getMyOrderDetailService = async (userId, orderId) => {
     const order = await findOrderDetailForUser(orderId, userId);
@@ -988,96 +1005,6 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
             Message: "Unknown error",
         };
     }
-};
-export const retryPaymentService = async (userId, orderId, ipAddr) => {
-    return prisma.$transaction(async (tx) => {
-        const order = await tx.orders.findFirst({
-            where: {
-                order_id: orderId,
-                user_id: userId,
-            },
-            include: {
-                orders_details: {
-                    include: {
-                        devices: true,
-                    },
-                },
-            },
-        });
-        if (!order)
-            throw new AppError("Không tìm thấy đơn hàng.", 404);
-        if (order.payment_method !== "VNPAY") {
-            throw new AppError("Chưa áp dụng cho các phương thức khác VNPay.", 400);
-        }
-        if (order.payment_status === orders_payment_status.PAID) {
-            throw new AppError("Đơn hàng đã được thanh toán.", 400);
-        }
-        if ([
-            ORDER_PAYMENT_REFUND_PENDING,
-            orders_payment_status.REFUNDED,
-            ORDER_PAYMENT_REFUND_FAILED,
-        ].includes(order.payment_status)) {
-            throw new AppError("Đơn hàng đã được hoàn tiền, kh6ong thể thanh toán lại.", 400);
-        }
-        if (order.status !== orders_status.PENDING) {
-            throw new AppError("Đơn hàng đã hết hạn hoặc không còn ở trạng thái chờ thanh toán.", 400);
-        }
-        const orderExpireAt = new Date(new Date(order.order_date).getTime() + 15 * 60 * 1000);
-        if (orderExpireAt <= new Date()) {
-            throw new AppError("Đơn hàng đã hết thởi gian thanh toán, vui lòng đặt lại đơn mới.", 400);
-        }
-        const hasReserveDevices = order.orders_details.every((detail) => {
-            const reservedDeviceCount = detail.devices.filter((device) => {
-                return device.status === devices_status.RESERVED;
-            }).length;
-            return reservedDeviceCount >= Number(detail.quantity);
-        });
-        if (!hasReserveDevices) {
-            throw new AppError("Sản phẩm trong đơn không còn được giữ hàng, vui lòng đặt lại đơn mới.", 400);
-        }
-        await tx.payment_transactions.updateMany({
-            where: {
-                order_id: orderId,
-                payment_method: "VNPAY",
-                status: payment_transactions_status.PENDING,
-            },
-            data: {
-                status: payment_transactions_status.FAILED,
-                updated_at: new Date(),
-            },
-        });
-        const paymentTransaction = await tx.payment_transactions.create({
-            data: {
-                transaction_id: crypto.randomUUID(),
-                order_id: orderId,
-                payment_method: "VNPAY",
-                amount: order.total_price,
-                status: payment_transactions_status.PENDING,
-                provider: "VNPAY",
-            },
-        });
-        await tx.orders.update({
-            where: {
-                order_id: orderId,
-            },
-            data: {
-                payment_status: orders_payment_status.PENDING,
-            },
-        });
-        const paymentUrl = createVnpayPaymentUrl({
-            txnRef: paymentTransaction.transaction_id,
-            orderId,
-            amount: Number(order.total_price),
-            ipAddr,
-            expireAt: orderExpireAt,
-        });
-        return {
-            order,
-            paymentTransaction,
-            paymentUrl,
-            expiredAt: orderExpireAt,
-        };
-    });
 };
 export const checkoutBuyNowRequest = async (userId, request, ipAddr) => {
     const user = await findUserById(userId);

@@ -4,6 +4,14 @@ import type {
     orders_status,
 } from "@prisma/client";
 
+export type MyOrderTab = "payment" | "shipping" | "completed" | "cancelled";
+
+export type MyOrderListQuery = {
+    page: number;
+    limit: number;
+    tab?: MyOrderTab;
+};
+
 export interface CheckoutOrderPayload {
     addressId: string;
     paymentMethod: orders_payment_method;
