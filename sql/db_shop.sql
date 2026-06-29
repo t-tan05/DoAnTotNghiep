@@ -678,6 +678,8 @@ CREATE TABLE `warranties` (
   `warranty_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `device_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `customer_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_by_employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `assigned_employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `received_date` date NOT NULL,
   `expected_return_date` date DEFAULT NULL,
   `return_date` date DEFAULT NULL,
@@ -692,7 +694,11 @@ CREATE TABLE `warranties` (
   KEY `fk_warranty_device` (`device_id`),
   KEY `idx_warranty_status` (`status`),
   KEY `idx_warranty_customer` (`customer_id`),
+  KEY `idx_warranty_created_by_employee` (`created_by_employee_id`),
+  KEY `idx_warranty_assigned_employee` (`assigned_employee_id`),
   CONSTRAINT `fk_warranty_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_warranty_created_by_employee` FOREIGN KEY (`created_by_employee_id`) REFERENCES `users` (`user_id`),
+  CONSTRAINT `fk_warranty_assigned_employee` FOREIGN KEY (`assigned_employee_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_warranty_device` FOREIGN KEY (`device_id`) REFERENCES `devices` (`device_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

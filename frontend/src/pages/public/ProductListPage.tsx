@@ -3,7 +3,9 @@ import ProductFilterSidebar from "@/components/prod/ProductFilterSidebar";
 import ProductSortBar from "@/components/prod/ProductSortBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import { productService } from "@/services/product.service";
+import { wishlistService } from "@/services/wishlist.service";
 import type {
     PublicProductCardItem,
     PublicProductFilterOption,
@@ -17,8 +19,10 @@ import { toast } from "sonner";
 
 export default function ProductListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const { isAuthenticated } = useAuth();
 
     const [products, setProducts] = useState<PublicProductCardItem[]>([]);
+    const [wishlistMap, setWishlistMap] = useState<Record<string, boolean>>({});
     const [brands, setBrands] = useState<PublicProductFilterOption[]>([]);
     const [categories, setCategories] = useState<PublicProductFilterOption[]>([]);
     const [loading, setLoading] = useState(true);
@@ -148,6 +152,19 @@ export default function ProductListPage() {
             setCategories(data.filters.categories);
             setTotalItems(data.meta.pagination.totalItems);
             setTotalPages(data.meta.pagination.totalPages);
+
+            if(isAuthenticated && data.products.length > 0) {
+                try {
+                    const variantIds = data.products.map((product) => product.variant.variant_id);
+                    const wishlistData = await wishlistService.checkMany(variantIds);
+
+                    setWishlistMap(wishlistData?.items ?? {});
+                } catch {
+                    setWishlistMap({});
+                }
+            }else {
+                setWishlistMap({});
+            }
         }catch(error) {
             toast.error(getErrorMessage(error));
         }finally{
@@ -161,7 +178,7 @@ export default function ProductListPage() {
         }, 300);
 
         return () => window.clearTimeout(timer);
-    }, [searchParams]);
+    }, [searchParams, isAuthenticated]);
 
     return (
         <main className="bg-[#f5f6fb] py-6">
@@ -242,6 +259,13 @@ export default function ProductListPage() {
                                     <ProductCard
                                         key={`${product.product_id}-${product.variant.variant_id}`}
                                         product={product}
+                                        isWishlisted={Boolean(wishlistMap[product.variant.variant_id])}
+                                        onWishlistChange={(variantId, isWishlisted) => {
+                                            setWishlistMap((current) => ({
+                                                ...current,
+                                                [variantId]: isWishlisted,
+                                            }));
+                                        }}
                                     />
                                 ))}
                             </div>

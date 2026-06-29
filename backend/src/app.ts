@@ -25,6 +25,7 @@ import externalNewsRoute from "#routes/externalNews.route";
 import cartRoute from "#routes/cart.route";
 import orderRoute from "#routes/order.route";
 import reviewRoute from "#routes/review.route";
+import wishlistRoute from "#routes/wishlist.route";
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use("/api/external-news", externalNewsRoute);
 app.use("/api/carts", cartRoute);
 app.use("/api/orders", orderRoute);
 app.use("/api/reviews", reviewRoute);
+app.use("/api/wishlists", wishlistRoute);
 
 app.use(globalErrorHandler);
 

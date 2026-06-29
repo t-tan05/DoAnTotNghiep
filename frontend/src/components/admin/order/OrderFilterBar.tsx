@@ -34,7 +34,7 @@ export default function OrderFilterBar({
             <select
                 value={status}
                 onChange={(e) => onStatusChange(e.target.value as OrderStatus | "")}
-                className="h-10 rounded-md border bg-background px-3 text-sm"
+                className="h-10 rounded-md border bg-background px-3 text-sm cursor-pointer"
             >
                 <option value="">Tất cả trạng thái</option>
                 <option value="PENDING">Chờ xử lý</option>
@@ -49,7 +49,7 @@ export default function OrderFilterBar({
             <select
                 value={paymentStatus}
                 onChange={(e) => onPaymentStatusChange(e.target.value as OrderPaymentStatus | "")}
-                className="h-10 rounded-md border bg-background px-3 text-sm"
+                className="h-10 rounded-md border bg-background px-3 text-sm cursor-pointer"
             >
                 <option value="">Tất cả thanh toán</option>
                 <option value="UNPAID">Chưa thanh toán</option>
@@ -64,7 +64,7 @@ export default function OrderFilterBar({
             <select
                 value={paymentMethod}
                 onChange={(e) => onPaymentMethodChange(e.target.value as PaymentMethod | "")}
-                className="h-10 rounded-md border bg-background px-3 text-sm"
+                className="h-10 rounded-md border bg-background px-3 text-sm cursor-pointer"
             >
                 <option value="">Tất cả phương thức</option>
                 <option value="COD">COD</option>
@@ -74,8 +74,8 @@ export default function OrderFilterBar({
                 <option value="BANK_TRANSFER">Chuyển khoản</option>
             </select>
 
-            <Input type="date" value={fromDate} onChange={(e) => onFromDateChange(e.target.value)} />
-            <Input type="date" value={toDate} onChange={(e) => onToDateChange(e.target.value)} />
+            <Input type="date" value={fromDate} onChange={(e) => onFromDateChange(e.target.value)} className="cursor-pointer"/>
+            <Input type="date" value={toDate} onChange={(e) => onToDateChange(e.target.value)} className="cursor-pointer"/>
 
             <Button type="button" variant="outline" onClick={onClear} className="cursor-pointer">
                 Xóa lọc

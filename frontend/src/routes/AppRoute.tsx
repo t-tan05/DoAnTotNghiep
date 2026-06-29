@@ -18,6 +18,7 @@ import AccountProfilePage from "@/pages/profile/AccountProfilePage";
 import ChangePasswordPage from "@/pages/profile/ChangePasswordPage";
 import AddressPage from "@/pages/profile/AddressPage";
 import OrderHistoryPage from "@/pages/profile/OrderHistoryPage";
+import WishlistPage from "@/pages/profile/WishlistPage";
 import AdminLayout from "@/components/admin/layout/AdminLayout";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
@@ -63,6 +64,7 @@ export default function AppRoute() {
                         <Route index element={<AccountProfilePage />} />
                         <Route path="password" element={<ChangePasswordPage />} />
                         <Route path="orders" element={<OrderHistoryPage />} />
+                        <Route path="wishlist" element={<WishlistPage />} />
                         <Route path="addresses" element={<AddressPage />} />
                     </Route>
 

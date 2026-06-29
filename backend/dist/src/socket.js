@@ -1,4 +1,8 @@
 import { Server } from "socket.io";
+import redisClient from "#config/redis";
+import jwt from "jsonwebtoken";
+import { ACCESS_TOKEN } from "#config/jwt";
+import { findUserById } from "#models/user.model";
 let io;
 export function initSocket(server) {
     io = new Server(server, {
@@ -7,9 +11,46 @@ export function initSocket(server) {
             credentials: true,
         },
     });
+    io.use(async (socket, next) => {
+        try {
+            const token = socket.handshake.auth?.token;
+            if (!token) {
+                return next(new Error("UNAUTHORIZED"));
+            }
+            const isBlacklist = await redisClient.exists(`blacklist:${token}`);
+            if (isBlacklist) {
+                return next(new Error("UNAUTHORIZED"));
+            }
+            const decoded = jwt.verify(token, ACCESS_TOKEN, {
+                algorithms: ['HS512'],
+            });
+            if (!decoded.user_id) {
+                return next(new Error("UNAUTHORIZED"));
+            }
+            const currentUser = await findUserById(decoded.user_id);
+            if (!currentUser || currentUser.status === "LOCKED") {
+                return next(new Error("UNAUTHORIZED"));
+            }
+            socket.data.user = {
+                user_id: currentUser.user_id,
+                email: currentUser.email,
+                roles: currentUser.users_roles.map((role) => role.role_name),
+            };
+            next();
+        }
+        catch {
+            next(new Error("UNAUTHORIZED"));
+        }
+    });
     io.on("connection", (socket) => {
         console.log("Socket connected: ", socket.id);
         socket.on("join_admin", () => {
+            const roles = socket.data.user?.roles || [];
+            const canJoinAdmin = roles.includes("ADMIN") || roles.includes("EMPLOYEE");
+            if (!canJoinAdmin) {
+                socket.emit("socket:error", "Bạn không có quyền theo dõi đơn hàng.");
+                return;
+            }
             socket.join("admin");
         });
         socket.on("disconnect", () => {

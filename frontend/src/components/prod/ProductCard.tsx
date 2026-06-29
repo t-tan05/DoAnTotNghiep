@@ -1,13 +1,29 @@
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { wishlistService } from "@/services/wishlist.service";
 import type { PublicProductCardItem } from "@/types/product.type";
+import { getErrorMessage } from "@/utils/getErrorMessage";
+import { Heart } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type Props = {
     product: PublicProductCardItem;
+    isWishlisted?: boolean;
+    onWishlistChange?: (variantId: string, isWishlisted: boolean) => void;
 };
 
-export default function ProductCard({product}: Props) {
+export default function ProductCard({
+    product,
+    isWishlisted: initialIsWishlisted = false,
+    onWishlistChange,
+}: Props) {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { isAuthenticated } = useAuth();
+
     const variant = product.variant;
 
     const displayName = variant.variant_name || product.product_name;
@@ -15,9 +31,62 @@ export default function ProductCard({product}: Props) {
     const originalPrice = Number(variant.original_price ?? variant.price);
     const hasDiscount = originalPrice > price;
     const isOutOfStock = Number(variant.quantity_in_stock) <= 0;
+    const [isWishlisted, setIsWishlisted] = useState(initialIsWishlisted);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
+
+    useEffect(() => {
+        setIsWishlisted(initialIsWishlisted);
+    }, [initialIsWishlisted, variant.variant_id]);
+
+    async function handleToggleWishlist() {
+        if(!isAuthenticated) {
+            navigate("/login", {
+                state: {
+                    from: `${location.pathname}${location.search}`,
+                },
+            });
+            return;
+        }
+
+        try {
+            setWishlistLoading(true);
+
+            const data = isWishlisted
+                ? await wishlistService.remove(variant.variant_id)
+                : await wishlistService.add(variant.variant_id);
+
+            const nextIsWishlisted = Boolean(data?.isWishlisted);
+            setIsWishlisted(nextIsWishlisted);
+            onWishlistChange?.(variant.variant_id, nextIsWishlisted);
+            toast.success(
+                data?.isWishlisted
+                    ? "Đã thêm vào sản phẩm yêu thích."
+                    : "Đã bỏ khỏi sản phẩm yêu thích.",
+            );
+        } catch(error) {
+            toast.error(getErrorMessage(error));
+        } finally {
+            setWishlistLoading(false);
+        }
+    }
 
     return (
-        <div className="group flex h-full flex-col rounded-md border bg-white p-3 transition hover:border-blue-700 hover:shadow-sm">
+        <div className="group relative flex h-full flex-col rounded-md border bg-white p-3 transition hover:border-blue-700 hover:shadow-sm">
+            <button
+                type="button"
+                disabled={wishlistLoading}
+                onClick={handleToggleWishlist}
+                className="absolute right-5 top-5 z-10 flex size-9 cursor-pointer items-center justify-center rounded-full border bg-white/95 text-muted-foreground shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label={isWishlisted ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+            >
+                <Heart
+                    className={[
+                        "size-5",
+                        isWishlisted ? "fill-blue-700 border-blue-200" : "",
+                    ].join(" ")}
+                />
+            </button>
+
             <Link
                 to={`/products/${product.product_id}?variantId=${variant.variant_id}`}
                 className="block"

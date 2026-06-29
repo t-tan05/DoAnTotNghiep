@@ -5,10 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { cartService } from "@/services/cart.service";
 import { productService } from "@/services/product.service";
+import { wishlistService } from "@/services/wishlist.service";
 import type { AdminProduct } from "@/types/product.type";
 import type { AdminProductVariant } from "@/types/productVariant.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { ChevronLeft, ChevronRight, Home, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Home, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -157,6 +158,8 @@ export default function ProductDetailPage() {
     const [loading, setLoading] = useState(true);
     const [adding, setAdding] = useState(false);
     const [buyingNow, setBuyingNow] = useState(false);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
+    const [isWishlisted, setIsWishlisted] = useState(false);
     const [specExpanded, setSpecExpanded] = useState(false);
     const [detailExpanded, setDetailExpanded] = useState(false);
     const [error, setError] = useState("");
@@ -252,6 +255,24 @@ export default function ProductDetailPage() {
         setThumbnailStartIndex((currentIndex) => Math.min(currentIndex, maxThumbnailStartIndex));
     }, [maxThumbnailStartIndex]);
 
+    useEffect(() => {
+        async function checkWishlist() {
+            if(!selectedVariant?.variant_id || !isAuthenticated) {
+                setIsWishlisted(false);
+                return;
+            }
+
+            try {
+                const data = await wishlistService.check(selectedVariant.variant_id);
+                setIsWishlisted(Boolean(data?.isWishlisted));
+            } catch {
+                setIsWishlisted(false);
+            }
+        }
+
+        checkWishlist();
+    }, [selectedVariant?.variant_id, isAuthenticated]);
+
     function selectVariant(variant: AdminProductVariant) {
         setSelectedVariantId(variant.variant_id);
         setQuantity(1);
@@ -318,6 +339,38 @@ export default function ProductDetailPage() {
         if (galleryImages.length <= 1) return;
 
         moveToImage(selectedImageIndex + 1);
+    }
+
+    async function handleToggleWishlist() {
+        if(!selectedVariant) return;
+
+        if(!isAuthenticated) {
+            navigate("/login", {
+                state: {
+                    from: `${location.pathname}${location.search}`,
+                },
+            });
+            return;
+        }
+
+        try {
+            setWishlistLoading(true);
+
+            const data = isWishlisted
+                ? await wishlistService.remove(selectedVariant.variant_id)
+                : await wishlistService.add(selectedVariant.variant_id);
+
+            setIsWishlisted(Boolean(data?.isWishlisted));
+            toast.success(
+                data?.isWishlisted
+                    ? "Đã thêm vào sản phẩm yêu thích."
+                    : "Đã bỏ khỏi sản phẩm yêu thích.",
+            );
+        } catch(error) {
+            toast.error(getErrorMessage(error));
+        } finally {
+            setWishlistLoading(false);
+        }
     }
 
     async function handleAddToCart() {
@@ -647,6 +700,22 @@ export default function ProductDetailPage() {
                                     className="h-12 w-full cursor-pointer bg-red-600 text-base hover:bg-red-700 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
                                 >
                                     {buyingNow ? "Đang xử lý..." : "Mua ngay"}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={!selectedVariant || wishlistLoading}
+                                    onClick={handleToggleWishlist}
+                                    className="h-12 w-full cursor-pointer gap-2 border-blue-700 text-base text-blue-700 hover:bg-blue-50 disabled:!pointer-events-auto disabled:!cursor-not-allowed sm:col-span-2"
+                                >
+                                    <Heart
+                                        className={cn(
+                                            "h-5 w-5",
+                                            isWishlisted && "fill-blue-700",
+                                        )}
+                                    />
+                                    {isWishlisted ? "Đã yêu thích" : "Yêu thích"}
                                 </Button>
                             </div>
                         </div>
