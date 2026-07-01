@@ -3,6 +3,7 @@ import {
     LockKeyhole,
     MapPin,
     Package,
+    ShieldCheck,
     UserRound,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
@@ -34,6 +35,11 @@ const menuItems = [
         to: "/account/wishlist",
         label: "Sản phẩm yêu thích",
         icon: Heart,
+    },
+    {
+        to: "/account/warranties",
+        label: "Bảo hành",
+        icon: ShieldCheck,
     },
     {
         to: "/account/addresses",

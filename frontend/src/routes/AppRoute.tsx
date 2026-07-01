@@ -19,6 +19,9 @@ import ChangePasswordPage from "@/pages/profile/ChangePasswordPage";
 import AddressPage from "@/pages/profile/AddressPage";
 import OrderHistoryPage from "@/pages/profile/OrderHistoryPage";
 import WishlistPage from "@/pages/profile/WishlistPage";
+import WarrantyDetailPage from "@/pages/profile/WarrantyDetailPage";
+import WarrantyListPage from "@/pages/profile/WarrantyListPage";
+import WarrantyRequestPage from "@/pages/profile/WarrantyRequestPage";
 import AdminLayout from "@/components/admin/layout/AdminLayout";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
@@ -45,6 +48,10 @@ import EmployeeOrdersPage from "@/pages/employee/EmployeeOrdersPage";
 import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
 import EmployeeOrderDetailPage from "@/pages/employee/EmployeeOrderDetailPage";
 import ProductListPage from "@/pages/public/ProductListPage";
+import AdminWarrantiesPage from "@/pages/admin/AdminWarrantiesPage";
+import AdminWarrantyDetailPage from "@/pages/admin/AdminWarrantyDetailPage";
+import EmployeeWarrantiesPage from "@/pages/employee/EmployeeWarrantiesPage";
+import EmployeeWarrantyDetailPage from "@/pages/employee/EmployeeWarrantyDetailPage";
 
 
 
@@ -65,6 +72,9 @@ export default function AppRoute() {
                         <Route path="password" element={<ChangePasswordPage />} />
                         <Route path="orders" element={<OrderHistoryPage />} />
                         <Route path="wishlist" element={<WishlistPage />} />
+                        <Route path="warranties" element={<WarrantyListPage />} />
+                        <Route path="warranties/new" element={<WarrantyRequestPage />} />
+                        <Route path="warranties/:warrantyId" element={<WarrantyDetailPage />} />
                         <Route path="addresses" element={<AddressPage />} />
                     </Route>
 
@@ -96,6 +106,8 @@ export default function AppRoute() {
                     <Route path="promotions" element={<AdminPromotionsPage />} />
                     <Route path="orders" element={<AdminOrdersPage />} />
                     <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
+                    <Route path="warranties" element={<AdminWarrantiesPage />} />
+                    <Route path="warranties/:warrantyId" element={<AdminWarrantyDetailPage />} />
                     <Route path="users" element={<div>Quản lý người dùng</div>} />
                     <Route path="statistics" element={<div>Thống kê</div>} />
                     <Route path="blogs" element={<AdminBlogsPage />} />
@@ -112,6 +124,8 @@ export default function AppRoute() {
                     <Route path="blogs/:postId/preview" element={<EmployeeBlogPreviewPage />} />
                     <Route path="orders" element={<EmployeeOrdersPage />} />
                     <Route path="orders/:orderId" element={<EmployeeOrderDetailPage />} />
+                    <Route path="warranties" element={<EmployeeWarrantiesPage />} />
+                    <Route path="warranties/:warrantyId" element={<EmployeeWarrantyDetailPage />} />
                     <Route path="external-news" element={<EmployeeExternalNewsPage />} />
                 </Route>
             </Route>

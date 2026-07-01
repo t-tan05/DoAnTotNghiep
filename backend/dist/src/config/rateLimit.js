@@ -1,7 +1,7 @@
 import rateLimit from "express-rate-limit";
 export const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 200,
     message: "Bạn đã gửi quá nhiều yêu cầu, vui lòng thử lại sau.",
 });
 export const rateRequestSendResetCode = rateLimit({

@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadgePercent,
   Boxes,
   ChartColumn,
@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Package,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
   Tags,
   Users,
@@ -47,6 +48,11 @@ export const adminSidebarItems = [
     title: "Đơn hàng",
     url: "/admin/orders",
     icon: ClipboardList,
+  },
+  {
+    title: "Bảo hành",
+    url: "/admin/warranties",
+    icon: ShieldCheck,
   },
   {
     title: "Người dùng",

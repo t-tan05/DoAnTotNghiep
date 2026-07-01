@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { Heart, LockKeyhole, LogIn, LogOut, MapPinned, Package, UserRound } from "lucide-react";
+import { Heart, LockKeyhole, LogIn, LogOut, MapPinned, Package, ShieldCheck, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function UserDropdown() {
@@ -69,6 +69,14 @@ export default function UserDropdown() {
                         >
                             <Heart className="size-4" />
                             Sản phẩm yêu thích
+                        </Link>
+
+                        <Link
+                            to="/account/warranties"
+                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                        >
+                            <ShieldCheck className="size-4" />
+                            Bảo hành
                         </Link>
 
                         <Link

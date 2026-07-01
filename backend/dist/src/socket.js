@@ -44,6 +44,10 @@ export function initSocket(server) {
     });
     io.on("connection", (socket) => {
         console.log("Socket connected: ", socket.id);
+        const currentUserId = socket.data.user?.user_id;
+        if (currentUserId) {
+            socket.join(`warranty_user:${currentUserId}`);
+        }
         socket.on("join_admin", () => {
             const roles = socket.data.user?.roles || [];
             const canJoinAdmin = roles.includes("ADMIN") || roles.includes("EMPLOYEE");
@@ -52,6 +56,24 @@ export function initSocket(server) {
                 return;
             }
             socket.join("admin");
+        });
+        socket.on("join_warranty_staff", () => {
+            const roles = socket.data.user?.roles || [];
+            const canJoinWarrantyStaff = roles.includes("ADMIN") || roles.includes("EMPLOYEE");
+            if (!canJoinWarrantyStaff) {
+                socket.emit("socket:error", "Bạn không có quyền theo dõi bảo hành.");
+                return;
+            }
+            socket.join("warranty_staff");
+        });
+        socket.on("join_warranty_detail", (warrantyId) => {
+            const roles = socket.data.user?.roles || [];
+            const canJoinWarrantyDetail = roles.includes("ADMIN") || roles.includes("EMPLOYEE");
+            if (!canJoinWarrantyDetail || typeof warrantyId !== "string" || !warrantyId.trim()) {
+                socket.emit("socket:error", "Bạn không có quyền theo dõi chi tiết bảo hành.");
+                return;
+            }
+            socket.join(`warranty_detail:${warrantyId}`);
         });
         socket.on("disconnect", () => {
             console.log("Socket disconnected:", socket.id);

@@ -671,37 +671,133 @@ CREATE TABLE `wishlists` (
 -- Table structure for table `warranties`
 --
 
+DROP TABLE IF EXISTS `warranty_issue_categories`;
+CREATE TABLE `warranty_issue_categories` (
+  `issue_category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `issue_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `is_warranty_eligible` tinyint(1) NOT NULL DEFAULT '1',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`issue_category_id`),
+  UNIQUE KEY `uq_warranty_issue_name` (`issue_name`),
+  KEY `idx_warranty_issue_active` (`is_active`),
+  KEY `idx_warranty_issue_eligible` (`is_warranty_eligible`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS `warranty_policies`;
+CREATE TABLE `warranty_policies` (
+  `policy_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `policy_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `brand_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `product_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `from_day` int NOT NULL DEFAULT '0',
+  `to_day` int DEFAULT NULL,
+  `policy_type` enum('REPLACE_NEW','CONDITIONAL_REPLACE','REPAIR','SEND_TO_BRAND','PAID_REPAIR','REFUSE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'REPAIR',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`policy_id`),
+  KEY `idx_warranty_policy_category` (`category_id`),
+  KEY `idx_warranty_policy_brand` (`brand_id`),
+  KEY `idx_warranty_policy_product` (`product_id`),
+  KEY `idx_warranty_policy_type` (`policy_type`),
+  KEY `idx_warranty_policy_active` (`is_active`),
+  CONSTRAINT `fk_warranty_policy_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`category_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_warranty_policy_brand` FOREIGN KEY (`brand_id`) REFERENCES `brands` (`brand_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_warranty_policy_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 DROP TABLE IF EXISTS `warranties`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `warranties` (
   `warranty_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `warranty_code` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `device_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `customer_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `order_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `issue_category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `policy_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_by_employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `assigned_employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `received_date` date NOT NULL,
+  `request_channel` enum('ONLINE','STORE','HOTLINE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ONLINE',
+  `service_method` enum('DROP_OFF','PICKUP','SHIPPING') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PICKUP',
+  `received_date` date DEFAULT NULL,
   `expected_return_date` date DEFAULT NULL,
   `return_date` date DEFAULT NULL,
   `issue_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `inspection_note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `inspection_result` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `is_warranty_eligible` tinyint(1) DEFAULT NULL,
+  `estimated_cost` decimal(12,2) DEFAULT NULL,
+  `customer_confirmed_paid_repair` tinyint(1) NOT NULL DEFAULT '0',
   `repair_actions` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `accessory_changed` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('RECEIVED','IN_PROGRESS','COMPLETED','RETURNED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RECEIVED',
+  `status` enum('REQUESTED','APPROVED','REJECTED','CUSTOMER_DROP_OFF','PICKUP_SCHEDULED','PICKED_UP','RECEIVED','INSPECTING','WAITING_CUSTOMER_CONFIRMATION','IN_PROGRESS','SENT_TO_BRAND','BRAND_RETURNED','COMPLETED','RETURN_SCHEDULED','RETURNED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'REQUESTED',
+  `pickup_receiver_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pickup_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pickup_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pickup_scheduled_at` datetime DEFAULT NULL,
+  `picked_up_at` datetime DEFAULT NULL,
+  `sent_to_brand_at` datetime DEFAULT NULL,
+  `brand_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `brand_ticket_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `brand_returned_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `return_method` enum('DROP_OFF','PICKUP','SHIPPING') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `return_receiver_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `return_phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `return_address` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `return_scheduled_at` datetime DEFAULT NULL,
+  `returned_at` datetime DEFAULT NULL,
   `note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`warranty_id`),
+  UNIQUE KEY `uq_warranty_code` (`warranty_code`),
   KEY `fk_warranty_device` (`device_id`),
+  KEY `idx_warranty_order` (`order_id`),
+  KEY `idx_warranty_issue_category` (`issue_category_id`),
+  KEY `idx_warranty_policy` (`policy_id`),
   KEY `idx_warranty_status` (`status`),
   KEY `idx_warranty_customer` (`customer_id`),
+  KEY `idx_warranty_request_channel` (`request_channel`),
+  KEY `idx_warranty_service_method` (`service_method`),
   KEY `idx_warranty_created_by_employee` (`created_by_employee_id`),
   KEY `idx_warranty_assigned_employee` (`assigned_employee_id`),
   CONSTRAINT `fk_warranty_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_warranty_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_warranty_issue_category` FOREIGN KEY (`issue_category_id`) REFERENCES `warranty_issue_categories` (`issue_category_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_warranty_policy` FOREIGN KEY (`policy_id`) REFERENCES `warranty_policies` (`policy_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_warranty_created_by_employee` FOREIGN KEY (`created_by_employee_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_warranty_assigned_employee` FOREIGN KEY (`assigned_employee_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_warranty_device` FOREIGN KEY (`device_id`) REFERENCES `devices` (`device_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `warranty_attachments`;
+CREATE TABLE `warranty_attachments` (
+  `attachment_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `warranty_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `uploaded_by_user_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `uploaded_by_employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `file_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_type` enum('IMAGE','VIDEO') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'IMAGE',
+  `purpose` enum('CUSTOMER_EVIDENCE','RECEIVING_PHOTO','INSPECTION_PHOTO','RETURN_PHOTO') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'CUSTOMER_EVIDENCE',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`attachment_id`),
+  KEY `idx_warranty_attachment_warranty` (`warranty_id`),
+  KEY `idx_warranty_attachment_user` (`uploaded_by_user_id`),
+  KEY `idx_warranty_attachment_employee` (`uploaded_by_employee_id`),
+  KEY `idx_warranty_attachment_purpose` (`purpose`),
+  CONSTRAINT `fk_warranty_attachment_warranty` FOREIGN KEY (`warranty_id`) REFERENCES `warranties` (`warranty_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_warranty_attachment_user` FOREIGN KEY (`uploaded_by_user_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_warranty_attachment_employee` FOREIGN KEY (`uploaded_by_employee_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 DROP TABLE IF EXISTS `warranty_processes`;
@@ -709,9 +805,11 @@ DROP TABLE IF EXISTS `warranty_processes`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `warranty_processes` (
   `process_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `warranty_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `employee_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `action` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `warranty_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+  `action` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `old_status` enum('REQUESTED','APPROVED','REJECTED','CUSTOMER_DROP_OFF','PICKUP_SCHEDULED','PICKED_UP','RECEIVED','INSPECTING','WAITING_CUSTOMER_CONFIRMATION','IN_PROGRESS','SENT_TO_BRAND','BRAND_RETURNED','COMPLETED','RETURN_SCHEDULED','RETURNED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `new_status` enum('REQUESTED','APPROVED','REJECTED','CUSTOMER_DROP_OFF','PICKUP_SCHEDULED','PICKED_UP','RECEIVED','INSPECTING','WAITING_CUSTOMER_CONFIRMATION','IN_PROGRESS','SENT_TO_BRAND','BRAND_RETURNED','COMPLETED','RETURN_SCHEDULED','RETURNED','CANCELLED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`process_id`),
