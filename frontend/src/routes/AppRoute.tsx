@@ -28,6 +28,7 @@ import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
 import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";
 import AdminProductDetailPage from "@/pages/admin/AdminProductDetailPage";
+import AdminProductLinesPage from "@/pages/admin/AdminProductLinesPage";
 import AdminProductAttributesPage from "@/pages/admin/AdminProductAttributesPage";
 import AdminProductVariantFormPage from "@/pages/admin/AdminProductVariantFormPage";
 import AdminPromotionsPage from "@/pages/admin/AdminPromotionsPage";
@@ -106,6 +107,7 @@ export default function AppRoute() {
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboardPage />} />
                     <Route path="products" element={<AdminProductsPage />} />
+                    <Route path="product-lines" element={<AdminProductLinesPage />} />
                     <Route path="products/:productId" element={<AdminProductDetailPage />}/>
                     <Route path="products/:productId/variants/new" element={<AdminProductVariantFormPage />}/>
                     <Route path="products/:productId/variants/:variantId/edit" element={<AdminProductVariantFormPage />}/>

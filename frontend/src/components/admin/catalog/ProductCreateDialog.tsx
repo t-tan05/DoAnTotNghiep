@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { productService } from "@/services/product.service";
+import { productLineService } from "@/services/productLine.service";
 import type { Brand } from "@/types/brand.type";
 import type { Category } from "@/types/category.type";
+import type { ProductLine } from "@/types/product-line.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type Props = {
@@ -32,12 +34,53 @@ export default function ProductCreateDialog({
         productName: "",
         brandId: "",
         categoryId: "",
+        lineId: "",
         warrantyPeriod: "12",
         description: "",
     });
 
+    const [productLines, setProductLines] = useState<ProductLine[]>([]);
+    const [loadingLines, setLoadingLines] = useState(false);
     const [error, setError] = useState("");
     const [loading ,setLoading] = useState(false);
+
+    useEffect(() => {
+        if(!open || !form.brandId || !form.categoryId) {
+            setProductLines([]);
+            return;
+        }
+
+        let ignore = false;
+
+        async function loadProductLines() {
+            try {
+                setLoadingLines(true);
+
+                const data = await productLineService.getAll({
+                    page: 1,
+                    limit: 1000,
+                    search: "",
+                    sortBy: "display_order",
+                    sortOrder: "asc",
+                    brandId: form.brandId,
+                    categoryId: form.categoryId,
+                    isActive: true,
+                });
+
+                if(!ignore) setProductLines(data?.productLines ?? []);
+            } catch (error) {
+                if(!ignore) toast.error(getErrorMessage(error));
+            } finally {
+                if(!ignore) setLoadingLines(false);
+            }
+        }
+
+        loadProductLines();
+
+        return () => {
+            ignore = true;
+        };
+    }, [open, form.brandId, form.categoryId]);
 
     function updateField(name: keyof typeof form, value: string) {
         setForm((prev) => ({
@@ -61,6 +104,7 @@ export default function ProductCreateDialog({
                 productName: form.productName.trim(),
                 brandId: form.brandId,
                 categoryId: form.categoryId,
+                lineId: form.lineId || null,
                 warrantyPeriod: Number(form.warrantyPeriod),
                 description: form.description.trim() || null,
             });
@@ -75,6 +119,7 @@ export default function ProductCreateDialog({
                 productName: "",
                 brandId: "",
                 categoryId: "",
+                lineId: "",
                 warrantyPeriod: "12",
                 description: "",
             });
@@ -109,7 +154,10 @@ export default function ProductCreateDialog({
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label>Thương hiệu</Label>
-                            <Select value={form.brandId} onValueChange={(value) => updateField("brandId", value)}>
+                            <Select
+                                value={form.brandId}
+                                onValueChange={(value) => setForm((prev) => ({ ...prev, brandId: value, lineId: "" }))}
+                            >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Chọn thương hiệu"/>
                                 </SelectTrigger>
@@ -125,7 +173,10 @@ export default function ProductCreateDialog({
 
                         <div className="space-y-2">
                             <Label>Danh mục</Label>
-                            <Select value={form.categoryId} onValueChange={(value) => updateField("categoryId", value)}>
+                            <Select
+                                value={form.categoryId}
+                                onValueChange={(value) => setForm((prev) => ({ ...prev, categoryId: value, lineId: "" }))}
+                            >
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Chọn danh mục"/>
                                 </SelectTrigger>
@@ -138,6 +189,27 @@ export default function ProductCreateDialog({
                                 </SelectContent>
                             </Select>
                         </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Dòng sản phẩm</Label>
+                        <Select
+                            value={form.lineId || "none"}
+                            onValueChange={(value) => updateField("lineId", value === "none" ? "" : value)}
+                            disabled={!form.brandId || !form.categoryId || loadingLines}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Chọn dòng sản phẩm"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Không chọn</SelectItem>
+                                {productLines.map((line) => (
+                                    <SelectItem key={line.line_id} value={line.line_id}>
+                                        {line.line_name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-2">

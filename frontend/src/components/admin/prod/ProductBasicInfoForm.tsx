@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { brandService } from "@/services/brand.service";
 import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
+import { productLineService } from "@/services/productLine.service";
 import type { Brand } from "@/types/brand.type";
 import type { Category } from "@/types/category.type";
+import type { ProductLine } from "@/types/product-line.type";
 import type { AdminProduct } from "@/types/product.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Pencil } from "lucide-react";
@@ -26,7 +28,9 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
     const [editing, setEditing] = useState(false);
     const [brands, setBrands] = useState<Brand[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [productLines, setProductLines] = useState<ProductLine[]>([]);
     const [loadingOptions, setLoadingOptions] = useState(false);
+    const [loadingLines, setLoadingLines] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
 
@@ -35,6 +39,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
         warrantyPeriod: String(product.warranty_period),
         brandId: product.brands.brand_id,
         categoryId: product.categories.category_id,
+        lineId: product.product_lines?.line_id ?? "",
         description: product.description ?? "",
     });
 
@@ -46,6 +51,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
             warrantyPeriod: String(product.warranty_period),
             brandId: product.brands.brand_id,
             categoryId: product.categories.category_id,
+            lineId: product.product_lines?.line_id ?? "",
             description: product.description ?? "",
         });
     }, [product, editing]);
@@ -86,6 +92,44 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
         loadOptions();
     }, [editing]);
 
+    useEffect(() => {
+        if(!editing || !form.brandId || !form.categoryId) {
+            setProductLines([]);
+            return;
+        }
+
+        let ignore = false;
+
+        async function loadProductLines() {
+            try {
+                setLoadingLines(true);
+
+                const data = await productLineService.getAll({
+                    page: 1,
+                    limit: 1000,
+                    search: "",
+                    sortBy: "display_order",
+                    sortOrder: "asc",
+                    brandId: form.brandId,
+                    categoryId: form.categoryId,
+                    isActive: true,
+                });
+
+                if(!ignore) setProductLines(data?.productLines ?? []);
+            } catch (error) {
+                if(!ignore) toast.error(getErrorMessage(error));
+            } finally {
+                if(!ignore) setLoadingLines(false);
+            }
+        }
+
+        loadProductLines();
+
+        return () => {
+            ignore = true;
+        };
+    }, [editing, form.brandId, form.categoryId]);
+
     function updateField(name: keyof typeof form, value: string) {
         setForm((prev) => ({
             ...prev,
@@ -101,6 +145,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
             warrantyPeriod: String(product.warranty_period),
             brandId: product.brands.brand_id,
             categoryId: product.categories.category_id,
+            lineId: product.product_lines?.line_id ?? "",
             description: product.description ?? "",
         });
     }
@@ -123,6 +168,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                 productName: form.productName.trim(),
                 brandId: form.brandId,
                 categoryId: form.categoryId,
+                lineId: form.lineId || null,
                 warrantyPeriod: Number(form.warrantyPeriod),
                 description: form.description.trim() || null,
             });
@@ -175,6 +221,11 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                         <p className="text-sm text-muted-foreground">Danh mục</p>
                         <p className="font-medium">{product.categories.category_name}</p>
                     </div>
+
+                    <div>
+                        <p className="text-sm text-muted-foreground">Dòng sản phẩm</p>
+                        <p className="font-medium">{product.product_lines?.line_name ?? "Chưa chọn"}</p>
+                    </div>
                 </div>
 
                 <div className="mt-4">
@@ -223,7 +274,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                         <Label>Thương hiệu</Label>
                         <Select
                             value={form.brandId}
-                            onValueChange={(value) => updateField("brandId", value)}
+                            onValueChange={(value) => setForm((prev) => ({ ...prev, brandId: value, lineId: "" }))}
                             disabled={loadingOptions}
                         >
                             <SelectTrigger className="w-full cursor-pointer">
@@ -243,7 +294,7 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                         <Label>Danh mục</Label>
                         <Select
                             value={form.categoryId}
-                            onValueChange={(value) => updateField("categoryId", value)}
+                            onValueChange={(value) => setForm((prev) => ({ ...prev, categoryId: value, lineId: "" }))}
                             disabled={loadingOptions}
                         >
                             <SelectTrigger className="w-full cursor-pointer">
@@ -258,6 +309,27 @@ export default function ProductBasicInfoForm({ product, onSuccess }: Props) {
                             </SelectContent>
                         </Select>
                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Dòng sản phẩm</Label>
+                    <Select
+                        value={form.lineId || "none"}
+                        onValueChange={(value) => updateField("lineId", value === "none" ? "" : value)}
+                        disabled={!form.brandId || !form.categoryId || loadingLines}
+                    >
+                        <SelectTrigger className="w-full cursor-pointer">
+                            <SelectValue placeholder="Chọn dòng sản phẩm" />
+                        </SelectTrigger>
+                        <SelectContent position="popper" align="start">
+                            <SelectItem value="none">Không chọn</SelectItem>
+                            {productLines.map((line) => (
+                                <SelectItem key={line.line_id} value={line.line_id}>
+                                    {line.line_name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="space-y-2">

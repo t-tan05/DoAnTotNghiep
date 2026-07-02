@@ -33,6 +33,7 @@ export const getAllProductsController = CatchAsync(async (req, res) => {
         }),
         brandId: typeof req.query.brandId === "string" ? req.query.brandId : undefined,
         categoryId: typeof req.query.categoryId === "string" ? req.query.categoryId : undefined,
+        lineId: typeof req.query.lineId === "string" ? req.query.lineId : undefined,
     };
     const data = await getAllProductsService(query);
     res.status(200).json({

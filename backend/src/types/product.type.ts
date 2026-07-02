@@ -19,6 +19,7 @@ export interface CreateProductPayload {
     productName: string;
     brandId: string;
     categoryId: string;
+    lineId?: string | null;
     description?: string | null;
     warrantyPeriod: number;
 }
@@ -27,6 +28,7 @@ export interface UpdateProductPayload {
     productName?: string;
     brandId?: string;
     categoryId?: string;
+    lineId?: string | null;
     description?: string | null;
     warrantyPeriod?: number;
 }

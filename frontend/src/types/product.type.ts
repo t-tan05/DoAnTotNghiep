@@ -6,6 +6,7 @@ export type ProductSortBy = "product_name" | "created_at" | "warranty_period";
 export type ProductListQuery = ListQuery<ProductSortBy> & {
     brandId?: string;
     categoryId?: string;
+    lineId?: string;
 };
 
 export type AdminProduct = {
@@ -14,6 +15,7 @@ export type AdminProduct = {
     description?: string | null;
     warranty_period: number;
     created_at?: string | null;
+    line_id?: string | null;
     brands: {
         brand_id: string;
         brand_name: string;
@@ -22,6 +24,13 @@ export type AdminProduct = {
         category_id: string;
         category_name: string;
     };
+    product_lines?: {
+        line_id: string;
+        line_name: string;
+        slug: string;
+        brand_id?: string;
+        category_id?: string;
+    } | null;
     product_images?: Array<{
         image_id: number | string;
         image_url: string;
@@ -43,6 +52,7 @@ export type CreateProductPayload = {
     productName: string;
     brandId: string;
     categoryId: string;
+    lineId?: string | null;
     description?: string | null;
     warrantyPeriod: number;
 };
@@ -51,6 +61,7 @@ export type UpdateProductPayload = {
     productName?: string;
     brandId?: string;
     categoryId?: string;
+    lineId?: string | null;
     description?: string | null;
     warrantyPeriod?: number;
 };

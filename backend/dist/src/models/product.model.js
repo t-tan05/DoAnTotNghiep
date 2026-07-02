@@ -13,6 +13,7 @@ export const findProductByNormalizeName = async (normalizedName) => {
             products_promotions: true,
             statistics_products: true,
             reviews: true,
+            product_lines: true,
         }
     });
 };
@@ -31,6 +32,7 @@ export const findProductById = async (productId) => {
             warranty_period: true,
             created_at: true,
             updated_at: true,
+            line_id: true,
             brands: {
                 select: {
                     brand_id: true,
@@ -42,6 +44,15 @@ export const findProductById = async (productId) => {
                     category_id: true,
                     category_name: true
                 }
+            },
+            product_lines: {
+                select: {
+                    line_id: true,
+                    line_name: true,
+                    slug: true,
+                    brand_id: true,
+                    category_id: true,
+                },
             },
             product_images: {
                 select: {
@@ -122,7 +133,7 @@ export const findProductById = async (productId) => {
     });
 };
 export const getProductWithQuery = async (params) => {
-    const { page, limit, search, sortBy, sortOrder, brandId, categoryId } = params;
+    const { page, limit, search, sortBy, sortOrder, brandId, categoryId, lineId } = params;
     const skip = (page - 1) * limit;
     const where = {
         ...(search
@@ -157,11 +168,19 @@ export const getProductWithQuery = async (params) => {
                             }
                         }
                     },
+                    {
+                        product_lines: {
+                            line_name: {
+                                contains: search
+                            }
+                        }
+                    },
                 ],
             }
             : {}),
         ...(brandId ? { brand_id: brandId } : {}),
         ...(categoryId ? { category_id: categoryId } : {}),
+        ...(lineId ? { line_id: lineId } : {}),
     };
     const [products, totalItems] = await prisma.$transaction([
         prisma.products.findMany({
@@ -174,6 +193,7 @@ export const getProductWithQuery = async (params) => {
                 description: true,
                 warranty_period: true,
                 created_at: true,
+                line_id: true,
                 brands: {
                     select: {
                         brand_id: true,
@@ -184,6 +204,15 @@ export const getProductWithQuery = async (params) => {
                     select: {
                         category_id: true,
                         category_name: true,
+                    },
+                },
+                product_lines: {
+                    select: {
+                        line_id: true,
+                        line_name: true,
+                        slug: true,
+                        brand_id: true,
+                        category_id: true,
                     },
                 },
                 product_variants: {

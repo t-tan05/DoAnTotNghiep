@@ -1,5 +1,6 @@
 import { findBrandById } from "#models/brand.model";
 import { findCategoryById } from "#models/category.model";
+import { findProductLineById } from "#models/productLine.model";
 import { 
     createProduct, 
     deleteProduct, 
@@ -40,6 +41,16 @@ export const createProductService = async(data: CreateProductPayload) => {
     //Kiểm tra category có tồn tại không
     if(!category) throw new AppError("Danh mục không tồn tại", 404);
 
+    if(data.lineId) {
+        const productLine = await findProductLineById(data.lineId);
+
+        if(!productLine) throw new AppError("DÃ²ng sáº£n pháº©m khÃ´ng tá»“n táº¡i", 404);
+
+        if(productLine.brand_id !== data.brandId || productLine.category_id !== data.categoryId) {
+            throw new AppError("DÃ²ng sáº£n pháº©m khÃ´ng thuá»™c Ä‘Ãºng thÆ°Æ¡ng hiá»‡u vÃ  danh má»¥c", 400);
+        }
+    }
+
     const productId = crypto.randomUUID();
 
     const newProduct = await createProduct({
@@ -48,6 +59,7 @@ export const createProductService = async(data: CreateProductPayload) => {
         normalized_name: normalizedName,
         brand_id: data.brandId,
         category_id: data.categoryId,
+        line_id: data.lineId ?? null,
         description: data.description ?? null,
         warranty_period: data.warrantyPeriod,
     });
@@ -84,6 +96,7 @@ export const getAllProductsService = async(params: ProductListQuery) => {
             filters: {
                 brandId: params.brandId,
                 categoryId: params.categoryId,
+                lineId: params.lineId,
             },
         },
     };
@@ -137,6 +150,29 @@ export const updateProductService = async(productId: string, data: UpdateProduct
     if(data.description !== undefined) productData.description = data.description;
 
     if(data.warrantyPeriod !== undefined) productData.warranty_period = data.warrantyPeriod;
+
+    const nextBrandId = data.brandId ?? product.brands.brand_id;
+    const nextCategoryId = data.categoryId ?? product.categories.category_id;
+
+    if(data.lineId !== undefined) {
+        if(data.lineId === null) {
+            productData.line_id = null;
+        } else {
+            const productLine = await findProductLineById(data.lineId);
+
+            if(!productLine) throw new AppError("DÃ²ng sáº£n pháº©m khÃ´ng tá»“n táº¡i", 404);
+
+            if(productLine.brand_id !== nextBrandId || productLine.category_id !== nextCategoryId) {
+                throw new AppError("DÃ²ng sáº£n pháº©m khÃ´ng thuá»™c Ä‘Ãºng thÆ°Æ¡ng hiá»‡u vÃ  danh má»¥c", 400);
+            }
+
+            productData.line_id = data.lineId;
+        }
+    } else if((data.brandId !== undefined || data.categoryId !== undefined) && product.product_lines) {
+        if(product.product_lines.brand_id !== nextBrandId || product.product_lines.category_id !== nextCategoryId) {
+            productData.line_id = null;
+        }
+    }
 
     const updProduct = await updateProduct(productId, productData);
 

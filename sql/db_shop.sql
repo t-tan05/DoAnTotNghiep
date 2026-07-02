@@ -316,6 +316,34 @@ CREATE TABLE `product_images` (
 ) ENGINE=InnoDB AUTO_INCREMENT=222 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+DROP TABLE IF EXISTS `product_lines`;
+CREATE TABLE `product_lines` (
+  `line_id` varchar(50) NOT NULL,
+  `line_name` varchar(100) NOT NULL,
+  `normalized_name` varchar(100) NOT NULL,
+  `slug` varchar(150) NOT NULL,
+
+  `brand_id` varchar(50) NOT NULL,
+  `category_id` varchar(50) NOT NULL,
+
+  `description` text DEFAULT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `display_order` int NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (`line_id`),
+
+  UNIQUE KEY `uq_product_lines_brand_category_slug` (`brand_id`, `category_id`, `slug`),
+  KEY `idx_product_lines_brand` (`brand_id`),
+  KEY `idx_product_lines_category` (`category_id`),
+  KEY `idx_product_lines_active_sort` (`is_active`, `display_order`),
+
+  CONSTRAINT `fk_product_lines_brand` FOREIGN KEY (`brand_id`) REFERENCES `brands` (`brand_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_product_lines_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`category_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Table structure for table `products`
@@ -326,6 +354,7 @@ DROP TABLE IF EXISTS `products`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `products` (
   `product_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `line_id` varchar(50) DEFAULT NULL,
   `product_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `normalized_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `brand_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -342,7 +371,9 @@ CREATE TABLE `products` (
   KEY `fk_product_category` (`category_id`),
   KEY `idx_products_category_brand` (`category_id`, `brand_id`),
   KEY `idx_products_created_at` (`created_at`),
+  KEY `idx_products_line` (`line_id`),
 
+  CONSTRAINT `fk_products_line` FOREIGN KEY (`line_id`) REFERENCES `product_lines` (`line_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_product_brand` FOREIGN KEY (`brand_id`) REFERENCES `brands` (`brand_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_product_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`category_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -7,6 +7,7 @@
   LayoutDashboard,
   LayoutTemplate,
   Package,
+  PanelsTopLeft,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -24,6 +25,11 @@ export const adminSidebarItems = [
     title: "Sản phẩm",
     url: "/admin/products",
     icon: Package,
+  },
+  {
+    title: "Dòng sản phẩm",
+    url: "/admin/product-lines",
+    icon: PanelsTopLeft,
   },
   {
     title: "Thuộc tính",

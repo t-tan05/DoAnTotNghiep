@@ -37,6 +37,7 @@ type Props<T> = {
     onSortChange: (sortBy: string) => void;
     onAdd?: () => void;
     headerActions?: ReactNode;
+    filters?: ReactNode;
     onEdit?: (item: T) => void;
     onDelete?: (item: T) => void;
     onView?: (item: T) => void;
@@ -59,6 +60,7 @@ export default function AdminDataTable<T>({
     onSortChange,
     onAdd,
     headerActions,
+    filters,
     onEdit,
     onDelete,
     onView,
@@ -96,6 +98,8 @@ export default function AdminDataTable<T>({
                     className="pl-9"
                 />
             </div>
+
+            {filters}
 
             <div className="rounded-md border bg-background">
                 <Table>

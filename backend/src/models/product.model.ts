@@ -8,6 +8,7 @@ export type ProductSortBy = "product_name" | "created_at" | "warranty_period";
 export type ProductListQuery = ListQuery<ProductSortBy> & {
     brandId?: string;
     categoryId?: string;
+    lineId?: string;
 };
 
 export const findProductByNormalizeName = async(normalizedName: string) => {
@@ -23,6 +24,7 @@ export const findProductByNormalizeName = async(normalizedName: string) => {
             products_promotions: true,
             statistics_products: true,
             reviews: true,
+            product_lines: true,
         }
     });
 };
@@ -43,6 +45,7 @@ export const findProductById = async(productId: string) => {
             warranty_period: true,
             created_at: true,
             updated_at: true,
+            line_id: true,
 
             brands: {
                 select: {
@@ -56,6 +59,16 @@ export const findProductById = async(productId: string) => {
                     category_id: true,
                     category_name: true
                 }
+            },
+
+            product_lines: {
+                select: {
+                    line_id: true,
+                    line_name: true,
+                    slug: true,
+                    brand_id: true,
+                    category_id: true,
+                },
             },
 
             product_images: {
@@ -143,7 +156,7 @@ export const findProductById = async(productId: string) => {
 };
 
 export const getProductWithQuery = async(params: ProductListQuery) => {
-    const {page, limit, search, sortBy, sortOrder, brandId, categoryId} = params;
+    const {page, limit, search, sortBy, sortOrder, brandId, categoryId, lineId} = params;
     const skip = (page - 1) * limit;
 
     const where: Prisma.productsWhereInput = {
@@ -179,12 +192,21 @@ export const getProductWithQuery = async(params: ProductListQuery) => {
                         }
                     }
                 },
+                {
+                    product_lines: {
+                        line_name: {
+                            contains: search
+                        }
+                    }
+                },
             ],
         }
         : {}),
         ...(brandId ? {brand_id: brandId} : {}),
 
         ...(categoryId ? {category_id: categoryId} : {}),
+
+        ...(lineId ? {line_id: lineId} : {}),
     };
 
     const [products, totalItems] = await prisma.$transaction([
@@ -198,6 +220,7 @@ export const getProductWithQuery = async(params: ProductListQuery) => {
                 description: true,
                 warranty_period: true,
                 created_at: true,
+                line_id: true,
                 brands: {
                     select: {
                         brand_id: true,
@@ -208,6 +231,15 @@ export const getProductWithQuery = async(params: ProductListQuery) => {
                     select: {
                         category_id: true,
                         category_name: true,
+                    },
+                },
+                product_lines: {
+                    select: {
+                        line_id: true,
+                        line_name: true,
+                        slug: true,
+                        brand_id: true,
+                        category_id: true,
                     },
                 },
                 product_variants: {

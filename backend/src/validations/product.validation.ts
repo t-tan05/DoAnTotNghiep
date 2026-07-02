@@ -14,6 +14,7 @@ export const createProductSchema = Joi.object({
     
     brandId: Joi.string().required(),
     categoryId: Joi.string().required(),
+    lineId: Joi.string().allow(null).optional(),
     description: Joi.string().allow("", null),
     warrantyPeriod: Joi.number()
         .integer()
@@ -36,6 +37,7 @@ export const updateProductSchema = Joi.object({
 
     brandId: Joi.string().optional(),
     categoryId: Joi.string().optional(),
+    lineId: Joi.string().allow(null).optional(),
     description: Joi.string().allow("", null).optional(),
     warrantyPeriod: Joi.number()
         .integer()
