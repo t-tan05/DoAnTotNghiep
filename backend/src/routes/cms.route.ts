@@ -1,0 +1,59 @@
+import { Router } from "express";
+import {
+    createCmsCollectionController,
+    createCmsRuleController,
+    createCmsSectionController,
+    createCmsSectionItemController,
+    deleteCmsCollectionController,
+    deleteCmsRuleController,
+    deleteCmsSectionController,
+    deleteCmsSectionItemController,
+    getAdminCmsCollectionDetailController,
+    getAdminCmsCollectionsController,
+    getPublicCmsCollectionController,
+    getPublicCmsCollectionFiltersController,
+    getPublicCmsCollectionProductsController,
+    updateCmsCollectionController,
+    updateCmsRuleController,
+    updateCmsSectionController,
+    updateCmsSectionItemController,
+} from "#controllers/cms.controller";
+import { VerifyToken } from "#middlewares/Auth";
+import { CheckRole } from "#middlewares/CheckRole";
+import {
+    createCmsCollectionSchema,
+    createCmsRuleSchema,
+    createCmsSectionItemSchema,
+    createCmsSectionSchema,
+    updateCmsCollectionSchema,
+    updateCmsRuleSchema,
+    updateCmsSectionItemSchema,
+    updateCmsSectionSchema,
+} from "#validations/cms.validation";
+import { Validate } from "#middlewares/Validate";
+
+const router = Router();
+
+router.get("/collections/public/:slug", getPublicCmsCollectionController);
+router.get("/collections/public/:slug/products", getPublicCmsCollectionProductsController);
+router.get("/collections/public/:slug/filters", getPublicCmsCollectionFiltersController);
+
+router.get("/admin/collections", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), getAdminCmsCollectionsController);
+router.post("/admin/collections", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(createCmsCollectionSchema), createCmsCollectionController);
+router.get("/admin/collections/:collectionId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), getAdminCmsCollectionDetailController);
+router.patch("/admin/collections/:collectionId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(updateCmsCollectionSchema), updateCmsCollectionController);
+router.delete("/admin/collections/:collectionId", VerifyToken, CheckRole("ADMIN"), deleteCmsCollectionController);
+
+router.post("/admin/collections/:collectionId/sections", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(createCmsSectionSchema), createCmsSectionController);
+router.patch("/admin/sections/:sectionId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(updateCmsSectionSchema), updateCmsSectionController);
+router.delete("/admin/sections/:sectionId", VerifyToken, CheckRole("ADMIN"), deleteCmsSectionController);
+
+router.post("/admin/sections/:sectionId/items", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(createCmsSectionItemSchema), createCmsSectionItemController);
+router.patch("/admin/items/:itemId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(updateCmsSectionItemSchema), updateCmsSectionItemController);
+router.delete("/admin/items/:itemId", VerifyToken, CheckRole("ADMIN"), deleteCmsSectionItemController);
+
+router.post("/admin/collections/:collectionId/rules", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(createCmsRuleSchema), createCmsRuleController);
+router.patch("/admin/rules/:ruleId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(updateCmsRuleSchema), updateCmsRuleController);
+router.delete("/admin/rules/:ruleId", VerifyToken, CheckRole("ADMIN"), deleteCmsRuleController);
+
+export default router;

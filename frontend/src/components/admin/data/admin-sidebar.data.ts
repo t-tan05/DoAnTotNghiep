@@ -5,6 +5,7 @@
   ClipboardList,
   FileText,
   LayoutDashboard,
+  LayoutTemplate,
   Package,
   Settings,
   ShieldCheck,
@@ -43,6 +44,11 @@ export const adminSidebarItems = [
     title: "Khuyến mãi",
     url: "/admin/promotions",
     icon: BadgePercent,
+  },
+  {
+    title: "CMS",
+    url: "/admin/cms",
+    icon: LayoutTemplate,
   },
   {
     title: "Đơn hàng",

@@ -286,7 +286,7 @@ const findColorAttribute = (variant) => {
             || attributeName.includes("color");
     });
 };
-const groupPublicVariants = (variants) => {
+export const groupPublicVariants = (variants) => {
     const groups = new Map();
     for (const variant of variants) {
         const key = getPublicVariantGroupKey(variant);
@@ -312,7 +312,7 @@ const groupPublicVariants = (variants) => {
         };
     });
 };
-const sortPublicProductCards = (products, sortBy) => {
+export const sortPublicProductCards = (products, sortBy) => {
     if (sortBy === "price_asc") {
         return [...products].sort((a, b) => Number(a.variant.discount_price ?? a.variant.price)
             - Number(b.variant.discount_price ?? b.variant.price));

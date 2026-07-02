@@ -55,7 +55,10 @@ import AdminWarrantiesPage from "@/pages/admin/AdminWarrantiesPage";
 import AdminWarrantyDetailPage from "@/pages/admin/AdminWarrantyDetailPage";
 import EmployeeWarrantiesPage from "@/pages/employee/EmployeeWarrantiesPage";
 import EmployeeWarrantyDetailPage from "@/pages/employee/EmployeeWarrantyDetailPage";
-
+import AdminCmsCollectionsPage from "@/pages/admin/AdminCmsCollectionsPage";
+import AdminCmsCollectionDetailPage from "@/pages/admin/AdminCmsCollectionDetailPage";
+import EmployeeCmsCollectionsPage from "@/pages/employee/EmployeeCmsCollectionsPage";
+import EmployeeCmsCollectionDetailPage from "@/pages/employee/EmployeeCmsCollectionDetailPage";
 
 
 export default function AppRoute() {
@@ -67,6 +70,7 @@ export default function AppRoute() {
                 <Route path="/tin-tuc" element={<BlogListPage />} />
                 <Route path="/tin-tuc/:postId" element={<BlogDetailPage />} />
                 <Route path="/products" element={<ProductListPage />} />
+                <Route path="/c/:cmsSlug" element={<ProductListPage />} />
                 <Route path="/products/:productId" element={<ProductDetailPage />} />
                 <Route path="/chinh-sach/bao-hanh" element={<WarrantyPolicyPage />} />
                 <Route path="/chinh-sach/doi-tra" element={<ReturnPolicyPage />} />
@@ -110,6 +114,8 @@ export default function AppRoute() {
                     <Route path="categories" element={<AdminCategoriesPage />} />
                     <Route path="brands" element={<AdminBrandPage />} />
                     <Route path="promotions" element={<AdminPromotionsPage />} />
+                    <Route path="cms" element={<AdminCmsCollectionsPage />} />
+                    <Route path="cms/:collectionId" element={<AdminCmsCollectionDetailPage />} />
                     <Route path="orders" element={<AdminOrdersPage />} />
                     <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
                     <Route path="warranties" element={<AdminWarrantiesPage />} />
@@ -132,6 +138,8 @@ export default function AppRoute() {
                     <Route path="orders/:orderId" element={<EmployeeOrderDetailPage />} />
                     <Route path="warranties" element={<EmployeeWarrantiesPage />} />
                     <Route path="warranties/:warrantyId" element={<EmployeeWarrantyDetailPage />} />
+                    <Route path="cms" element={<EmployeeCmsCollectionsPage />} />
+                    <Route path="cms/:collectionId" element={<EmployeeCmsCollectionDetailPage />} />
                     <Route path="external-news" element={<EmployeeExternalNewsPage />} />
                 </Route>
             </Route>

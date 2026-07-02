@@ -1,4 +1,6 @@
-import PublicCmsSections, { mapCmsItemToProduct } from "@/components/cms/PublicCmsSections";
+const fs = require('fs');
+const path = 'frontend/src/pages/public/ProductListPage.tsx';
+const content = String.raw`import PublicCmsSections from "@/components/cms/PublicCmsSections";
 import ProductCard from "@/components/prod/ProductCard";
 import ProductFilterSidebar from "@/components/prod/ProductFilterSidebar";
 import ProductSortBar from "@/components/prod/ProductSortBar";
@@ -16,7 +18,7 @@ import type {
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 function slugify(value: string) {
@@ -35,109 +37,14 @@ function normalizeCmsSlug(value: string) {
     const trimmed = value.trim();
     if(!trimmed) return "";
 
-    if(trimmed.startsWith("/c/")) {
-        return slugify(trimmed.replace(/^\/c\//, ""));
+    if(trimmed.startsWith("/")) {
+        return trimmed;
     }
 
-    return slugify(trimmed.replace(/^\/+/, ""));
-}
-
-function getCmsProductGridProducts(collection: CmsCollection | null) {
-    return (collection?.cms_sections ?? [])
-        .filter((section) => section.is_active && section.section_type === "PRODUCT_GRID")
-        .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
-        .flatMap((section) =>
-            (section.cms_section_items ?? [])
-                .filter((item) => item.is_active)
-                .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
-        )
-        .map(mapCmsItemToProduct)
-        .filter((product): product is PublicProductCardItem => Boolean(product));
-}
-
-function getUniqueFilterOptions(
-    products: PublicProductCardItem[],
-    key: "brand" | "category",
-): PublicProductFilterOption[] {
-    const map = new Map<string, PublicProductFilterOption>();
-
-    for(const product of products) {
-        if(key === "brand") {
-            map.set(product.brand.brand_id, {
-                id: product.brand.brand_id,
-                name: product.brand.brand_name,
-            });
-        }else {
-            map.set(product.category.category_id, {
-                id: product.category.category_id,
-                name: product.category.category_name,
-            });
-        }
-    }
-
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"));
-}
-
-function getProductPrice(product: PublicProductCardItem) {
-    return Number(product.variant.discount_price ?? product.variant.price ?? 0);
-}
-
-function filterCmsGridProducts(
-    products: PublicProductCardItem[],
-    filters: {
-        search: string;
-        brandId: string;
-        categoryId: string;
-        minPrice: string;
-        maxPrice: string;
-        sortBy: string;
-    },
-) {
-    const searchValue = filters.search.trim().toLowerCase();
-
-    const filteredProducts = products.filter((product) => {
-        const price = getProductPrice(product);
-
-        if(filters.brandId && product.brand.brand_id !== filters.brandId) return false;
-        if(filters.categoryId && product.category.category_id !== filters.categoryId) return false;
-        if(filters.minPrice && price < Number(filters.minPrice)) return false;
-        if(filters.maxPrice && price > Number(filters.maxPrice)) return false;
-
-        if(searchValue) {
-            const haystack = [
-                product.product_name,
-                product.variant.variant_name,
-                product.variant.sku,
-                product.brand.brand_name,
-                product.category.category_name,
-            ].join(" ").toLowerCase();
-
-            if(!haystack.includes(searchValue)) return false;
-        }
-
-        return true;
-    });
-
-    if(filters.sortBy === "price_asc") {
-        return [...filteredProducts].sort((a, b) => getProductPrice(a) - getProductPrice(b));
-    }
-
-    if(filters.sortBy === "price_desc") {
-        return [...filteredProducts].sort((a, b) => getProductPrice(b) - getProductPrice(a));
-    }
-
-    if(filters.sortBy === "name_asc") {
-        return [...filteredProducts].sort((a, b) =>
-            String(a.variant.variant_name || a.product_name)
-                .localeCompare(String(b.variant.variant_name || b.product_name), "vi")
-        );
-    }
-
-    return filteredProducts;
+    return "/" + slugify(trimmed);
 }
 
 export default function ProductListPage() {
-    const { cmsSlug: routeCmsSlug } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();
 
@@ -167,8 +74,7 @@ export default function ProductListPage() {
     const [cmsCollection, setCmsCollection] = useState<CmsCollection | null>(null);
     const [cmsLoading, setCmsLoading] = useState(false);
 
-    const cmsSlug = normalizeCmsSlug(routeCmsSlug || cmsParam);
-    const isCmsPage = Boolean(cmsSlug);
+    const cmsSlug = normalizeCmsSlug(cmsParam || search);
 
     useEffect(() => {
         setDraftSearch(search);
@@ -193,13 +99,7 @@ export default function ProductListPage() {
     }
 
     function clearFilters() {
-        const next = new URLSearchParams();
-
-        if(cmsParam && !routeCmsSlug) {
-            next.set("cms", cmsParam);
-        }
-
-        setSearchParams(next);
+        setSearchParams(new URLSearchParams());
     }
 
     function applyFilters() {
@@ -275,110 +175,15 @@ export default function ProductListPage() {
         try {
             setLoading(true);
 
-            if(isCmsPage) {
-                const cmsGridProducts = getCmsProductGridProducts(cmsCollection);
-
-                if(cmsGridProducts.length > 0) {
-                    const filteredProducts = filterCmsGridProducts(cmsGridProducts, {
-                        search,
-                        brandId,
-                        categoryId,
-                        minPrice,
-                        maxPrice,
-                        sortBy,
-                    });
-                    const totalGridItems = filteredProducts.length;
-                    const start = (page - 1) * 20;
-                    const paginatedProducts = filteredProducts.slice(start, start + 20);
-                    const maxGridPrice = cmsGridProducts.reduce(
-                        (maxPrice, product) => Math.max(maxPrice, getProductPrice(product)),
-                        0,
-                    );
-
-                    setMaxAvailablePrice(maxGridPrice);
-
-                    if(!searchParams.has("minPrice")) {
-                        setDraftMinPrice("0");
-                    }
-
-                    if(!searchParams.has("maxPrice")) {
-                        setDraftMaxPrice(String(maxGridPrice));
-                    }
-
-                    setProducts(paginatedProducts);
-                    setBrands(getUniqueFilterOptions(cmsGridProducts, "brand"));
-                    setCategories(getUniqueFilterOptions(cmsGridProducts, "category"));
-                    setTotalItems(totalGridItems);
-                    setTotalPages(Math.ceil(totalGridItems / 20));
-
-                    if(isAuthenticated && paginatedProducts.length > 0) {
-                        try {
-                            const variantIds = paginatedProducts.map((product) => product.variant.variant_id);
-                            const wishlistData = await wishlistService.checkMany(variantIds);
-
-                            setWishlistMap(wishlistData?.items ?? {});
-                        } catch {
-                            setWishlistMap({});
-                        }
-                    }else {
-                        setWishlistMap({});
-                    }
-
-                    return;
-                }
-
-                const [productData, filterData] = await Promise.all([
-                    cmsService.getPublicCollectionProducts(cmsSlug, {
-                        page,
-                        limit: 20,
-                        search: search || undefined,
-                        brandId: brandId || undefined,
-                        categoryId: categoryId || undefined,
-                        minPrice: minPrice ? Number(minPrice) : undefined,
-                        maxPrice: maxPrice ? Number(maxPrice) : undefined,
-                        sortBy,
-                    }),
-                    cmsService.getPublicCollectionFilters(cmsSlug),
-                ]);
-
-                setMaxAvailablePrice(Number(filterData.maxPrice ?? 0));
-
-                if(!searchParams.has("minPrice")) {
-                    setDraftMinPrice("0");
-                }
-
-                if(!searchParams.has("maxPrice")) {
-                    setDraftMaxPrice(String(Number(filterData.maxPrice ?? 0)));
-                }
-
-                setProducts(productData.items);
-                setBrands(filterData.brands);
-                setCategories(filterData.categories);
-                setTotalItems(productData.total);
-                setTotalPages(productData.totalPages);
-
-                if(isAuthenticated && productData.items.length > 0) {
-                    try {
-                        const variantIds = productData.items.map((product) => product.variant.variant_id);
-                        const wishlistData = await wishlistService.checkMany(variantIds);
-
-                        setWishlistMap(wishlistData?.items ?? {});
-                    } catch {
-                        setWishlistMap({});
-                    }
-                }else {
-                    setWishlistMap({});
-                }
-
-                return;
-            }
+            const effectiveBrandId = brandId || cmsCollection?.brand_id || "";
+            const effectiveCategoryId = categoryId || cmsCollection?.category_id || "";
 
             const data = await productService.getAllPublic({
                 page,
                 limit: 20,
                 search: search || undefined,
-                brandId: brandId || undefined,
-                categoryId: categoryId || undefined,
+                brandId: effectiveBrandId || undefined,
+                categoryId: effectiveCategoryId || undefined,
                 minPrice: minPrice ? Number(minPrice) : undefined,
                 maxPrice: maxPrice ? Number(maxPrice) : undefined,
                 sortBy: sortBy as any,
@@ -425,7 +230,7 @@ export default function ProductListPage() {
         }, 300);
 
         return () => window.clearTimeout(timer);
-    }, [searchParams, isAuthenticated, cmsSlug, isCmsPage, cmsCollection]);
+    }, [searchParams, isAuthenticated, cmsCollection?.brand_id, cmsCollection?.category_id]);
 
     useEffect(() => {
         loadCmsCollection();
@@ -478,7 +283,7 @@ export default function ProductListPage() {
                     <section className="space-y-4">
                         {cmsLoading ? (
                             <div className="rounded-md border bg-white p-8 text-center text-muted-foreground">
-                                Đang tải nội dung nổi bật...
+                                \u0110ang t\u1ea3i n\u1ed9i dung n\u1ed5i b\u1eadt...
                             </div>
                         ) : (
                             <PublicCmsSections collection={cmsCollection} />
@@ -492,15 +297,15 @@ export default function ProductListPage() {
 
                         {loading ? (
                             <div className="rounded-md border bg-white p-8 text-center text-muted-foreground">
-                                Đang tải sản phẩm...
+                                \u0110ang t\u1ea3i s\u1ea3n ph\u1ea9m...
                             </div>
                         ) : products.length === 0 ? (
                             <div className="rounded-md border bg-white p-8 text-center">
                                 <h2 className="font-semibold">
-                                    Không tìm thấy sản phẩm phù hợp
+                                    Kh\u00f4ng t\u00ecm th\u1ea5y s\u1ea3n ph\u1ea9m ph\u00f9 h\u1ee3p
                                 </h2>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    Hãy thử thay đổi từ khóa hoặc bỏ bớt bộ lọc.
+                                    H\u00e3y th\u1eed thay \u0111\u1ed5i t\u1eeb kh\u00f3a ho\u1eb7c b\u1ecf b\u1edbt b\u1ed9 l\u1ecdc.
                                 </p>
 
                                 <Button
@@ -509,7 +314,7 @@ export default function ProductListPage() {
                                     onClick={clearFilters}
                                     className="mt-4 cursor-pointer"
                                 >
-                                    Xóa bộ lọc
+                                    X\u00f3a b\u1ed9 l\u1ecdc
                                 </Button>
                             </div>
                         ) : (
@@ -538,7 +343,7 @@ export default function ProductListPage() {
                                 onClick={() => updateParam("page", String(page - 1))}
                                 className="cursor-pointer"
                             >
-                                Trước
+                                Tr\u01b0\u1edbc
                             </Button>
 
                             <span className="text-sm text-muted-foreground">
@@ -561,3 +366,5 @@ export default function ProductListPage() {
         </main>
     );
 }
+`;
+fs.writeFileSync(path, content, 'utf8');

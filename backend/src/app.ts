@@ -27,6 +27,7 @@ import orderRoute from "#routes/order.route";
 import reviewRoute from "#routes/review.route";
 import wishlistRoute from "#routes/wishlist.route";
 import warrantyRoute from "#routes/warranty.route";
+import cmsRoute from "#routes/cms.route";
 
 const app = express();
 
@@ -67,6 +68,7 @@ app.use("/api/orders", orderRoute);
 app.use("/api/reviews", reviewRoute);
 app.use("/api/wishlists", wishlistRoute);
 app.use("/api/warranties", warrantyRoute);
+app.use("/api/cms", cmsRoute);
 
 app.use(globalErrorHandler);
 

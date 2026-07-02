@@ -1,4 +1,4 @@
-import { ClipboardList, FileText, Newspaper, ShieldCheck } from "lucide-react";
+import { ClipboardList, FileText, LayoutTemplate, Newspaper, ShieldCheck } from "lucide-react";
 
 export const employeeSidebarItems = [
     {
@@ -14,11 +14,16 @@ export const employeeSidebarItems = [
     {
         title: "Đơn hàng",
         url: "/employee/orders",
-        icon: ClipboardList
+        icon: ClipboardList,
     },
     {
         title: "Bảo hành",
         url: "/employee/warranties",
-        icon: ShieldCheck
-    }
+        icon: ShieldCheck,
+    },
+    {
+        title: "CMS",
+        url: "/employee/cms",
+        icon: LayoutTemplate,
+    },
 ];
