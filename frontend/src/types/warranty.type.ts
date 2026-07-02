@@ -144,8 +144,30 @@ export type WarrantyLookupResponse =
         variant: WarrantyVariant;
     };
 
+export type WarrantyPhoneLookupItem = {
+    orderId: string;
+    orderDetailId: string;
+    deviceId: string | null;
+    serialNumber: string | null;
+    soldDate?: string | null;
+    warrantyEndDate?: string | null;
+    isValid: boolean;
+    hasOpenWarranty: boolean;
+    message: string;
+    product: WarrantyProduct;
+    variant: WarrantyVariant;
+};
+
+export type WarrantyPhoneLookupResponse = {
+    isValid: boolean;
+    message: string;
+    phoneNumber: string;
+    items: WarrantyPhoneLookupItem[];
+};
+
 export type CreateWarrantyPayload = {
-    serialNumber: string;
+    serialNumber?: string;
+    deviceId?: string;
     issueDescription: string;
     issueCategoryId?: string;
     serviceMethod?: WarrantyServiceMethod;

@@ -5,7 +5,7 @@ import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
 import VerifyResetCodePage from "@/pages/auth/VerifyResetCodePage";
 import ForbiddenPage from "@/pages/public/ForbiddenPage";
-import HomePage from "@/pages/public/HomePage";
+import HomePage from "@/pages/public/HomeLandingPage";
 import NotFoundPage from "@/pages/public/NotFoundPage";
 import ProductDetailPage from "@/pages/public/ProductDetailPage";
 import { Route, Routes } from "react-router-dom";
@@ -21,7 +21,7 @@ import OrderHistoryPage from "@/pages/profile/OrderHistoryPage";
 import WishlistPage from "@/pages/profile/WishlistPage";
 import WarrantyDetailPage from "@/pages/profile/WarrantyDetailPage";
 import WarrantyListPage from "@/pages/profile/WarrantyListPage";
-import WarrantyRequestPage from "@/pages/profile/WarrantyRequestPage";
+import WarrantyRequestPage from "@/components/profile/WarrantyLookupRequest";
 import AdminLayout from "@/components/admin/layout/AdminLayout";
 import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
 import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
@@ -48,6 +48,9 @@ import EmployeeOrdersPage from "@/pages/employee/EmployeeOrdersPage";
 import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
 import EmployeeOrderDetailPage from "@/pages/employee/EmployeeOrderDetailPage";
 import ProductListPage from "@/pages/public/ProductListPage";
+import DeliveryPolicyPage from "@/pages/public/DeliveryPolicyPage";
+import ReturnPolicyPage from "@/pages/public/ReturnPolicyPage";
+import WarrantyPolicyPage from "@/pages/public/WarrantyPolicyPage";
 import AdminWarrantiesPage from "@/pages/admin/AdminWarrantiesPage";
 import AdminWarrantyDetailPage from "@/pages/admin/AdminWarrantyDetailPage";
 import EmployeeWarrantiesPage from "@/pages/employee/EmployeeWarrantiesPage";
@@ -65,6 +68,9 @@ export default function AppRoute() {
                 <Route path="/tin-tuc/:postId" element={<BlogDetailPage />} />
                 <Route path="/products" element={<ProductListPage />} />
                 <Route path="/products/:productId" element={<ProductDetailPage />} />
+                <Route path="/chinh-sach/bao-hanh" element={<WarrantyPolicyPage />} />
+                <Route path="/chinh-sach/doi-tra" element={<ReturnPolicyPage />} />
+                <Route path="/chinh-sach/giao-hang" element={<DeliveryPolicyPage />} />
                 <Route path="/payment/vnpay-return" element={<PaymentReturnPage />}/>
                 <Route element={<ProtectedRoute />}>
                     <Route path="/account" element={<ProfileLayout />}>

@@ -4,10 +4,10 @@ import { warranties_status, warranty_request_channel, warranty_service_method } 
 const optionalNote = Joi.string().trim().allow("", null);
 
 export const createWarrantySchema = Joi.object({
-    serialNumber: Joi.string().trim().required().messages({
+    serialNumber: Joi.string().trim().empty("").allow(null).messages({
         "string.empty": "Số seri không được để trống.",
-        "any.required": "Số seri là bắt buộc.",
     }),
+    deviceId: Joi.string().trim().empty("").allow(null),
     issueCategoryId: Joi.string().trim().allow("", null),
     issueDescription: Joi.string().trim().min(5).max(2000).required().messages({
         "string.empty": "Mô tả vấn đề không được để trống.",
@@ -19,6 +19,8 @@ export const createWarrantySchema = Joi.object({
     pickupPhone: Joi.string().trim().max(20).allow("", null),
     pickupAddress: Joi.string().trim().max(500).allow("", null),
     note: optionalNote,
+}).or("serialNumber", "deviceId").messages({
+    "object.missing": "Vui lòng chọn sản phẩm hoặc nhập số seri cần bảo hành.",
 });
 
 export const warrantyNoteSchema = Joi.object({

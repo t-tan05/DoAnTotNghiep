@@ -1,4 +1,5 @@
 import { createWarrantyWithProcess, findDeviceBySerialForWarranty, findMyWarrantyById, findOpenWarrantyByDeviceId, findWarrantyById, getMyWarranties, getWarrantiesWithQuery, updateWarrantyStatusWithProcess } from "#models/warranty.model";
+import { findDeviceByIdForWarranty, findWarrantyOrderDetailsByPhone, } from "#models/warranty.model";
 import AppError from "#utils/AppError";
 import { devices_status, warranties_status, warranty_service_method } from "@prisma/client";
 import crypto from "crypto";
@@ -66,10 +67,73 @@ export const lookupWarrantyBySerialService = async (serialNumber) => {
         variant: device.product_variants,
     };
 };
+export const lookupWarrantyByPhoneService = async (customerId, phoneNumber) => {
+    const keyword = phoneNumber.trim();
+    if (!keyword) {
+        throw new AppError("Vui lòng nhập số điện thoại cần tra cứu.", 400);
+    }
+    const orderDetails = await findWarrantyOrderDetailsByPhone(customerId, keyword);
+    const items = [];
+    orderDetails.forEach((orderDetail) => {
+        if (!orderDetail.devices.length) {
+            items.push({
+                orderId: orderDetail.order_id,
+                orderDetailId: orderDetail.order_detail_id,
+                deviceId: null,
+                serialNumber: null,
+                soldDate: orderDetail.orders.order_date,
+                warrantyEndDate: null,
+                isValid: false,
+                hasOpenWarranty: false,
+                message: "Sản phẩm này chưa có serial/thiết bị trong hệ thống. Vui lòng liên hệ cửa hàng để nhân viên tiếp nhận bảo hành thủ công.",
+                product: orderDetail.product_variants.products,
+                variant: orderDetail.product_variants,
+            });
+            return;
+        }
+        orderDetail.devices.forEach((device) => {
+            const hasOpenWarranty = device.warranties.length > 0;
+            const validWarranty = isWarrantyValid(device.warranty_end_date);
+            const canCreateWarranty = device.status === devices_status.SOLD && validWarranty && !hasOpenWarranty;
+            items.push({
+                orderId: orderDetail.order_id,
+                orderDetailId: orderDetail.order_detail_id,
+                deviceId: device.device_id,
+                serialNumber: device.serial_number,
+                soldDate: device.sold_date || orderDetail.orders.order_date,
+                warrantyEndDate: device.warranty_end_date,
+                isValid: canCreateWarranty,
+                hasOpenWarranty,
+                message: hasOpenWarranty
+                    ? "Sản phẩm này đang có phiếu bảo hành chưa hoàn tất."
+                    : device.status !== devices_status.SOLD
+                        ? "Sản phẩm đang ở trạng thái không thể tạo phiếu bảo hành mới."
+                        : validWarranty
+                            ? "Sản phẩm còn hiệu lực bảo hành."
+                            : "Sản phẩm đã hết hạn bảo hành.",
+                product: orderDetail.product_variants.products,
+                variant: orderDetail.product_variants,
+            });
+        });
+    });
+    return {
+        isValid: items.some((item) => item.isValid),
+        message: items.length
+            ? "Tra cứu sản phẩm theo số điện thoại thành công."
+            : "Không tìm thấy sản phẩm đã mua bằng số điện thoại này.",
+        phoneNumber: keyword,
+        items,
+    };
+};
 export const createWarrantyService = async (customerId, data) => {
-    const device = await findDeviceBySerialForWarranty(data.serialNumber.trim());
+    const device = data.deviceId
+        ? await findDeviceByIdForWarranty(data.deviceId.trim())
+        : await findDeviceBySerialForWarranty((data.serialNumber || "").trim());
     if (!device)
         throw new AppError("Không tìm thấy sản phẩm trong hệ thống.", 404);
+    if (device.orders_details?.orders?.user_id && device.orders_details.orders.user_id !== customerId) {
+        throw new AppError("Bạn không có quyền tạo bảo hành cho sản phẩm này.", 403);
+    }
     if (device.status !== devices_status.SOLD) {
         throw new AppError("Sản phẩm không đủ điều kiện tạo bảo hành.", 400);
     }

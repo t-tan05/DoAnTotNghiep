@@ -15,7 +15,8 @@ export type WarrantyListQuery = {
 };
 
 export type CreateWarrantyPayload = {
-    serialNumber: string;
+    serialNumber?: string;
+    deviceId?: string;
     issueDescription: string;
     issueCategoryId?: string;
     serviceMethod?: warranty_service_method;

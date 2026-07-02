@@ -1,4 +1,4 @@
-import { addWarrantyProcessController, approveWarrantyController, brandReturnedWarrantyController, cancelWarrantyController, completeWarrantyController, createWarrantyController, getAllWarrantiesController, getMyWarrantyDetailController, getMyWarrantiesController, getWarrantyDetailController, inspectWarrantyController, lookupWarrantyBySerialController, markCustomerDropOffWarrantyController, markPickedUpWarrantyController, receiveWarrantyController, rejectWarrantyController, returnWarrantyController, schedulePickupWarrantyController, scheduleReturnWarrantyController, sendToBrandWarrantyController, startRepairWarrantyController, } from "#controllers/warranty.controller";
+import { addWarrantyProcessController, approveWarrantyController, brandReturnedWarrantyController, cancelWarrantyController, completeWarrantyController, createWarrantyController, getAllWarrantiesController, getMyWarrantyDetailController, getMyWarrantiesController, getWarrantyDetailController, inspectWarrantyController, lookupWarrantyByPhoneController, lookupWarrantyBySerialController, markCustomerDropOffWarrantyController, markPickedUpWarrantyController, receiveWarrantyController, rejectWarrantyController, returnWarrantyController, schedulePickupWarrantyController, scheduleReturnWarrantyController, sendToBrandWarrantyController, startRepairWarrantyController, } from "#controllers/warranty.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { Validate } from "#middlewares/Validate";
@@ -7,6 +7,7 @@ import { Router } from "express";
 const router = Router();
 router.use(VerifyToken);
 router.get("/lookup", lookupWarrantyBySerialController);
+router.get("/lookup-phone", lookupWarrantyByPhoneController);
 router.post("/", Validate(createWarrantySchema), createWarrantyController);
 router.get("/me", getMyWarrantiesController);
 router.get("/me/:warrantyId", getMyWarrantyDetailController);

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -41,15 +41,14 @@ export default function Footer() {
           <h3 className="font-semibold">Chính sách</h3>
 
           <ul className="mt-3 space-y-2 text-sm ">
-            <li>Chính sách bảo hành</li>
-            <li>Chính sách đổi trả</li>
-            <li>Chính sách giao hàng</li>
+            <li><Link to="/chinh-sach/bao-hanh">Chính sách bảo hành</Link></li>
+            <li><Link to="/chinh-sach/doi-tra">Chính sách đổi trả</Link></li>
+            <li><Link to="/chinh-sach/giao-hang">Chính sách giao hàng</Link></li>
           </ul>
         </div>
 
         <div>
           <h3 className="font-semibold">Mạng xã hội</h3>
-          
         </div>
       </div>
 

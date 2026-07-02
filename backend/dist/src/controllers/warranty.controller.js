@@ -1,4 +1,4 @@
-import { addWarrantyProcessService, approveWarrantyService, brandReturnedWarrantyService, cancelWarrantyService, completeWarrantyService, createWarrantyService, getAllWarrantiesService, getMyWarrantyDetailService, getMyWarrantiesService, getWarrantyDetailService, inspectWarrantyService, lookupWarrantyBySerialService, markCustomerDropOffWarrantyService, markPickedUpWarrantyService, receiveWarrantyService, rejectWarrantyService, returnWarrantyService, schedulePickupWarrantyService, scheduleReturnWarrantyService, sendToBrandWarrantyService, startRepairWarrantyService, } from "#services/warranty.service";
+import { addWarrantyProcessService, approveWarrantyService, brandReturnedWarrantyService, cancelWarrantyService, completeWarrantyService, createWarrantyService, getAllWarrantiesService, getMyWarrantyDetailService, getMyWarrantiesService, getWarrantyDetailService, lookupWarrantyByPhoneService, inspectWarrantyService, lookupWarrantyBySerialService, markCustomerDropOffWarrantyService, markPickedUpWarrantyService, receiveWarrantyService, rejectWarrantyService, returnWarrantyService, schedulePickupWarrantyService, scheduleReturnWarrantyService, sendToBrandWarrantyService, startRepairWarrantyService, } from "#services/warranty.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { warranties_status, warranty_request_channel, warranty_service_method } from "@prisma/client";
 import { getIO } from "../socket.js";
@@ -56,6 +56,15 @@ export const lookupWarrantyBySerialController = CatchAsync(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Kiểm tra serial bảo hành thành công.",
+        data,
+    });
+});
+export const lookupWarrantyByPhoneController = CatchAsync(async (req, res) => {
+    const phoneNumber = String(req.query.phoneNumber || "");
+    const data = await lookupWarrantyByPhoneService(req.user.user_id, phoneNumber);
+    res.status(200).json({
+        success: true,
+        message: "Tra cứu bảo hành theo số điện thoại thành công.",
         data,
     });
 });

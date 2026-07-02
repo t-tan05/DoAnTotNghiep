@@ -10,6 +10,7 @@
     getMyWarrantiesController,
     getWarrantyDetailController,
     inspectWarrantyController,
+    lookupWarrantyByPhoneController,
     lookupWarrantyBySerialController,
     markCustomerDropOffWarrantyController,
     markPickedUpWarrantyController,
@@ -41,6 +42,7 @@ const router = Router();
 router.use(VerifyToken);
 
 router.get("/lookup", lookupWarrantyBySerialController);
+router.get("/lookup-phone", lookupWarrantyByPhoneController);
 router.post("/", Validate(createWarrantySchema), createWarrantyController);
 
 router.get("/me", getMyWarrantiesController);

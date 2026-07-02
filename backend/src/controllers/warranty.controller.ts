@@ -9,6 +9,7 @@
     getMyWarrantyDetailService,
     getMyWarrantiesService,
     getWarrantyDetailService,
+    lookupWarrantyByPhoneService,
     inspectWarrantyService,
     lookupWarrantyBySerialService,
     markCustomerDropOffWarrantyService,
@@ -92,6 +93,17 @@ export const lookupWarrantyBySerialController = CatchAsync(async(req: AuthReques
     res.status(200).json({
         success: true,
         message: "Kiểm tra serial bảo hành thành công.",
+        data,
+    });
+});
+
+export const lookupWarrantyByPhoneController = CatchAsync(async(req: AuthRequest, res: Response) => {
+    const phoneNumber = String(req.query.phoneNumber || "");
+    const data = await lookupWarrantyByPhoneService(req.user.user_id, phoneNumber);
+
+    res.status(200).json({
+        success: true,
+        message: "Tra cứu bảo hành theo số điện thoại thành công.",
         data,
     });
 });

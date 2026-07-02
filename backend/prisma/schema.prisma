@@ -7,6 +7,104 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model cms_collections {
+  collection_id        String                   @id @db.VarChar(50)
+  slug                 String                   @unique(map: "uq_cms_collections_slug") @db.VarChar(150)
+  title                String                   @db.VarChar(255)
+  description          String?                  @db.Text
+  page_type            cms_collection_page_type @default(CATEGORY)
+  category_id          String?                  @db.VarChar(50)
+  brand_id             String?                  @db.VarChar(50)
+  is_active            Boolean                  @default(true)
+  sort_order           Int                      @default(0)
+  metadata             Json?
+  created_at           DateTime?                @default(now()) @db.DateTime(0)
+  updated_at           DateTime?                @default(now()) @db.DateTime(0)
+  cms_collection_rules cms_collection_rules[]
+  brands               brands?                  @relation(fields: [brand_id], references: [brand_id], onUpdate: NoAction, map: "fk_cms_collections_brand")
+  categories           categories?              @relation(fields: [category_id], references: [category_id], onUpdate: NoAction, map: "fk_cms_collections_category")
+  cms_sections         cms_sections[]
+
+  @@index([page_type], map: "idx_cms_collections_page_type")
+  @@index([category_id], map: "idx_cms_collections_category")
+  @@index([brand_id], map: "idx_cms_collections_brand")
+  @@index([is_active, sort_order], map: "idx_cms_collections_active_sort")
+}
+
+model cms_sections {
+  section_id        String              @id @db.VarChar(50)
+  collection_id     String              @db.VarChar(50)
+  section_type      cms_section_type
+  title             String?             @db.VarChar(255)
+  subtitle          String?             @db.VarChar(255)
+  background_image  String?             @db.VarChar(500)
+  href              String?             @db.VarChar(500)
+  sort_order        Int                 @default(0)
+  is_active         Boolean             @default(true)
+  metadata          Json?
+  created_at        DateTime?           @default(now()) @db.DateTime(0)
+  updated_at        DateTime?           @default(now()) @db.DateTime(0)
+  cms_section_items cms_section_items[]
+  cms_collections   cms_collections     @relation(fields: [collection_id], references: [collection_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cms_sections_collection")
+
+  @@index([collection_id], map: "idx_cms_sections_collection")
+  @@index([section_type], map: "idx_cms_sections_type")
+  @@index([collection_id, is_active, sort_order], map: "idx_cms_sections_active_sort")
+}
+
+model cms_section_items {
+  item_id          String            @id @db.VarChar(50)
+  section_id       String            @db.VarChar(50)
+  title            String?           @db.VarChar(255)
+  subtitle         String?           @db.VarChar(255)
+  image_url        String?           @db.VarChar(500)
+  href             String?           @db.VarChar(500)
+  product_id       String?           @db.VarChar(50)
+  variant_id       String?           @db.VarChar(50)
+  blog_id          String?           @db.VarChar(50)
+  sort_order       Int               @default(0)
+  is_active        Boolean           @default(true)
+  metadata         Json?
+  created_at       DateTime?         @default(now()) @db.DateTime(0)
+  updated_at       DateTime?         @default(now()) @db.DateTime(0)
+  blog_posts       blog_posts?       @relation(fields: [blog_id], references: [post_id], onUpdate: NoAction, map: "fk_cms_section_items_blog")
+  products         products?         @relation(fields: [product_id], references: [product_id], onUpdate: NoAction, map: "fk_cms_section_items_product")
+  cms_sections     cms_sections      @relation(fields: [section_id], references: [section_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cms_section_items_section")
+  product_variants product_variants? @relation(fields: [variant_id], references: [variant_id], onUpdate: NoAction, map: "fk_cms_section_items_variant")
+
+  @@index([section_id], map: "idx_cms_section_items_section")
+  @@index([product_id], map: "idx_cms_section_items_product")
+  @@index([variant_id], map: "idx_cms_section_items_variant")
+  @@index([blog_id], map: "idx_cms_section_items_blog")
+  @@index([section_id, is_active, sort_order], map: "idx_cms_section_items_active_sort")
+}
+
+model cms_collection_rules {
+  rule_id         String                      @id @db.VarChar(50)
+  collection_id   String                      @db.VarChar(50)
+  category_id     String?                     @db.VarChar(50)
+  brand_id        String?                     @db.VarChar(50)
+  attribute_name  String?                     @db.VarChar(100)
+  attribute_value String?                     @db.VarChar(100)
+  keyword         String?                     @db.VarChar(255)
+  min_price       Decimal?                    @db.Decimal(15, 2)
+  max_price       Decimal?                    @db.Decimal(15, 2)
+  sort_by         cms_collection_rule_sort_by @default(NEWEST)
+  limit           Int                         @default(20)
+  is_active       Boolean                     @default(true)
+  metadata        Json?
+  created_at      DateTime?                   @default(now()) @db.DateTime(0)
+  updated_at      DateTime?                   @default(now()) @db.DateTime(0)
+  brands          brands?                     @relation(fields: [brand_id], references: [brand_id], onUpdate: NoAction, map: "fk_cms_collection_rules_brand")
+  categories      categories?                 @relation(fields: [category_id], references: [category_id], onUpdate: NoAction, map: "fk_cms_collection_rules_category")
+  cms_collections cms_collections             @relation(fields: [collection_id], references: [collection_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cms_collection_rules_collection")
+
+  @@index([collection_id], map: "idx_cms_collection_rules_collection")
+  @@index([category_id], map: "idx_cms_collection_rules_category")
+  @@index([brand_id], map: "idx_cms_collection_rules_brand")
+  @@index([collection_id, is_active], map: "idx_cms_collection_rules_active")
+}
+
 model addresses {
   address_id    String    @id @db.VarChar(50)
   user_id       String    @db.VarChar(50)
@@ -49,31 +147,34 @@ model blog_categories {
 }
 
 model blog_posts {
-  post_id         String             @id @db.VarChar(50)
-  title           String             @db.VarChar(255)
-  slug            String             @unique(map: "slug") @db.VarChar(255)
-  content         String             @db.LongText
-  author_id       String             @db.VarChar(50)
-  category_id     String?            @db.VarChar(50)
-  status          blog_posts_status? @default(DRAFT)
-  published_at    DateTime?          @db.DateTime(0)
-  created_at      DateTime?          @default(now()) @db.DateTime(0)
-  updated_at      DateTime?          @default(now()) @db.DateTime(0)
-  thumbnail_url   String?            @db.VarChar(255)
-  users           users              @relation(fields: [author_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_post_author")
-  blog_categories blog_categories?   @relation(fields: [category_id], references: [category_id], onUpdate: NoAction, map: "fk_post_category")
+  post_id           String              @id @db.VarChar(50)
+  title             String              @db.VarChar(255)
+  slug              String              @unique(map: "slug") @db.VarChar(255)
+  content           String              @db.LongText
+  author_id         String              @db.VarChar(50)
+  category_id       String?             @db.VarChar(50)
+  status            blog_posts_status?  @default(DRAFT)
+  published_at      DateTime?           @db.DateTime(0)
+  created_at        DateTime?           @default(now()) @db.DateTime(0)
+  updated_at        DateTime?           @default(now()) @db.DateTime(0)
+  thumbnail_url     String?             @db.VarChar(255)
+  users             users               @relation(fields: [author_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_post_author")
+  blog_categories   blog_categories?    @relation(fields: [category_id], references: [category_id], onUpdate: NoAction, map: "fk_post_category")
+  cms_section_items cms_section_items[]
 
   @@index([author_id], map: "fk_post_author")
   @@index([category_id], map: "fk_post_category")
 }
 
 model brands {
-  brand_id          String              @id @db.VarChar(50)
-  brand_name        String              @unique(map: "brand_name") @db.VarChar(50)
-  normalized_name   String              @unique(map: "normalized_name") @db.VarChar(50)
-  description       String?             @db.Text
-  products          products[]
-  warranty_policies warranty_policies[]
+  brand_id             String                 @id @db.VarChar(50)
+  brand_name           String                 @unique(map: "brand_name") @db.VarChar(50)
+  normalized_name      String                 @unique(map: "normalized_name") @db.VarChar(50)
+  description          String?                @db.Text
+  cms_collection_rules cms_collection_rules[]
+  cms_collections      cms_collections[]
+  products             products[]
+  warranty_policies    warranty_policies[]
 }
 
 model carts {
@@ -102,12 +203,14 @@ model carts_items {
 }
 
 model categories {
-  category_id       String              @id @db.VarChar(50)
-  category_name     String              @unique(map: "category_name") @db.VarChar(100)
-  normalized_name   String              @unique(map: "normalized_name") @db.VarChar(50)
-  description       String?             @db.Text
-  products          products[]
-  warranty_policies warranty_policies[]
+  category_id          String                 @id @db.VarChar(50)
+  category_name        String                 @unique(map: "category_name") @db.VarChar(100)
+  normalized_name      String                 @unique(map: "normalized_name") @db.VarChar(50)
+  description          String?                @db.Text
+  cms_collection_rules cms_collection_rules[]
+  cms_collections      cms_collections[]
+  products             products[]
+  warranty_policies    warranty_policies[]
 }
 
 model devices {
@@ -218,6 +321,7 @@ model product_variants {
   created_at               DateTime?                  @default(now()) @db.DateTime(0)
   updated_at               DateTime?                  @default(now()) @db.DateTime(0)
   carts_items              carts_items[]
+  cms_section_items        cms_section_items[]
   devices                  devices[]
   inventory_transactions   inventory_transactions[]
   orders_details           orders_details[]
@@ -241,6 +345,7 @@ model products {
   warranty_period     Int
   created_at          DateTime?             @default(now()) @db.DateTime(0)
   updated_at          DateTime?             @default(now()) @db.DateTime(0)
+  cms_section_items   cms_section_items[]
   product_images      product_images[]
   product_variants    product_variants[]
   brands              brands                @relation(fields: [brand_id], references: [brand_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_brand")
@@ -578,6 +683,31 @@ model wishlists {
   @@unique([user_id, variant_id], map: "uq_wishlists_user_variant")
   @@index([user_id], map: "idx_wishlists_user_id")
   @@index([variant_id], map: "idx_wishlists_variant_id")
+}
+
+enum cms_collection_page_type {
+  HOME
+  CATEGORY
+  BRAND
+  CAMPAIGN
+  CUSTOM
+}
+
+enum cms_section_type {
+  BANNER
+  SHORTCUT_BUTTONS
+  SHORTCUT_CARDS
+  FEATURED_PRODUCTS
+  BLOG_GRID
+  PRODUCT_GRID
+}
+
+enum cms_collection_rule_sort_by {
+  NEWEST
+  PRICE_ASC
+  PRICE_DESC
+  BEST_SELLING
+  PROMOTION
 }
 
 enum UserStatus {

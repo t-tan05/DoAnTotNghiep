@@ -121,6 +121,102 @@ export const findDeviceBySerialForWarranty = async (serialNumber) => {
         },
     });
 };
+export const findDeviceByIdForWarranty = async (deviceId) => {
+    return prisma.devices.findUnique({
+        where: {
+            device_id: deviceId,
+        },
+        include: {
+            product_variants: {
+                include: {
+                    products: {
+                        include: {
+                            brands: true,
+                            categories: true,
+                        },
+                    },
+                    product_images: {
+                        orderBy: {
+                            is_default: "desc",
+                        },
+                    },
+                },
+            },
+            orders_details: {
+                include: {
+                    orders: true,
+                },
+            },
+        },
+    });
+};
+export const findWarrantyOrderDetailsByPhone = async (customerId, phoneNumber) => {
+    return prisma.orders_details.findMany({
+        where: {
+            orders: {
+                user_id: customerId,
+                receiver_phone: {
+                    contains: phoneNumber,
+                },
+                status: "COMPLETED",
+            },
+        },
+        include: {
+            orders: true,
+            product_variants: {
+                include: {
+                    products: {
+                        include: {
+                            brands: true,
+                            categories: true,
+                        },
+                    },
+                    product_images: {
+                        orderBy: {
+                            is_default: "desc",
+                        },
+                    },
+                },
+            },
+            devices: {
+                include: {
+                    warranties: {
+                        where: {
+                            status: {
+                                in: [
+                                    "REQUESTED",
+                                    "APPROVED",
+                                    "CUSTOMER_DROP_OFF",
+                                    "PICKUP_SCHEDULED",
+                                    "PICKED_UP",
+                                    "RECEIVED",
+                                    "INSPECTING",
+                                    "WAITING_CUSTOMER_CONFIRMATION",
+                                    "IN_PROGRESS",
+                                    "SENT_TO_BRAND",
+                                    "BRAND_RETURNED",
+                                    "COMPLETED",
+                                    "RETURN_SCHEDULED",
+                                ],
+                            },
+                        },
+                        select: {
+                            warranty_id: true,
+                            warranty_code: true,
+                            status: true,
+                        },
+                        take: 1,
+                    },
+                },
+            },
+        },
+        orderBy: {
+            orders: {
+                order_date: "desc",
+            },
+        },
+    });
+};
 export const findOpenWarrantyByDeviceId = async (deviceId) => {
     return prisma.warranties.findFirst({
         where: {

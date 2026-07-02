@@ -12,6 +12,7 @@ import type {
     WarrantyDetailResponse,
     WarrantyLookupResponse,
     WarrantyNotePayload,
+    WarrantyPhoneLookupResponse,
 } from "@/types/warranty.type";
 
 export const warrantyService = {
@@ -24,6 +25,20 @@ export const warrantyService = {
 
         if(!res.data.data) {
             throw new Error("Không kiểm tra được serial bảo hành.");
+        }
+
+        return res.data.data;
+    },
+
+    lookupByPhone: async(phoneNumber: string) => {
+        const res = await api.get<BackendSuccess<WarrantyPhoneLookupResponse>>("/warranties/lookup-phone", {
+            params: {
+                phoneNumber,
+            },
+        });
+
+        if(!res.data.data) {
+            throw new Error("Không tra cứu được thông tin bảo hành.");
         }
 
         return res.data.data;
