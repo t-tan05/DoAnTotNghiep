@@ -47,7 +47,7 @@ export const cmsService = {
         );
 
         if(!res.data.data) {
-            throw new Error("KhÃ´ng láº¥y Ä‘Æ°á»£c bá»™ lá»c CMS.");
+            throw new Error("Không lấy được bộ lọc CMS.");
         }
 
         return res.data.data;

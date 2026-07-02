@@ -437,7 +437,7 @@ export default function ProductListPage() {
                 <div className="mb-4">
                     <h1 className="text-2xl font-semibold">{cmsCollection?.title || "S\u1ea3n ph\u1ea9m"}</h1>
                     <p className="text-sm text-muted-foreground">
-                        {cmsCollection?.description || "T\u00ecm ki\u1ebfm v\u00e0 l\u1ef1a ch\u1ecdn s\u1ea3n ph\u1ea9m ph\u00f9 h\u1ee3p v\u1edbi nhu c\u1ea7u c\u1ee7a b\u1ea1n."}
+                        {cmsCollection?.description || "Tìm kiếm và lựa chọn sản phẩm phù hợp với nhu cầu của bạn."}
                     </p>
                 </div>
 
@@ -447,7 +447,7 @@ export default function ProductListPage() {
                         <Input
                             value={search}
                             onChange={(e) => updateParam("search", e.target.value)}
-                            placeholder="B\u1ea1n mu\u1ed1n mua g\u00ec h\u00f4m nay?"
+                            placeholder="Bạn muốn mua gì hôm nay?"
                             className="pl-9"
                         />
                     </div>
