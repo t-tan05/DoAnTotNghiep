@@ -1,29 +1,46 @@
 import redisClient from "#config/redis";
 import { 
-    getAllUsers, 
     findUserById, 
     updateUserById, 
     deleteUserById, 
     findUserByIdForChangePassword, 
     findUserByEmail,
     createUserWithRole,
-    createEmpByAdmin
+    createEmpByAdmin,
+    getUsersWithQuery
 } from "#models/user.model";
 import AppError from "#utils/AppError";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { sendNotifyPasswordForEmployee } from "#services/mail.service";
-
-//Tạo hàm hash token
-const hashToken = (token: string) => {
-    return crypto.createHash("sha256").update(token).digest("hex");
-};
+import { UserListQuery } from "#types/user.type";
 
 //Hàm lấy tất cả tài khoản dành cho ADMIN
-export const getAllUsersService = async() => {
-    const users = await getAllUsers();
+export const getAllUsersService = async(params: UserListQuery) => {
+    const { users, totalItems } = await getUsersWithQuery(params);
 
-    return {users};
+    return {
+        users,
+        meta: {
+            pagination: {
+                page: params.page,
+                limit: params.limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / params.limit),
+            },
+            sort: {
+                sortBy: params.sortBy,
+                sortOrder: params.sortOrder,
+            },
+            search: params.search,
+            filters: {
+                role: params.role,
+                status: params.status,
+                verified: params.verified,
+                mustChangePassword: params.mustChangePassword,
+            },
+        },
+    };
 };
 
 //Hàm lấy thông tin cá nhân

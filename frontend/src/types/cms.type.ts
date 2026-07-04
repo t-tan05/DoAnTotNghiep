@@ -204,6 +204,10 @@ export type CmsSectionItemPayload = {
     metadata?: unknown;
 };
 
+export type BulkCmsSectionItemsPayload = {
+    items: CmsSectionItemPayload[];
+};
+
 export type CmsCollectionRulePayload = {
     categoryId?: string | null;
     brandId?: string | null;

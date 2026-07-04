@@ -345,6 +345,12 @@ export const createCmsSectionItem = async(data: Prisma.cms_section_itemsUnchecke
     });
 };
 
+export const createCmsSectionItems = async(data: Prisma.cms_section_itemsUncheckedCreateInput[]) => {
+    return prisma.$transaction(
+        data.map((item) => prisma.cms_section_items.create({ data: item })),
+    );
+};
+
 export const updateCmsSectionItem = async(itemId: string, data: Prisma.cms_section_itemsUncheckedUpdateInput) => {
     return prisma.cms_section_items.update({
         where: {

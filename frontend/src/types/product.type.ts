@@ -122,7 +122,7 @@ export type PublicProductQuery = {
     brandId?: string;
     minPrice?: number;
     maxPrice?: number;
-    sortBy?: "newest" | "price_asc" | "price_desc" | "name_asc";
+    sortBy?: "newest" | "price_asc" | "price_desc" | "name_asc" | "promotion" | "best_selling";
 };
 
 export type PublicProductsResponse = {

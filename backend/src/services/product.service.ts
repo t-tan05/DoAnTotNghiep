@@ -463,6 +463,19 @@ export const sortPublicProductCards = (products: any[], sortBy: PublicProductLis
         );
     }
 
+    if(sortBy === "promotion") {
+        return [...products].sort((a, b) => {
+            const aOriginalPrice = Number(a.variant.original_price ?? a.variant.price ?? 0);
+            const bOriginalPrice = Number(b.variant.original_price ?? b.variant.price ?? 0);
+            const aCurrentPrice = Number(a.variant.discount_price ?? a.variant.price ?? 0);
+            const bCurrentPrice = Number(b.variant.discount_price ?? b.variant.price ?? 0);
+            const aDiscount = Math.max(0, aOriginalPrice - aCurrentPrice);
+            const bDiscount = Math.max(0, bOriginalPrice - bCurrentPrice);
+
+            return bDiscount - aDiscount;
+        });
+    }
+
     return products;
 };
 

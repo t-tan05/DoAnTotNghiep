@@ -3,6 +3,7 @@ import {
     createCmsRule,
     createCmsSection,
     createCmsSectionItem,
+    createCmsSectionItems,
     deleteCmsCollection,
     deleteCmsRule,
     deleteCmsSection,
@@ -25,6 +26,7 @@ import {
     CreateCmsCollectionPayload,
     CreateCmsRulePayload,
     CreateCmsSectionItemPayload,
+    BulkCreateCmsSectionItemsPayload,
     CreateCmsSectionPayload,
     AdminCmsCollectionQuery,
     PublicCmsProductQuery,
@@ -76,9 +78,11 @@ const buildCmsBaseProductWhere = (collection: any) => {
         collection.brand_id,
         ...getMetadataArray(collection.metadata, "brandIds"),
     ].filter(Boolean);
+    const lineIds = getMetadataArray(collection.metadata, "lineIds");
 
     addInFilter(productWhere, "category_id", Array.from(new Set(categoryIds)));
     addInFilter(productWhere, "brand_id", Array.from(new Set(brandIds)));
+    addInFilter(productWhere, "line_id", Array.from(new Set(lineIds)));
 
     return Object.keys(productWhere).length > 0 ? { products: productWhere } : {};
 };
@@ -94,9 +98,11 @@ const buildCmsRuleWhere = (rule: any) => {
         rule.brand_id,
         ...getMetadataArray(rule.metadata, "brandIds"),
     ].filter(Boolean);
+    const lineIds = getMetadataArray(rule.metadata, "lineIds");
 
     addInFilter(productWhere, "category_id", Array.from(new Set(categoryIds)));
     addInFilter(productWhere, "brand_id", Array.from(new Set(brandIds)));
+    addInFilter(productWhere, "line_id", Array.from(new Set(lineIds)));
 
     if(Object.keys(productWhere).length > 0) {
         where.products = productWhere;
@@ -625,6 +631,49 @@ export const createCmsSectionItemService = async(
     });
 
     return { item };
+};
+
+const mapCmsSectionItemPayload = (
+    sectionId: string,
+    data: CreateCmsSectionItemPayload,
+    indexOffset = 0,
+) => ({
+    item_id: crypto.randomUUID(),
+    section_id: sectionId,
+    title: data.title ?? null,
+    subtitle: data.subtitle ?? null,
+    image_url: data.imageUrl ?? null,
+    href: data.href ?? null,
+    product_id: data.productId ?? null,
+    variant_id: data.variantId ?? null,
+    blog_id: data.blogId ?? null,
+    metadata: data.metadata ?? undefined,
+    sort_order: data.sortOrder ?? indexOffset,
+    is_active: data.isActive ?? true,
+});
+
+export const bulkCreateCmsSectionItemsService = async(
+    sectionId: string,
+    data: BulkCreateCmsSectionItemsPayload,
+) => {
+    const section = await findCmsSectionById(sectionId);
+
+    if(!section) {
+        throw new AppError("Không tìm thấy CMS section.", 404);
+    }
+
+    if(!data.items?.length) {
+        throw new AppError("Danh sách CMS section item không được rỗng.", 400);
+    }
+
+    const items = await createCmsSectionItems(
+        data.items.map((item, index) => mapCmsSectionItemPayload(sectionId, item, index)),
+    );
+
+    return {
+        items,
+        totalItems: items.length,
+    };
 };
 
 export const updateCmsSectionItemService = async(

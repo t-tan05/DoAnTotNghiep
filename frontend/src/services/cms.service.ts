@@ -8,6 +8,7 @@ import type {
     PublicCmsCollectionData,
     PublicCmsCollectionFiltersData,
     PublicCmsCollectionProductsData,
+    BulkCmsSectionItemsPayload,
     CmsSectionItemPayload,
     CmsSectionPayload,
 } from "@/types/cms.type";
@@ -112,6 +113,11 @@ export const cmsService = {
 
     createSectionItem: async (sectionId: string, payload: CmsSectionItemPayload) => {
         const res = await api.post(`/cms/admin/sections/${sectionId}/items`, payload);
+        return res.data;
+    },
+
+    createSectionItems: async (sectionId: string, payload: BulkCmsSectionItemsPayload) => {
+        const res = await api.post(`/cms/admin/sections/${sectionId}/items/bulk`, payload);
         return res.data;
     },
 

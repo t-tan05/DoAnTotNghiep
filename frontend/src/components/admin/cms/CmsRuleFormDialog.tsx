@@ -21,9 +21,11 @@ import {
 import { brandService } from "@/services/brand.service";
 import { categoryService } from "@/services/category.service";
 import { cmsService } from "@/services/cms.service";
+import { productLineService } from "@/services/productLine.service";
 import type { Brand } from "@/types/brand.type";
 import type { Category } from "@/types/category.type";
 import type { CmsCollectionRule, CmsRuleSortBy } from "@/types/cms.type";
+import type { ProductLine } from "@/types/product-line.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -48,7 +50,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function getMetadataIds(metadata: unknown, key: "categoryIds" | "brandIds") {
+function getMetadataIds(metadata: unknown, key: "categoryIds" | "brandIds" | "lineIds") {
     if(!isRecord(metadata) || !Array.isArray(metadata[key])) {
         return [];
     }
@@ -62,6 +64,7 @@ function buildMetadata(
     metadata: unknown,
     categoryIds: string[],
     brandIds: string[],
+    lineIds: string[],
 ) {
     const nextMetadata = isRecord(metadata) ? { ...metadata } : {};
 
@@ -75,6 +78,12 @@ function buildMetadata(
         nextMetadata.brandIds = brandIds;
     }else {
         delete nextMetadata.brandIds;
+    }
+
+    if(lineIds.length > 0) {
+        nextMetadata.lineIds = lineIds;
+    }else {
+        delete nextMetadata.lineIds;
     }
 
     return Object.keys(nextMetadata).length > 0 ? nextMetadata : undefined;
@@ -91,6 +100,7 @@ export default function CmsRuleFormDialog({
 
     const [brands, setBrands] = useState<Brand[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [productLines, setProductLines] = useState<ProductLine[]>([]);
     const [loadingOptions, setLoadingOptions] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -99,6 +109,7 @@ export default function CmsRuleFormDialog({
         brandId: "",
         categoryIds: [] as string[],
         brandIds: [] as string[],
+        lineIds: [] as string[],
         attributeName: "",
         attributeValue: "",
         keyword: "",
@@ -117,6 +128,7 @@ export default function CmsRuleFormDialog({
             brandId: rule?.brand_id ?? "",
             categoryIds: getMetadataIds(rule?.metadata, "categoryIds"),
             brandIds: getMetadataIds(rule?.metadata, "brandIds"),
+            lineIds: getMetadataIds(rule?.metadata, "lineIds"),
             attributeName: rule?.attribute_name ?? "",
             attributeValue: rule?.attribute_value ?? "",
             keyword: rule?.keyword ?? "",
@@ -136,13 +148,15 @@ export default function CmsRuleFormDialog({
             try {
                 setLoadingOptions(true);
 
-                const [brandData, categoryData] = await Promise.all([
+                const [brandData, categoryData, lineData] = await Promise.all([
                     brandService.getAll({ page: 1, limit: 1000, search: "", sortBy: "brand_name", sortOrder: "asc" }),
                     categoryService.getAll({ page: 1, limit: 1000, search: "", sortBy: "category_name", sortOrder: "asc" }),
+                    productLineService.getAll({ page: 1, limit: 1000, search: "", sortBy: "display_order", sortOrder: "asc", isActive: true }),
                 ]);
 
                 setBrands(brandData?.brands ?? []);
                 setCategories(categoryData?.categories ?? []);
+                setProductLines(lineData?.productLines ?? []);
             } catch(error) {
                 toast.error(getErrorMessage(error));
             } finally {
@@ -160,7 +174,7 @@ export default function CmsRuleFormDialog({
         }));
     }
 
-    function toggleListValue(name: "categoryIds" | "brandIds", value: string) {
+    function toggleListValue(name: "categoryIds" | "brandIds" | "lineIds", value: string) {
         setForm((current) => {
             const currentValues = current[name];
             const nextValues = currentValues.includes(value)
@@ -186,6 +200,7 @@ export default function CmsRuleFormDialog({
                 rule?.metadata,
                 form.categoryIds,
                 form.brandIds,
+                form.lineIds,
             );
 
             const payload = {
@@ -229,7 +244,7 @@ export default function CmsRuleFormDialog({
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <FormError message={error} />
 
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-3">
                         <div className="space-y-2">
                             <Label>Danh mục</Label>
                             <Select value={form.categoryId || "none"} disabled={loadingOptions} onValueChange={(value) => updateField("categoryId", value === "none" ? "" : value)}>
@@ -324,7 +339,7 @@ export default function CmsRuleFormDialog({
                         </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-3">
                         <div className="space-y-2">
                             <Label>Chọn nhiều danh mục</Label>
                             <div className="max-h-44 space-y-2 overflow-y-auto rounded-md border p-3">
@@ -343,6 +358,35 @@ export default function CmsRuleFormDialog({
                                             onCheckedChange={() => toggleListValue("categoryIds", category.category_id)}
                                         />
                                         <span>{category.category_name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Chọn nhiều thương hiệu</Label>
+                            <p className="text-xs font-medium text-muted-foreground">Dòng sản phẩm</p>
+                            <div className="max-h-44 space-y-2 overflow-y-auto rounded-md border p-3">
+                                {productLines.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        Chưa có dòng sản phẩm.
+                                    </p>
+                                ) : productLines.map((line) => (
+                                    <label
+                                        key={line.line_id}
+                                        className="flex cursor-pointer items-start gap-2 text-sm"
+                                    >
+                                        <Checkbox
+                                            checked={form.lineIds.includes(line.line_id)}
+                                            disabled={loadingOptions}
+                                            onCheckedChange={() => toggleListValue("lineIds", line.line_id)}
+                                        />
+                                        <span className="min-w-0">
+                                            <span className="block truncate">{line.line_name}</span>
+                                            <span className="block truncate text-xs text-muted-foreground">
+                                                {line.brands?.brand_name || "-"} / {line.categories?.category_name || "-"}
+                                            </span>
+                                        </span>
                                     </label>
                                 ))}
                             </div>

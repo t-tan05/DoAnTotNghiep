@@ -395,6 +395,9 @@ export const getPublicProductVariantsWithQuery = async (params) => {
     if (sortBy === "name_asc") {
         orderBy = { variant_name: "asc" };
     }
+    if (sortBy === "best_selling") {
+        orderBy = { sold_quantity: "desc" };
+    }
     const [variants, totalItems] = await prisma.$transaction([
         prisma.product_variants.findMany({
             where,

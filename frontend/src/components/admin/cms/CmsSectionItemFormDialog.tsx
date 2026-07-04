@@ -2,6 +2,7 @@
 import SpinnerButton from "@/components/common/SpinnerButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Dialog,
     DialogContent,
@@ -21,7 +22,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cmsService } from "@/services/cms.service";
 import { productService } from "@/services/product.service";
-import type { CmsSectionItem } from "@/types/cms.type";
+import type { CmsSectionItem, CmsSectionItemPayload } from "@/types/cms.type";
 import type { AdminProduct } from "@/types/product.type";
 import type { AdminProductVariant } from "@/types/productVariant.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
@@ -73,6 +74,15 @@ function buildVariantLink(productId: string, variantId: string) {
     return `/products/${productId}?variantId=${variantId}`;
 }
 
+type ProductTarget = {
+    key: string;
+    title: string;
+    imageUrl: string;
+    href: string;
+    productId: string;
+    variantId: string;
+};
+
 function EmptyImage({ className = "h-14 w-14" }: { className?: string }) {
     return (
         <div className={`flex shrink-0 items-center justify-center rounded-md border bg-muted ${className}`}>
@@ -109,13 +119,15 @@ export default function CmsSectionItemFormDialog({
     const [productPage, setProductPage] = useState(1);
     const [productTotalPages, setProductTotalPages] = useState(1);
     const [loadingProducts, setLoadingProducts] = useState(false);
+    const [selectedTargets, setSelectedTargets] = useState<ProductTarget[]>([]);
 
     const selectedTargetText = useMemo(() => {
+        if(!isEdit && selectedTargets.length > 0) return `Đã chọn ${selectedTargets.length} item`;
         if(form.variantId) return `Đã chọn variant ${form.variantId.slice(0, 8)}...`;
         if(form.productId) return `Đã chọn product ${form.productId.slice(0, 8)}...`;
         if(form.blogId) return `Đã chọn blog ${form.blogId.slice(0, 8)}...`;
         return "Chưa chọn nội dung";
-    }, [form.blogId, form.productId, form.variantId]);
+    }, [form.blogId, form.productId, form.variantId, isEdit, selectedTargets.length]);
 
     useEffect(() => {
         if(!open) return;
@@ -133,6 +145,7 @@ export default function CmsSectionItemFormDialog({
         });
         setError("");
         setProductPage(1);
+        setSelectedTargets([]);
     }, [open, item]);
 
     useEffect(() => {
@@ -197,6 +210,39 @@ export default function CmsSectionItemFormDialog({
         }));
     }
 
+    function getProductTarget(product: AdminProduct): ProductTarget {
+        return {
+            key: `product:${product.product_id}`,
+            title: product.product_name,
+            imageUrl: getProductImage(product),
+            href: buildProductLink(product.product_id),
+            productId: product.product_id,
+            variantId: "",
+        };
+    }
+
+    function getVariantTarget(product: AdminProduct, variant: AdminProductVariant): ProductTarget {
+        return {
+            key: `variant:${variant.variant_id}`,
+            title: getVariantLabel(product, variant),
+            imageUrl: getVariantImage(variant, product),
+            href: buildVariantLink(product.product_id, variant.variant_id),
+            productId: product.product_id,
+            variantId: variant.variant_id,
+        };
+    }
+
+    function toggleTarget(target: ProductTarget) {
+        setSelectedTargets((current) => current.some((item) => item.key === target.key)
+            ? current.filter((item) => item.key !== target.key)
+            : [...current, target]
+        );
+    }
+
+    function isTargetSelected(key: string) {
+        return selectedTargets.some((target) => target.key === key);
+    }
+
     function clearPickedTarget() {
         setForm((current) => ({
             ...current,
@@ -204,6 +250,7 @@ export default function CmsSectionItemFormDialog({
             variantId: "",
             blogId: "",
         }));
+        setSelectedTargets([]);
     }
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -213,7 +260,7 @@ export default function CmsSectionItemFormDialog({
         try {
             setLoading(true);
 
-            const payload = {
+            const payload: CmsSectionItemPayload = {
                 title: form.title.trim() || null,
                 subtitle: form.subtitle.trim() || null,
                 imageUrl: form.imageUrl.trim() || null,
@@ -228,6 +275,24 @@ export default function CmsSectionItemFormDialog({
             if(isEdit && item) {
                 await cmsService.updateSectionItem(item.item_id, payload);
                 toast.success("Cập nhật item thành công.");
+            } else if(selectedTargets.length > 0) {
+                const baseSortOrder = Number(form.sortOrder || 0);
+
+                await cmsService.createSectionItems(sectionId, {
+                    items: selectedTargets.map((target, index) => ({
+                        title: target.title,
+                        subtitle: form.subtitle.trim() || null,
+                        imageUrl: target.imageUrl || null,
+                        href: target.href,
+                        productId: target.productId,
+                        variantId: target.variantId || null,
+                        blogId: null,
+                        sortOrder: baseSortOrder + index,
+                        isActive: form.isActive === "true",
+                    })),
+                });
+
+                toast.success(`Tạo ${selectedTargets.length} item thành công.`);
             } else {
                 await cmsService.createSectionItem(sectionId, payload);
                 toast.success("Tạo item thành công.");
@@ -388,6 +453,7 @@ export default function CmsSectionItemFormDialog({
                                         </div>
                                     ) : products.map((product) => {
                                         const productImage = getProductImage(product);
+                                        const productTarget = getProductTarget(product);
 
                                         return (
                                             <div key={product.product_id} className="rounded-lg border bg-white p-3">
@@ -408,21 +474,32 @@ export default function CmsSectionItemFormDialog({
                                                                 <p className="mt-1 break-all text-xs text-muted-foreground">Product ID: {product.product_id}</p>
                                                             </div>
 
-                                                            <Button
-                                                                type="button"
-                                                                variant={form.productId === product.product_id && !form.variantId ? "default" : "outline"}
-                                                                size="sm"
-                                                                className="shrink-0 cursor-pointer"
-                                                                onClick={() => selectProduct(product)}
-                                                            >
-                                                                <Check className="mr-2 h-4 w-4" />
-                                                                Chọn sản phẩm chung
-                                                            </Button>
+                                                            {isEdit ? (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant={form.productId === product.product_id && !form.variantId ? "default" : "outline"}
+                                                                    size="sm"
+                                                                    className="shrink-0 cursor-pointer"
+                                                                    onClick={() => selectProduct(product)}
+                                                                >
+                                                                    <Check className="mr-2 h-4 w-4" />
+                                                                    Chọn sản phẩm chung
+                                                                </Button>
+                                                            ) : (
+                                                                <label className="flex shrink-0 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                                                                    <Checkbox
+                                                                        checked={isTargetSelected(productTarget.key)}
+                                                                        onCheckedChange={() => toggleTarget(productTarget)}
+                                                                    />
+                                                                    Thêm sản phẩm chung
+                                                                </label>
+                                                            )}
                                                         </div>
 
                                                         {product.product_variants?.length ? (
                                                             <div className="mt-3 overflow-hidden rounded-md border">
-                                                                <div className="grid grid-cols-[64px_minmax(0,1fr)_120px_108px] bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+                                                                <div className="grid grid-cols-[36px_64px_minmax(0,1fr)_120px_108px] bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+                                                                    <span></span>
                                                                     <span>Ảnh</span>
                                                                     <span>Biến thể</span>
                                                                     <span>SKU</span>
@@ -431,15 +508,34 @@ export default function CmsSectionItemFormDialog({
                                                                 <div className="divide-y">
                                                                     {product.product_variants.map((variant) => {
                                                                         const variantImage = getVariantImage(variant, product);
+                                                                        const variantTarget = getVariantTarget(product, variant);
                                                                         const selected = form.variantId === variant.variant_id;
+                                                                        const targetSelected = isTargetSelected(variantTarget.key);
 
                                                                         return (
-                                                                            <button
+                                                                            <div
                                                                                 key={variant.variant_id}
-                                                                                type="button"
-                                                                                onClick={() => selectVariant(product, variant)}
-                                                                                className={`grid w-full grid-cols-[64px_minmax(0,1fr)_120px_108px] items-center gap-3 px-3 py-2 text-left transition hover:bg-primary/5 ${selected ? "bg-primary/10" : ""}`}
+                                                                                role="button"
+                                                                                tabIndex={0}
+                                                                                onClick={() => isEdit ? selectVariant(product, variant) : toggleTarget(variantTarget)}
+                                                                                onKeyDown={(event) => {
+                                                                                    if(event.key === "Enter" || event.key === " ") {
+                                                                                        event.preventDefault();
+                                                                                        isEdit ? selectVariant(product, variant) : toggleTarget(variantTarget);
+                                                                                    }
+                                                                                }}
+                                                                                className={`grid w-full cursor-pointer grid-cols-[36px_64px_minmax(0,1fr)_120px_108px] items-center gap-3 px-3 py-2 text-left transition hover:bg-primary/5 ${selected || targetSelected ? "bg-primary/10" : ""}`}
                                                                             >
+                                                                                <span onClick={(event) => event.stopPropagation()}>
+                                                                                    {!isEdit ? (
+                                                                                        <Checkbox
+                                                                                            checked={targetSelected}
+                                                                                            onCheckedChange={() => toggleTarget(variantTarget)}
+                                                                                        />
+                                                                                    ) : selected ? (
+                                                                                        <Check className="h-4 w-4 text-primary" />
+                                                                                    ) : null}
+                                                                                </span>
                                                                                 {variantImage ? (
                                                                                     <img src={variantImage} alt={getVariantLabel(product, variant)} className="h-11 w-11 rounded-md border object-contain" />
                                                                                 ) : (
@@ -451,7 +547,7 @@ export default function CmsSectionItemFormDialog({
                                                                                 </span>
                                                                                 <span className="truncate text-xs text-muted-foreground">{variant.sku}</span>
                                                                                 <span className="text-right text-sm font-semibold text-primary">{formatCurrency(variant.price)}</span>
-                                                                            </button>
+                                                                            </div>
                                                                         );
                                                                     })}
                                                                 </div>

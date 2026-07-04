@@ -52,7 +52,9 @@ export type PublicProductSortBy =
     | "newest"
     | "price_asc"
     | "price_desc"
-    | "name_asc";
+    | "name_asc"
+    | "promotion"
+    | "best_selling";
 
 export interface PublicProductListQuery {
     page: number;

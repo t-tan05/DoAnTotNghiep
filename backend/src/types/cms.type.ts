@@ -6,7 +6,7 @@ export type PublicCmsProductQuery = {
     brandId?: string;
     minPrice?: number;
     maxPrice?: number;
-    sortBy?: "newest" | "price_asc" | "price_desc" | "best_selling";
+    sortBy?: "newest" | "price_asc" | "price_desc" | "best_selling" | "promotion";
     attributeValueIds?: string[];
 };
 
@@ -70,6 +70,10 @@ export type CreateCmsSectionItemPayload = {
 };
 
 export type UpdateCmsSectionItemPayload = Partial<CreateCmsSectionItemPayload>;
+
+export type BulkCreateCmsSectionItemsPayload = {
+    items: CreateCmsSectionItemPayload[];
+};
 
 export type CreateCmsRulePayload = {
     categoryId?: string | null;

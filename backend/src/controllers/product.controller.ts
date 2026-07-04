@@ -127,7 +127,7 @@ export const downloadProductImportTemplateController = CatchAsync(async(req: Req
 });
 
 const getPublicSortBy = (value: unknown) => {
-    const allowed = ["newest", "price_asc", "price_desc", "name_asc"];
+    const allowed = ["newest", "price_asc", "price_desc", "name_asc", "promotion", "best_selling"];
 
     return typeof value === "string" && allowed.includes(value)
         ? value as any

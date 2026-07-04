@@ -2,14 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Brand } from "@/types/brand.type";
 import type { Category } from "@/types/category.type";
+import type { ProductLine } from "@/types/product-line.type";
 
 type Props = {
     brandId: string;
     categoryId: string;
+    lineId: string;
     brands: Brand[];
     categories: Category[];
+    productLines: ProductLine[];
     onBrandChange: (value: string) => void;
     onCategoryChange: (value: string) => void;
+    onLineChange: (value: string) => void;
     onClear: () => void;
 };
 
@@ -18,10 +22,13 @@ const ALL_VALUE = "all";
 export default function ProductFilterBar({
     brandId,
     categoryId,
+    lineId,
     brands,
     categories,
+    productLines,
     onBrandChange,
     onCategoryChange,
+    onLineChange,
     onClear,
 }: Props) {
     return (
@@ -49,6 +56,20 @@ export default function ProductFilterBar({
                     {categories.map((category) => (
                         <SelectItem key={category.category_id} value={category.category_id}>
                             {category.category_name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Select value={lineId || ALL_VALUE} onValueChange={(value) => onLineChange(value === ALL_VALUE ? "" : value)}>
+                <SelectTrigger className="w-full cursor-pointer md:w-[240px]">
+                    <SelectValue placeholder="Dòng sản phẩm" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value={ALL_VALUE}>Tất cả dòng sản phẩm</SelectItem>
+                    {productLines.map((line) => (
+                        <SelectItem key={line.line_id} value={line.line_id}>
+                            {line.line_name}
                         </SelectItem>
                     ))}
                 </SelectContent>

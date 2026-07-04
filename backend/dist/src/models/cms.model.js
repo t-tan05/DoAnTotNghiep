@@ -304,6 +304,9 @@ export const createCmsSectionItem = async (data) => {
         data,
     });
 };
+export const createCmsSectionItems = async (data) => {
+    return prisma.$transaction(data.map((item) => prisma.cms_section_items.create({ data: item })));
+};
 export const updateCmsSectionItem = async (itemId, data) => {
     return prisma.cms_section_items.update({
         where: {

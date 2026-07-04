@@ -1,10 +1,12 @@
 import FeaturedProductSection from "@/components/home/FeaturedProductSection";
 import type { CmsCollection, CmsSection, CmsSectionItem } from "@/types/cms.type";
 import type { PublicProductAttribute, PublicProductCardItem } from "@/types/product.type";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 type Props = {
     collection?: CmsCollection | null;
+    afterBanner?: ReactNode;
 };
 
 function getVariantImage(item: CmsSectionItem) {
@@ -119,20 +121,25 @@ function ShortcutButtonsSection({ section }: { section: CmsSection }) {
     );
 }
 
-export default function PublicCmsSections({ collection }: Props) {
+export default function PublicCmsSections({ collection, afterBanner }: Props) {
     const sections = (collection?.cms_sections ?? [])
         .filter((section) => section.is_active)
         .sort((a, b) => Number(a.sort_order) - Number(b.sort_order));
 
     if(!collection || !sections.length) return null;
 
+    const bannerSections = sections.filter((section) => section.section_type === "BANNER");
+    const contentSections = sections.filter((section) => section.section_type !== "BANNER");
+
     return (
         <div className="space-y-5">
-            {sections.map((section) => {
-                if(section.section_type === "BANNER") {
-                    return <BannerSection key={section.section_id} section={section} />;
-                }
+            {bannerSections.map((section) => (
+                <BannerSection key={section.section_id} section={section} />
+            ))}
 
+            {afterBanner}
+
+            {contentSections.map((section) => {
                 if(section.section_type === "SHORTCUT_BUTTONS" || section.section_type === "SHORTCUT_CARDS") {
                     return <ShortcutButtonsSection key={section.section_id} section={section} />;
                 }

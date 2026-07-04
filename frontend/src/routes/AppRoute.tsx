@@ -58,6 +58,7 @@ import EmployeeWarrantiesPage from "@/pages/employee/EmployeeWarrantiesPage";
 import EmployeeWarrantyDetailPage from "@/pages/employee/EmployeeWarrantyDetailPage";
 import AdminCmsCollectionsPage from "@/pages/admin/AdminCmsCollectionsPage";
 import AdminCmsCollectionDetailPage from "@/pages/admin/AdminCmsCollectionDetailPage";
+import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import EmployeeCmsCollectionsPage from "@/pages/employee/EmployeeCmsCollectionsPage";
 import EmployeeCmsCollectionDetailPage from "@/pages/employee/EmployeeCmsCollectionDetailPage";
 
@@ -122,7 +123,7 @@ export default function AppRoute() {
                     <Route path="orders/:orderId" element={<AdminOrderDetailPage />} />
                     <Route path="warranties" element={<AdminWarrantiesPage />} />
                     <Route path="warranties/:warrantyId" element={<AdminWarrantyDetailPage />} />
-                    <Route path="users" element={<div>Quản lý người dùng</div>} />
+                    <Route path="users" element={<AdminUsersPage />} />
                     <Route path="statistics" element={<div>Thống kê</div>} />
                     <Route path="blogs" element={<AdminBlogsPage />} />
                     <Route path="settings" element={<div>Cài đặt</div>} />

@@ -316,6 +316,19 @@ export const createCmsSectionItemSchema = Joi.object({
         "boolean.base": "Trạng thái hoạt động phải là true hoặc false",
     }),
 });
+export const bulkCreateCmsSectionItemsSchema = Joi.object({
+    items: Joi.array()
+        .items(createCmsSectionItemSchema)
+        .min(1)
+        .max(100)
+        .required()
+        .messages({
+        "array.base": "Danh sách CMS section item phải là mảng",
+        "array.min": "Phải chọn ít nhất 1 CMS section item",
+        "array.max": "Chỉ được tạo tối đa {#limit} CMS section item mỗi lần",
+        "any.required": "Danh sách CMS section item là bắt buộc",
+    }),
+});
 export const updateCmsSectionItemSchema = Joi.object({
     title: Joi.string()
         .allow("", null)

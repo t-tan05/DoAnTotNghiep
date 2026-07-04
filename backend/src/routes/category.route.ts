@@ -6,8 +6,8 @@ import { Router } from "express";
 const router = Router();
 
 router.post("/", VerifyToken, CheckRole("ADMIN"), createCategoryController);
-router.get("/", VerifyToken, CheckRole("ADMIN"), getAllCategoriesController);
-router.get("/:categoryId", VerifyToken, CheckRole("ADMIN"), getCategoryByIdController);
+router.get("/", VerifyToken, getAllCategoriesController);
+router.get("/:categoryId", VerifyToken, getCategoryByIdController);
 router.patch("/:categoryId", VerifyToken, CheckRole("ADMIN"), updateCategoryController);
 router.delete("/:categoryId", VerifyToken, CheckRole("ADMIN"), deleteCategoryController);
 

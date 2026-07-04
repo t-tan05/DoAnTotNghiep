@@ -16,9 +16,9 @@ import { Router } from "express";
 
 const router = Router();
 
-router.get("/", VerifyToken, CheckRole("ADMIN"), getAllProductLinesController);
+router.get("/", VerifyToken, getAllProductLinesController);
 router.post("/", VerifyToken, CheckRole("ADMIN"), Validate(createProductLineSchema), createProductLineController);
-router.get("/:lineId", VerifyToken, CheckRole("ADMIN"), getProductLineByIdController);
+router.get("/:lineId", VerifyToken, getProductLineByIdController);
 router.patch("/:lineId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductLineSchema), updateProductLineController);
 router.delete("/:lineId", VerifyToken, CheckRole("ADMIN"), deleteProductLineController);
 

@@ -1,7 +1,7 @@
 import PublicCmsSections, { mapCmsItemToProduct } from "@/components/cms/PublicCmsSections";
 import ProductCard from "@/components/prod/ProductCard";
 import ProductFilterSidebar from "@/components/prod/ProductFilterSidebar";
-import ProductSortBar from "@/components/prod/ProductSortBar";
+import ProductSortButtons from "@/components/prod/ProductSortButtons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +16,7 @@ import type {
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 function slugify(value: string) {
@@ -82,6 +82,13 @@ function getProductPrice(product: PublicProductCardItem) {
     return Number(product.variant.discount_price ?? product.variant.price ?? 0);
 }
 
+function getProductDiscountValue(product: PublicProductCardItem) {
+    const originalPrice = Number(product.variant.original_price ?? product.variant.price ?? 0);
+    const currentPrice = Number(product.variant.discount_price ?? product.variant.price ?? 0);
+
+    return Math.max(0, originalPrice - currentPrice);
+}
+
 function filterCmsGridProducts(
     products: PublicProductCardItem[],
     filters: {
@@ -133,7 +140,54 @@ function filterCmsGridProducts(
         );
     }
 
+    if(filters.sortBy === "promotion") {
+        return [...filteredProducts].sort((a, b) => getProductDiscountValue(b) - getProductDiscountValue(a));
+    }
+
     return filteredProducts;
+}
+
+function getCmsBreadcrumbs(
+    collection: CmsCollection | null,
+    categories: PublicProductFilterOption[],
+    brands: PublicProductFilterOption[],
+) {
+    const items = [{ label: "Trang chủ", href: "/" }];
+
+    const category = collection?.categories
+        ? {
+            id: collection.categories.category_id,
+            name: collection.categories.category_name,
+        }
+        : categories.length === 1 ? categories[0] : null;
+
+    const brand = collection?.brands
+        ? {
+            id: collection.brands.brand_id,
+            name: collection.brands.brand_name,
+        }
+        : brands.length === 1 ? brands[0] : null;
+
+    if(category) {
+        items.push({
+            label: category.name,
+            href: `/products?categoryId=${encodeURIComponent(category.id)}`,
+        });
+    }
+
+    if(brand) {
+        items.push({
+            label: brand.name,
+            href: `/products?brandId=${encodeURIComponent(brand.id)}`,
+        });
+    }
+
+    items.push({
+        label: collection?.title || "Sản phẩm",
+        href: "",
+    });
+
+    return items;
 }
 
 export default function ProductListPage() {
@@ -431,15 +485,44 @@ export default function ProductListPage() {
         loadCmsCollection();
     }, [cmsSlug]);
 
+    const breadcrumbs = isCmsPage
+        ? getCmsBreadcrumbs(cmsCollection, categories, brands)
+        : [];
+
     return (
         <main className="bg-[#f5f6fb] py-6">
             <div className="mx-auto max-w-7xl px-4">
+                {breadcrumbs.length > 0 ? (
+                    <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+                        {breadcrumbs.map((item, index) => {
+                            const isLast = index === breadcrumbs.length - 1;
+
+                            return (
+                                <span key={`${item.label}-${index}`} className="flex items-center gap-2">
+                                    {isLast || !item.href ? (
+                                        <span className="font-medium text-foreground text-lg">{item.label}</span>
+                                    ) : (
+                                        <Link to={item.href} className="text-sky-500 text-lg transition hover:text-foreground">
+                                            {item.label}
+                                        </Link>
+                                    )}
+                                    {!isLast ? (
+                                        <span className="text-muted-foreground">›</span>
+                                    ) : null}
+                                </span>
+                            );
+                        })}
+                    </nav>
+                ) : null}
+
+                {!isCmsPage ? (
                 <div className="mb-4">
                     <h1 className="text-2xl font-semibold">{cmsCollection?.title || "S\u1ea3n ph\u1ea9m"}</h1>
                     <p className="text-sm text-muted-foreground">
                         {cmsCollection?.description || "Tìm kiếm và lựa chọn sản phẩm phù hợp với nhu cầu của bạn."}
                     </p>
                 </div>
+                ) : null}
 
                 <div className="hidden">
                     <div className="relative">
@@ -481,10 +564,27 @@ export default function ProductListPage() {
                                 Đang tải nội dung nổi bật...
                             </div>
                         ) : (
-                            <PublicCmsSections collection={cmsCollection} />
+                            <PublicCmsSections
+                                collection={cmsCollection}
+                                afterBanner={(
+                                    <section className="rounded-md bg-white p-5">
+                                        <h1 className="text-2xl font-semibold text-[#2d3b55]">
+                                            {cmsCollection?.title || "Sản phẩm"}{" "}
+                                            <span className="font-normal text-[#8490ad]">
+                                                ({totalItems} sản phẩm)
+                                            </span>
+                                        </h1>
+                                        {cmsCollection?.description ? (
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                {cmsCollection.description}
+                                            </p>
+                                        ) : null}
+                                    </section>
+                                )}
+                            />
                         )}
 
-                        <ProductSortBar
+                        <ProductSortButtons
                             totalItems={totalItems}
                             sortBy={sortBy}
                             onSortChange={(value) => updateParam("sortBy", value)}

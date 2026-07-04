@@ -1,4 +1,5 @@
 import prisma from "#config/prisma";
+import { UserListQuery } from "#types/user.type";
 import AppError from "#utils/AppError";
 import { Prisma } from "@prisma/client";
 
@@ -179,22 +180,74 @@ export const createUserWithRole = async(
     });
 };
 
-export const getAllUsers = async() => {
-    return await prisma.users.findMany({
-        select: {
-            user_id: true,
-            email: true,
-            name: true,
-            verified: true,
-            must_change_password: true,
-            status: true,
+export const getUsersWithQuery = async(params: UserListQuery) => {
+    const {
+        page,
+        limit,
+        search,
+        sortBy,
+        sortOrder,
+        role,
+        status,
+        verified,
+        mustChangePassword,
+    } = params;
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.usersWhereInput = {
+        ...(search ? {
+            OR: [
+                { name: { contains: search } },
+                { email: { contains: search } },
+                { user_id: { contains: search } },
+            ],
+        } : {}),
+
+        ...(status ? { status } : {}),
+        ...(verified !== undefined ? { verified } : {}),
+        ...(mustChangePassword !== undefined ? { must_change_password: mustChangePassword } : {}),
+
+        ...(role ? {
             users_roles: {
-                select: {
-                    role_name: true,
-                }
+                some: {
+                    role_name: role,
+                },
             },
-        },
-    });
+        } : {}),
+    };
+
+    const [users, totalItems] = await prisma.$transaction([
+        prisma.users.findMany({
+            where,
+            skip,
+            take: limit,
+            select: {
+                user_id: true,
+                email: true,
+                name: true,
+                verified: true,
+                must_change_password: true,
+                status: true,
+                locked_reason: true,
+                locked_at: true,
+                users_roles: {
+                    select: {
+                        role_name: true,
+                    },
+                },
+            },
+            orderBy: {
+                [sortBy]: sortOrder,
+            },
+        }),
+        prisma.users.count({ where }),
+    ]);
+
+    return {
+        users,
+        totalItems,
+    };
 };
 
 export const deleteUserById = async(userId: string)  => {

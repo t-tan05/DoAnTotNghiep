@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { brandService } from "@/services/brand.service";
 import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
+import { productLineService } from "@/services/productLine.service";
 import type { SortOrder } from "@/types/admin-table.type";
 import type { Brand } from "@/types/brand.type";
 import type { Category } from "@/types/category.type";
+import type { ProductLine } from "@/types/product-line.type";
 import type { AdminProduct, ProductSortBy } from "@/types/product.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Download, Upload } from "lucide-react";
@@ -80,6 +82,7 @@ export default function AdminProductsPage() {
     const [products, setProducts] = useState<AdminProduct[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [productLines, setProductLines] = useState<ProductLine[]>([]);
     const [openCreate, setOpenCreate] = useState(false);
     const [openImport, setOpenImport] = useState(false);
     const [deleteProduct, setDeleteProduct] = useState<AdminProduct | null>(null);
@@ -89,6 +92,7 @@ export default function AdminProductsPage() {
     const [search, setSearch] = useState("");
     const [brandId, setBrandId] = useState("");
     const [categoryId, setCategoryId] = useState("");
+    const [lineId, setLineId] = useState("");
     const [sortBy, setSortBy] = useState<ProductSortBy>("created_at");
     const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
     const [totalPages, setTotalPages] = useState(1);
@@ -98,13 +102,15 @@ export default function AdminProductsPage() {
 
     async function loadOptions() {
         try {
-            const [brandData, categoryData] = await Promise.all([
+            const [brandData, categoryData, lineData] = await Promise.all([
                 brandService.getAll({ page: 1, limit: 100, search: "", sortBy: "brand_name", sortOrder: "asc" }),
                 categoryService.getAll({ page: 1, limit: 100, search: "", sortBy: "category_name", sortOrder: "asc" }),
+                productLineService.getAll({ page: 1, limit: 1000, search: "", sortBy: "display_order", sortOrder: "asc", isActive: true }),
             ]);
 
             setBrands(brandData?.brands ?? []);
             setCategories(categoryData?.categories ?? []);
+            setProductLines(lineData?.productLines ?? []);
         } catch(error) {
             toast.error(getErrorMessage(error));
         }
@@ -120,6 +126,7 @@ export default function AdminProductsPage() {
                 search,
                 brandId: brandId || undefined,
                 categoryId: categoryId || undefined,
+                lineId: lineId || undefined,
                 sortBy,
                 sortOrder,
             });
@@ -145,7 +152,7 @@ export default function AdminProductsPage() {
         }, 300);
 
         return () => window.clearTimeout(timer);
-    }, [page, search, brandId, categoryId, sortBy, sortOrder]);
+    }, [page, search, brandId, categoryId, lineId, sortBy, sortOrder]);
 
     function handleSortChange(nextSortBy: string) {
         if(!["product_name", "created_at", "warranty_period"].includes(nextSortBy)) return;
@@ -196,25 +203,41 @@ export default function AdminProductsPage() {
         }
     }
 
+    const filteredProductLines = productLines.filter((line) => {
+        if(brandId && line.brand_id !== brandId) return false;
+        if(categoryId && line.category_id !== categoryId) return false;
+
+        return true;
+    });
+
     return (
         <>
             <div className="space-y-4">
                 <ProductFilterBar
                     brandId={brandId}
                     categoryId={categoryId}
+                    lineId={lineId}
                     brands={brands}
                     categories={categories}
+                    productLines={filteredProductLines}
                     onBrandChange={(value) => {
                         setBrandId(value);
+                        setLineId("");
                         setPage(1);
                     }}
                     onCategoryChange={(value) => {
                         setCategoryId(value);
+                        setLineId("");
+                        setPage(1);
+                    }}
+                    onLineChange={(value) => {
+                        setLineId(value);
                         setPage(1);
                     }}
                     onClear={() => {
                         setBrandId("");
                         setCategoryId("");
+                        setLineId("");
                         setPage(1);
                     }}
                 />

@@ -3,6 +3,7 @@ import {CatchAsync} from "#utils/CatchAsync";
 import { 
     createCmsCollectionService, 
     createCmsRuleService,
+    bulkCreateCmsSectionItemsService,
     createCmsSectionItemService,
     createCmsSectionService,
     deleteCmsCollectionService, 
@@ -195,6 +196,19 @@ export const createCmsSectionItemController = CatchAsync(async(req: Request, res
     res.status(201).json({
         success: true,
         message: "Tạo CMS section item thành công.",
+        data: {
+            ...data
+        },
+    });
+});
+
+export const bulkCreateCmsSectionItemsController = CatchAsync(async(req: Request, res: Response) => {
+    const sectionId = req.params.sectionId as string;
+    const data = await bulkCreateCmsSectionItemsService(sectionId, req.body);
+
+    res.status(201).json({
+        success: true,
+        message: "Tạo nhiều CMS section item thành công.",
         data: {
             ...data
         },

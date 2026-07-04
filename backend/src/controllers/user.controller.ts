@@ -1,22 +1,67 @@
 import { CatchAsync } from "#utils/CatchAsync";
 import { Request, Response } from "express";
-import { createEmpByAdminService, delUserService, getAllUsersService, lockUserService, profileService, unlockUserService, updatePasswordService, updateProfileService } from "#services/user.service";
+import { 
+    createEmpByAdminService, 
+    delUserService, 
+    getAllUsersService, 
+    lockUserService, 
+    profileService, 
+    unlockUserService, 
+    updatePasswordService, 
+    updateProfileService 
+} from "#services/user.service";
 import AppError from "#utils/AppError";
+import { UserRoleFilter, UserSortBy, UserStatusFilter } from "#types/user.type";
+import { parseListQuery } from "#utils/parseListQuery";
 
 interface AuthRequest extends Request {
     user?: any;
 }
 
+const getBooleanQuery = (value: unknown) => {
+    if(value === "true") return true;
+    if(value === "false") return false;
+    return undefined;
+};
+
+const getRoleQuery = (value: unknown): UserRoleFilter | undefined => {
+    const allowed = ["ADMIN", "EMPLOYEE", "CUSTOMER"];
+
+    return typeof value === "string" && allowed.includes(value)
+        ? value as UserRoleFilter
+        : undefined;
+};
+
+const getStatusQuery = (value: unknown): UserStatusFilter | undefined => {
+    const allowed = ["ACTIVE", "LOCKED"];
+
+    return typeof value === "string" && allowed.includes(value)
+        ? value as UserStatusFilter
+        : undefined;
+};
+
 export const getAllUsersController = CatchAsync(async(req: Request, res: Response) => {
-    const data = await getAllUsersService();
+    const query = {
+        ...parseListQuery<UserSortBy>({
+            query: req.query,
+            allowedSortFields: ["name", "email", "status", "verified"],
+            defaultSortBy: "name",
+        }),
+        role: getRoleQuery(req.query.role),
+        status: getStatusQuery(req.query.status),
+        verified: getBooleanQuery(req.query.verified),
+        mustChangePassword: getBooleanQuery(req.query.mustChangePassword),
+    };
+
+    const data = await getAllUsersService(query);
 
     res.status(200).json({
         success: true,
         message: "Lấy danh sách users thành công",
         data: {
             ...data
-        }
-    })
+        },
+    });
 });
 
 export const profileController = CatchAsync(async(req: AuthRequest, res: Response) => {

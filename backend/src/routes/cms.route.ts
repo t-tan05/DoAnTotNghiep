@@ -4,6 +4,7 @@ import {
     createCmsRuleController,
     createCmsSectionController,
     createCmsSectionItemController,
+    bulkCreateCmsSectionItemsController,
     deleteCmsCollectionController,
     deleteCmsRuleController,
     deleteCmsSectionController,
@@ -24,6 +25,7 @@ import {
     createCmsCollectionSchema,
     createCmsRuleSchema,
     createCmsSectionItemSchema,
+    bulkCreateCmsSectionItemsSchema,
     createCmsSectionSchema,
     updateCmsCollectionSchema,
     updateCmsRuleSchema,
@@ -49,6 +51,7 @@ router.patch("/admin/sections/:sectionId", VerifyToken, CheckRole("ADMIN", "EMPL
 router.delete("/admin/sections/:sectionId", VerifyToken, CheckRole("ADMIN"), deleteCmsSectionController);
 
 router.post("/admin/sections/:sectionId/items", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(createCmsSectionItemSchema), createCmsSectionItemController);
+router.post("/admin/sections/:sectionId/items/bulk", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(bulkCreateCmsSectionItemsSchema), bulkCreateCmsSectionItemsController);
 router.patch("/admin/items/:itemId", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), Validate(updateCmsSectionItemSchema), updateCmsSectionItemController);
 router.delete("/admin/items/:itemId", VerifyToken, CheckRole("ADMIN"), deleteCmsSectionItemController);
 

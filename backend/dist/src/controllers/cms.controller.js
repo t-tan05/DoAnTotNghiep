@@ -1,5 +1,5 @@
 import { CatchAsync } from "#utils/CatchAsync";
-import { createCmsCollectionService, createCmsRuleService, createCmsSectionItemService, createCmsSectionService, deleteCmsCollectionService, deleteCmsRuleService, deleteCmsSectionItemService, deleteCmsSectionService, getAdminCmsCollectionDetailService, getAdminCmsCollectionsService, getPublicCmsCollectionFiltersService, getPublicCmsCollectionProductsService, getPublicCmsCollectionService, updateCmsCollectionService, updateCmsRuleService, updateCmsSectionItemService, updateCmsSectionService } from "#services/cms.service";
+import { createCmsCollectionService, createCmsRuleService, bulkCreateCmsSectionItemsService, createCmsSectionItemService, createCmsSectionService, deleteCmsCollectionService, deleteCmsRuleService, deleteCmsSectionItemService, deleteCmsSectionService, getAdminCmsCollectionDetailService, getAdminCmsCollectionsService, getPublicCmsCollectionFiltersService, getPublicCmsCollectionProductsService, getPublicCmsCollectionService, updateCmsCollectionService, updateCmsRuleService, updateCmsSectionItemService, updateCmsSectionService } from "#services/cms.service";
 export const getPublicCmsCollectionController = CatchAsync(async (req, res) => {
     const slug = req.params.slug;
     const data = await getPublicCmsCollectionService(slug);
@@ -145,6 +145,17 @@ export const createCmsSectionItemController = CatchAsync(async (req, res) => {
     res.status(201).json({
         success: true,
         message: "Tạo CMS section item thành công.",
+        data: {
+            ...data
+        },
+    });
+});
+export const bulkCreateCmsSectionItemsController = CatchAsync(async (req, res) => {
+    const sectionId = req.params.sectionId;
+    const data = await bulkCreateCmsSectionItemsService(sectionId, req.body);
+    res.status(201).json({
+        success: true,
+        message: "Tạo nhiều CMS section item thành công.",
         data: {
             ...data
         },
