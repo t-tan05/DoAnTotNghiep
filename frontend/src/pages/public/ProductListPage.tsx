@@ -515,15 +515,6 @@ export default function ProductListPage() {
                     </nav>
                 ) : null}
 
-                {!isCmsPage ? (
-                <div className="mb-4">
-                    <h1 className="text-2xl font-semibold">{cmsCollection?.title || "S\u1ea3n ph\u1ea9m"}</h1>
-                    <p className="text-sm text-muted-foreground">
-                        {cmsCollection?.description || "Tìm kiếm và lựa chọn sản phẩm phù hợp với nhu cầu của bạn."}
-                    </p>
-                </div>
-                ) : null}
-
                 <div className="hidden">
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -577,6 +568,10 @@ export default function ProductListPage() {
                                         {cmsCollection?.description ? (
                                             <p className="mt-1 text-sm text-muted-foreground">
                                                 {cmsCollection.description}
+                                            </p>
+                                        ) : !isCmsPage ? (
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                Tìm kiếm và lựa chọn sản phẩm phù hợp với nhu cầu của bạn.
                                             </p>
                                         ) : null}
                                     </section>
