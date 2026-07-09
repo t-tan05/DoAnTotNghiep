@@ -1,8 +1,10 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../../ui/sidebar";
 import { adminSidebarItems } from "../data/admin-sidebar.data";
 
 export default function AdminSidebar() {
+    const { pathname } = useLocation();
+
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader>
@@ -23,14 +25,21 @@ export default function AdminSidebar() {
                     <SidebarMenu>
                         {adminSidebarItems.map((item) => {
                             const Icon = item.icon;
+                            const isActive = item.url === "/admin"
+                                ? pathname === item.url
+                                : pathname === item.url || pathname.startsWith(`${item.url}/`);
 
                             return (
                                 <SidebarMenuItem key={item.url}>
-                                    <SidebarMenuButton asChild tooltip={item.title}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={isActive}
+                                        tooltip={item.title}
+                                        className={isActive ? "bg-sky-50 text-sky-700 font-medium hover:bg-sky-50 [&_svg]:text-sky-600" : ""}
+                                    >
                                         <NavLink
                                             to={item.url}
                                             end={item.url === "/admin"}
-                                            className={({ isActive }) => isActive ? "bg-sidebar-accent test-sidebar-accent-foreground" : ""}
                                         >
                                             <Icon />
                                             <span>{item.title}</span>

@@ -23,7 +23,7 @@ import WarrantyDetailPage from "@/pages/profile/WarrantyDetailPage";
 import WarrantyListPage from "@/pages/profile/WarrantyListPage";
 import WarrantyRequestPage from "@/components/profile/WarrantyLookupRequest";
 import AdminLayout from "@/components/admin/layout/AdminLayout";
-import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import AdminDashboardPage from "@/pages/admin/AdminDashboardRealtimePage";
 import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
 import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";

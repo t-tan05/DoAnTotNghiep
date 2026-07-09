@@ -25,6 +25,9 @@ const addInFilter = (target, field, values) => {
         };
     }
 };
+const buildEmptyProductScopeWhere = () => ({
+    variant_id: "__cms_empty_manual_scope__",
+});
 const buildCmsBaseProductWhere = (collection) => {
     const productWhere = {};
     const categoryIds = [
@@ -106,11 +109,15 @@ const buildCmsProductScopeWhere = (collection) => {
         ?.filter((rule) => rule.is_active)
         .map(buildCmsRuleWhere)
         .filter((where) => Object.keys(where).length > 0) ?? [];
+    const hasBaseWhere = Object.keys(baseWhere).length > 0;
     if (ruleWheres.length === 0) {
+        if (collection.page_type === "CUSTOM" && !hasBaseWhere) {
+            return buildEmptyProductScopeWhere();
+        }
         return baseWhere;
     }
     const andWhere = [];
-    if (Object.keys(baseWhere).length > 0) {
+    if (hasBaseWhere) {
         andWhere.push(baseWhere);
     }
     andWhere.push({ OR: ruleWheres });

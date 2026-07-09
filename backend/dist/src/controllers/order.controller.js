@@ -1,7 +1,7 @@
 import { cancelMyOrderService, checkoutOrderService, getMyOrderDetailService, getMyOrdersService, cancelOrderForStaffService, completeOrderService, confirmOrderService, getAllOrdersService, getOrderDetailForStaffService, markDeliveryFailedService, shipOrderService, handleVnpayReturnService, handleVnpayIpnService, checkoutBuyNowRequest, } from "#services/order.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { orders_payment_method, orders_payment_status, orders_status, } from "@prisma/client";
-import { getIO } from "../socket.js";
+import { emitDashboardUpdate, getIO } from "../socket.js";
 const getEnumQuery = (value, values) => {
     return typeof value === "string" && values.includes(value)
         ? value
@@ -16,6 +16,7 @@ const emitOrderUpdated = (order, eventType = "updated") => {
         employeeId: order.employee_id,
         updatedAt: order.updated_at || new Date(),
     });
+    emitDashboardUpdate();
 };
 export const checkoutOrderController = CatchAsync(async (req, res) => {
     const userId = req.user.user_id;
@@ -30,6 +31,7 @@ export const checkoutOrderController = CatchAsync(async (req, res) => {
         totalPrice: data.order.total_price,
         createdAt: data.order.order_date,
     });
+    emitDashboardUpdate();
     res.status(201).json({
         success: true,
         message: "Đặt hàng thành công.",
@@ -51,6 +53,7 @@ export const buyNowOrderController = CatchAsync(async (req, res) => {
         totalPrice: data.order.total_price,
         createdAt: data.order.order_date,
     });
+    emitDashboardUpdate();
     res.status(201).json({
         success: true,
         message: "Đặt hàng thành công.",

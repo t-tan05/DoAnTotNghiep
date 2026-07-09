@@ -243,6 +243,11 @@ model orders {
   payment_status                  orders_payment_status    @default(UNPAID)
   receiver_name                   String?                  @db.VarChar(255)
   receiver_phone                  String?                  @db.VarChar(20)
+  note                            String?                  @db.Text
+  completed_at                    DateTime?                @db.DateTime(0)
+  cancelled_at                    DateTime?                @db.DateTime(0)
+  delivery_failed_at              DateTime?                @db.DateTime(0)
+  updated_at                      DateTime?                @default(now()) @updatedAt @db.DateTime(0)
   inventory_transactions          inventory_transactions[]
   addresses                       addresses?               @relation(fields: [address_id], references: [address_id], onDelete: Restrict, onUpdate: NoAction, map: "fk_orders_address")
   users_orders_employee_idTousers users?                   @relation("orders_employee_idTousers", fields: [employee_id], references: [user_id], onUpdate: NoAction, map: "fk_orders_employee")
@@ -259,6 +264,10 @@ model orders {
   @@index([payment_method], map: "idx_orders_payment_method")
   @@index([payment_status], map: "idx_orders_payment_status")
   @@index([status], map: "idx_orders_status")
+  @@index([cancelled_at], map: "idx_orders_cancelled_at")
+  @@index([completed_at], map: "idx_orders_completed_at")
+  @@index([delivery_failed_at], map: "idx_orders_delivery_failed_at")
+  @@index([updated_at], map: "idx_orders_updated_at")
 }
 
 model orders_details {
@@ -456,6 +465,8 @@ model users {
   verify_token_expire                                 DateTime?                @db.DateTime(0)
   reset_token                                         String?                  @db.VarChar(255)
   reset_token_expire                                  DateTime?                @db.DateTime(0)
+  created_at                                          DateTime?                @default(now()) @db.DateTime(0)
+  updated_at                                          DateTime?                @default(now()) @updatedAt @db.DateTime(0)
   addresses                                           addresses[]
   blog_posts                                          blog_posts[]
   carts                                               carts?
@@ -473,6 +484,7 @@ model users {
   wishlists                                           wishlists[]
 
   @@index([name], map: "idx_user_name")
+  @@index([created_at], map: "idx_users_created_at")
 }
 
 model users_roles {

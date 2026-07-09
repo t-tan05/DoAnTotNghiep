@@ -167,7 +167,7 @@ CREATE TABLE `orders` (
   `order_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `total_price` decimal(12,2) NOT NULL,
   `address_id` varchar(50) DEFAULT NULL,
-
+  `note` text default null,
   `status` enum(
     'PENDING',
     'CONFIRMED',
@@ -198,6 +198,10 @@ CREATE TABLE `orders` (
 
   `receiver_name` varchar(255) DEFAULT NULL,
   `receiver_phone` varchar(20) DEFAULT NULL,
+  `completed_at` DATETIME NULL,
+  `cancelled_at` DATETIME NULL,
+  `delivery_failed_at` DATETIME NULL,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   PRIMARY KEY (`order_id`),
 
@@ -208,6 +212,10 @@ CREATE TABLE `orders` (
   KEY `idx_orders_payment_status` (`payment_status`),
   KEY `idx_orders_payment_method` (`payment_method`),
   KEY `idx_orders_order_date` (`order_date`),
+  KEY `idx_orders_completed_at` (`completed_at`),
+  KEY `idx_orders_cancelled_at` (`cancelled_at`),
+  KEY `idx_orders_delivery_failed_at` (`delivery_failed_at`),
+  KEY `idx_orders_updated_at` (`updated_at`);
 
   CONSTRAINT `fk_orders_address`
     FOREIGN KEY (`address_id`)
@@ -771,8 +779,11 @@ CREATE TABLE `users` (
   `verify_token_expire` datetime DEFAULT NULL,
   `reset_token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `reset_token_expire` datetime DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `user_email_unique` (`email`),
+  KEY `idx_users_created_at` (`created_at`);
   KEY `idx_user_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

@@ -68,6 +68,10 @@ const addInFilter = (target: any, field: string, values: string[]) => {
     }
 };
 
+const buildEmptyProductScopeWhere = () => ({
+    variant_id: "__cms_empty_manual_scope__",
+});
+
 const buildCmsBaseProductWhere = (collection: any) => {
     const productWhere: any = {};
     const categoryIds = [
@@ -165,14 +169,19 @@ const buildCmsProductScopeWhere = (collection: any) => {
         ?.filter((rule: any) => rule.is_active)
         .map(buildCmsRuleWhere)
         .filter((where: any) => Object.keys(where).length > 0) ?? [];
+    const hasBaseWhere = Object.keys(baseWhere).length > 0;
 
     if(ruleWheres.length === 0) {
+        if(collection.page_type === "CUSTOM" && !hasBaseWhere) {
+            return buildEmptyProductScopeWhere();
+        }
+
         return baseWhere;
     }
 
     const andWhere = [];
 
-    if(Object.keys(baseWhere).length > 0) {
+    if(hasBaseWhere) {
         andWhere.push(baseWhere);
     }
 

@@ -21,7 +21,7 @@ import {
     orders_status,
 } from "@prisma/client";
 import { Request, Response } from "express";
-import { getIO } from "../socket.js";
+import { emitDashboardUpdate, getIO } from "../socket.js";
 
 interface AuthRequest extends Request {
     user?: any;
@@ -41,6 +41,7 @@ const emitOrderUpdated = (order: any, eventType = "updated") => {
         employeeId: order.employee_id,
         updatedAt: order.updated_at || new Date(),
     });
+    emitDashboardUpdate();
 };
 
 export const checkoutOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
@@ -58,6 +59,7 @@ export const checkoutOrderController = CatchAsync(async(req: AuthRequest, res: R
         totalPrice: data.order.total_price,
         createdAt: data.order.order_date,
     });
+    emitDashboardUpdate();
 
     res.status(201).json({
         success: true,
@@ -83,6 +85,7 @@ export const buyNowOrderController = CatchAsync(async(req: AuthRequest, res: Res
         totalPrice: data.order.total_price,
         createdAt: data.order.order_date,
     });
+    emitDashboardUpdate();
 
     res.status(201).json({
         success: true,

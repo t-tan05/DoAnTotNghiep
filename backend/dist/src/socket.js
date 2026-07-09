@@ -3,6 +3,8 @@ import redisClient from "#config/redis";
 import jwt from "jsonwebtoken";
 import { ACCESS_TOKEN } from "#config/jwt";
 import { findUserById } from "#models/user.model";
+import { removeOnlineStaff, removeOnlineVisitor, setOnlineStaff, setOnlineVisitor, } from "#utils/dashboardMetrics";
+import { getDashboardSummaryService } from "#services/dashboard.service";
 let io;
 export function initSocket(server) {
     io = new Server(server, {
@@ -15,7 +17,8 @@ export function initSocket(server) {
         try {
             const token = socket.handshake.auth?.token;
             if (!token) {
-                return next(new Error("UNAUTHORIZED"));
+                socket.data.visitorKind = "guest";
+                return next();
             }
             const isBlacklist = await redisClient.exists(`blacklist:${token}`);
             if (isBlacklist) {
@@ -39,23 +42,47 @@ export function initSocket(server) {
             next();
         }
         catch {
-            next(new Error("UNAUTHORIZED"));
+            socket.data.visitorKind = "guest";
+            next();
         }
     });
     io.on("connection", (socket) => {
         console.log("Socket connected: ", socket.id);
         const currentUserId = socket.data.user?.user_id;
+        const roles = socket.data.user?.roles || [];
         if (currentUserId) {
             socket.join(`warranty_user:${currentUserId}`);
         }
+        if (currentUserId && (roles.includes("ADMIN") || roles.includes("EMPLOYEE"))) {
+            setOnlineStaff(socket.id, {
+                userId: currentUserId,
+                roles,
+            });
+            emitDashboardUpdate();
+        }
         socket.on("join_admin", () => {
-            const roles = socket.data.user?.roles || [];
             const canJoinAdmin = roles.includes("ADMIN") || roles.includes("EMPLOYEE");
             if (!canJoinAdmin) {
                 socket.emit("socket:error", "Bạn không có quyền theo dõi đơn hàng.");
                 return;
             }
             socket.join("admin");
+        });
+        socket.on("join_dashboard", async () => {
+            const canJoinDashboard = roles.includes("ADMIN");
+            if (!canJoinDashboard) {
+                socket.emit("socket:error", "Bạn không có quyền theo dõi dashboard.");
+                return;
+            }
+            socket.join("dashboard_admin");
+            socket.emit("dashboard:updated", await getDashboardSummaryService());
+        });
+        socket.on("visitor:active", () => {
+            setOnlineVisitor(socket.id, {
+                kind: currentUserId ? "authenticated" : "guest",
+                userId: currentUserId || null,
+            });
+            emitDashboardUpdate();
         });
         socket.on("join_warranty_staff", () => {
             const roles = socket.data.user?.roles || [];
@@ -76,6 +103,9 @@ export function initSocket(server) {
             socket.join(`warranty_detail:${warrantyId}`);
         });
         socket.on("disconnect", () => {
+            removeOnlineVisitor(socket.id);
+            removeOnlineStaff(socket.id);
+            emitDashboardUpdate();
             console.log("Socket disconnected:", socket.id);
         });
     });
@@ -86,4 +116,17 @@ export function getIO() {
         throw new Error("Socket.IO chưa được khởi tạo.");
     }
     return io;
+}
+export async function emitDashboardUpdate() {
+    if (!io)
+        return;
+    const room = io.sockets.adapter.rooms.get("dashboard_admin");
+    if (!room?.size)
+        return;
+    try {
+        io.to("dashboard_admin").emit("dashboard:updated", await getDashboardSummaryService());
+    }
+    catch (error) {
+        console.error("Emit dashboard update failed:", error);
+    }
 }

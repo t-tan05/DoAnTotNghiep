@@ -106,6 +106,21 @@ export function AuthProvider({children}:AuthProviderProps) {
         initAuth();
     }, []);
 
+    useEffect(() => {
+        const token = localStorage.getItem("accessToken");
+        const isStaff = user?.roles?.some((role) => role === "ADMIN" || role === "EMPLOYEE");
+
+        if(!token || !isStaff) return;
+
+        socket.auth = { token };
+
+        if(socket.connected) {
+            socket.disconnect();
+        }
+
+        socket.connect();
+    }, [user]);
+
     return (
         <AuthContext.Provider
             value={{

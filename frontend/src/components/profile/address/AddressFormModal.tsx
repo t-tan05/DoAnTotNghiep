@@ -1,6 +1,6 @@
 import FormError from "@/components/common/FormError";
 import SpinnerButton from "@/components/common/SpinnerButton";
-import { addressService } from "@/services/address.service";
+import { addressService, type ProvinceOption, type WardOption } from "@/services/address.service";
 import type { Address } from "@/types/address.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { X } from "lucide-react";
@@ -15,6 +15,92 @@ type AddressFormModalProps = {
   onClose: () => void;
   onSuccess: () => void;
 };
+
+type SearchableOption = {
+    code: number;
+    name: string;
+};
+
+type SearchableSelectProps = {
+    id: string;
+    value: string;
+    placeholder: string;
+    disabled?: boolean;
+    options: SearchableOption[];
+    onSearchChange?: () => void;
+    onSelect: (option: SearchableOption) => void;
+};
+
+function SearchableSelect({
+    id,
+    value,
+    placeholder,
+    disabled = false,
+    options,
+    onSearchChange,
+    onSelect,
+}: SearchableSelectProps) {
+    const [keyword, setKeyword] = useState(value);
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        setKeyword(value);
+    }, [value]);
+
+    const searchText = keyword.trim().toLowerCase();
+    const filteredOptions = options
+        .filter((item) => item.name.toLowerCase().includes(searchText))
+        .slice(0, 20);
+
+    return (
+        <div className="relative">
+            <input
+                id={id}
+                className="h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+                value={keyword}
+                placeholder={placeholder}
+                disabled={disabled}
+                autoComplete="off"
+                required
+                onFocus={() => setOpen(true)}
+                onChange={(e) => {
+                    setKeyword(e.target.value);
+                    setOpen(true);
+                    onSearchChange?.();
+                }}
+                onBlur={() => {
+                    setTimeout(() => setOpen(false), 150);
+                }}
+            />
+
+            {open && !disabled && (
+                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {filteredOptions.length > 0 ? (
+                        filteredOptions.map((option) => (
+                            <button
+                                key={option.code}
+                                type="button"
+                                className="block w-full px-4 py-3 text-left text-sm hover:bg-gray-100"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                    onSelect(option);
+                                    setKeyword(option.name);
+                                    setOpen(false);
+                                }}
+                            >
+                                {option.name}
+                            </button>
+                        ))
+                    ) : (
+                        <div className="px-4 py-3 text-sm text-gray-500">
+                            Không tìm thấy kết quả
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function AddressFormModal({
     open,
@@ -35,9 +121,65 @@ export default function AddressFormModal({
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [provinces, setProvinces] = useState<ProvinceOption[]>([]);
+    const [wards, setWards] = useState<WardOption[]>([]);
+    const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+    const [loadingProvinces, setLoadingProvinces] = useState(false);
+    const [loadingWards, setLoadingWards] = useState(false);
 
     useEffect(() => {
         if(!open) return;
+
+        async function fetchProvinces() {
+            setLoadingProvinces(true);
+
+            try{
+                const data = await addressService.getProvinces();
+                setProvinces(data);
+            }catch{
+                toast.error("Không thể tải danh sách tỉnh/thành phố.");
+            }finally{
+                setLoadingProvinces(false);
+            }
+        }
+
+        fetchProvinces();
+    }, [open]);
+
+    useEffect(() => {
+        if(!open || !form.province || !provinces.length) return;
+
+        const province = provinces.find((item) => item.name === form.province);
+        setSelectedProvinceCode(province ? String(province.code) : "");
+    }, [open, form.province, provinces]);
+
+    useEffect(() => {
+        if(!open || !selectedProvinceCode) {
+            setWards([]);
+            return;
+        }
+
+        async function fetchWards() {
+            setLoadingWards(true);
+
+            try{
+                const data = await addressService.getWardsByProvince(selectedProvinceCode);
+                setWards(data);
+            }catch{
+                toast.error("Không thể tải danh sách phường/xã.");
+            }finally{
+                setLoadingWards(false);
+            }
+        }
+
+        fetchWards();
+    }, [open, selectedProvinceCode]);
+
+    useEffect(() => {
+        if(!open) return;
+
+        setSelectedProvinceCode("");
+        setWards([]);
 
         if(mode === "edit" && address){
             setForm({
@@ -70,9 +212,36 @@ export default function AddressFormModal({
         }));
     }
 
+    function handleProvinceSearchChange() {
+        setSelectedProvinceCode("");
+        updateField("province", "");
+        updateField("ward", "");
+        setWards([]);
+    }
+
+    function handleProvinceSelect(province: ProvinceOption) {
+        setSelectedProvinceCode(String(province.code));
+        updateField("province", province.name);
+        updateField("ward", "");
+    }
+
+    function handleWardSearchChange() {
+        updateField("ward", "");
+    }
+
+    function handleWardSelect(ward: WardOption) {
+        updateField("ward", ward.name);
+    }
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError("");
+
+        if(!form.province || !form.ward) {
+            setError("Vui lòng chọn tỉnh/thành phố và phường/xã từ danh sách gợi ý.");
+            return;
+        }
+
         setLoading(true);
 
         try{
@@ -166,13 +335,14 @@ export default function AddressFormModal({
                                     <label htmlFor="province" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
                                         <span className="mr-1 text-red-500">*</span> Tỉnh/Thành phố
                                     </label>
-                                    <input
+                                    <SearchableSelect
                                         id="province"
-                                        className="h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
-                                        placeholder="Tỉnh/Thành phố"
                                         value={form.province}
-                                        onChange={(e) => updateField("province", e.target.value)}
-                                        required
+                                        placeholder={loadingProvinces ? "Đang tải tỉnh/thành phố..." : "Nhập tỉnh/thành phố"}
+                                        disabled={loadingProvinces}
+                                        options={provinces}
+                                        onSearchChange={handleProvinceSearchChange}
+                                        onSelect={handleProvinceSelect}
                                     />
                                 </div>
 
@@ -180,13 +350,20 @@ export default function AddressFormModal({
                                     <label htmlFor="ward" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
                                         <span className="mr-1 text-red-500">*</span> Phường/Xã
                                     </label>
-                                    <input
+                                    <SearchableSelect
                                         id="ward"
-                                        className="h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
-                                        placeholder="Phường/Xã"
                                         value={form.ward}
-                                        onChange={(e) => updateField("ward", e.target.value)}
-                                        required
+                                        placeholder={
+                                            !selectedProvinceCode
+                                                ? "Chọn tỉnh/thành phố trước"
+                                                : loadingWards
+                                                    ? "Đang tải phường/xã..."
+                                                    : "Nhập phường/xã"
+                                        }
+                                        disabled={!selectedProvinceCode || loadingWards}
+                                        options={wards}
+                                        onSearchChange={handleWardSearchChange}
+                                        onSelect={handleWardSelect}
                                     />
                                 </div>
                             </div>
