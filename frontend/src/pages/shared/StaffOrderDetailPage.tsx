@@ -305,6 +305,14 @@ export default function StaffOrderDetailPage({basePath}: Props) {
                         </div>
 
                         <div className="rounded-lg border bg-background p-5">
+                            <h2 className="text-lg font-semibold">Ghi chú đơn hàng</h2>
+
+                            <p className="mt-4 whitespace-pre-wrap text-sm text-muted-foreground">
+                                {order.note?.trim() || "Khách hàng không để lại ghi chú."}
+                            </p>
+                        </div>
+
+                        <div className="rounded-lg border bg-background p-5">
                             <h2 className="text-lg font-semibold">Khách hàng</h2>
 
                             <div className="mt-4 space-y-2 text-sm">

@@ -64,6 +64,17 @@ const columns: AdminColumn<StaffOrder>[] = [
         ),
     },
     {
+        key: "note",
+        title: "Ghi chú",
+        render: (order) => order.note ? (
+            <span className="line-clamp-2 max-w-[220px] text-sm">
+                {order.note}
+            </span>
+        ) : (
+            <span className="text-muted-foreground">-</span>
+        ),
+    },
+    {
         key: "total_price",
         title: "Tổng tiền",
         sortable: true,

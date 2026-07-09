@@ -6,6 +6,7 @@ export type OrderHistoryTab = "payment" | "shipping" | "completed" | "cancelled"
 export type CheckoutPayload = {
     addressId: string;
     paymentMethod: PaymentMethod;
+    note?: string;
 };
 
 export type BuyNowPayload = CheckoutPayload & {
@@ -79,6 +80,7 @@ export type MyOrder = {
     payment_status: OrderPaymentStatus;
     receiver_name?: string | null;
     receiver_phone?: string | null;
+    note?: string | null;
     orders_details: OrderDetail[];
 };
 

@@ -15,6 +15,7 @@ export type MyOrderListQuery = {
 export interface CheckoutOrderPayload {
     addressId: string;
     paymentMethod: orders_payment_method;
+    note?: string;
 }
 
 export interface OrderListQuery {
@@ -35,4 +36,5 @@ export interface BuyNowRequest {
     addressId: string;
     quantity: number;
     paymentMethod: orders_payment_method;
+    note?: string;
 }

@@ -10,7 +10,7 @@ import {
     setOnlineStaff,
     setOnlineVisitor,
 } from "#utils/dashboardMetrics";
-import { getDashboardSummaryService } from "#services/dashboard.service";
+import { getDashboardSummaryAnalyticsService } from "#services/dashboardAnalytics.service";
 
 let io: Server;
 
@@ -100,7 +100,7 @@ export function initSocket(server: HttpServer) {
             }
 
             socket.join("dashboard_admin");
-            socket.emit("dashboard:updated", await getDashboardSummaryService());
+            socket.emit("dashboard:updated", await getDashboardSummaryAnalyticsService());
         });
 
         socket.on("visitor:active", () => {
@@ -162,7 +162,7 @@ export async function emitDashboardUpdate() {
     if(!room?.size) return;
 
     try {
-        io.to("dashboard_admin").emit("dashboard:updated", await getDashboardSummaryService());
+        io.to("dashboard_admin").emit("dashboard:updated", await getDashboardSummaryAnalyticsService());
     }catch(error) {
         console.error("Emit dashboard update failed:", error);
     }

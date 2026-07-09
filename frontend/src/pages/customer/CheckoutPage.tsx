@@ -1,4 +1,4 @@
-import PageLoading from "@/components/common/PageLoading";
+﻿import PageLoading from "@/components/common/PageLoading";
 import SpinnerButton from "@/components/common/SpinnerButton";
 import AddressFormModal from "@/components/profile/address/AddressFormModal";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { toast } from "sonner";
 
 const formatPrice = (value: number | string) => {
-    return Number(value).toLocaleString("vi-VN") + "đ";
+    return Number(value).toLocaleString("vi-VN") + "Đ";
 };
 
 const BUY_NOW_STORAGE_KEY = "checkout:buy-now";
@@ -85,6 +85,7 @@ export default function CheckoutPage() {
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
+    const [orderNote, setOrderNote] = useState("");
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -187,7 +188,7 @@ export default function CheckoutPage() {
         }
 
         if(isBuyNow && !buyNowItem) {
-            toast.error("Không tìm thấy sản phẩm mua ngay.");
+            toast.error("Không tìm thấy danh sách mua ngay.");
             return;
         }
 
@@ -200,10 +201,12 @@ export default function CheckoutPage() {
                     quantity: buyNowItem.quantity,
                     addressId: selectedAddressId,
                     paymentMethod,
+                    note: orderNote.trim() || undefined,
                 })
                 : await orderService.checkout({
                     addressId: selectedAddressId,
                     paymentMethod,
+                    note: orderNote.trim() || undefined,
                 });
 
             if(paymentMethod === "VNPAY" && data?.paymentUrl) {
@@ -327,6 +330,19 @@ export default function CheckoutPage() {
                         )}
                     </section>
 
+                    <section className="rounded-lg border bg-background p-5">
+                        <h2 className="text-lg font-semibold">Ghi chú cho đơn hàng</h2>
+                        <textarea
+                            value={orderNote}
+                            onChange={(event) => setOrderNote(event.target.value)}
+                            maxLength={500}
+                            placeholder="Nhập thông tin ghi chú cho nhà bán hàng"
+                            className="mt-4 min-h-24 w-full resize-y rounded-md border bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
+                        />
+                        <div className="mt-1 text-right text-xs text-muted-foreground">
+                            {orderNote.length}/500
+                        </div>
+                    </section>
                     <section className="rounded-lg border bg-background p-5">
                         <h2 className="text-xl font-semibold">Phương thức thanh toán</h2>
 

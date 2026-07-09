@@ -23,7 +23,8 @@ import WarrantyDetailPage from "@/pages/profile/WarrantyDetailPage";
 import WarrantyListPage from "@/pages/profile/WarrantyListPage";
 import WarrantyRequestPage from "@/components/profile/WarrantyLookupRequest";
 import AdminLayout from "@/components/admin/layout/AdminLayout";
-import AdminDashboardPage from "@/pages/admin/AdminDashboardRealtimePage";
+import AdminDashboardPage from "@/pages/admin/AdminDashboardPage";
+import AdminStatisticsPage from "@/pages/admin/AdminStatisticsPage";
 import AdminBrandPage from "@/pages/admin/AdminBrandsPage";
 import AdminCategoriesPage from "@/pages/admin/AdminCategoriesPage";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";
@@ -124,7 +125,7 @@ export default function AppRoute() {
                     <Route path="warranties" element={<AdminWarrantiesPage />} />
                     <Route path="warranties/:warrantyId" element={<AdminWarrantyDetailPage />} />
                     <Route path="users" element={<AdminUsersPage />} />
-                    <Route path="statistics" element={<div>Thống kê</div>} />
+                    <Route path="statistics" element={<AdminStatisticsPage />} />
                     <Route path="blogs" element={<AdminBlogsPage />} />
                     <Route path="settings" element={<div>Cài đặt</div>} />
                 </Route>

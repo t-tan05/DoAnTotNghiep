@@ -1,4 +1,5 @@
 export type DashboardProductStat = {
+    productId?: string;
     variantId: string;
     sku: string;
     name: string;
@@ -26,15 +27,40 @@ export type DashboardSummary = {
         todayRevenue: number;
         ordersToday: number;
         completedOrdersToday: number;
+        deliveryFailedToday: number;
+        pendingOrders: number;
+        cancelledOrders: number;
+        cancelledOrdersToday: number;
+        warrantyRequestsToday: number;
         lowStockCount: number;
+        newCustomers: {
+            today: number;
+            last7Days: number;
+            thisMonth: number;
+        };
     };
     revenueChart: Array<{
         label: string;
         revenue: number;
         orders: number;
     }>;
+    orderRate: {
+        completed: number;
+        cancelled: number;
+        deliveryFailed: number;
+        total: number;
+        successRate: number;
+        cancelRate: number;
+        deliveryFailedRate: number;
+    };
     bestSellers: DashboardProductStat[];
     lowStock: DashboardLowStockItem[];
+    lowStockPagination: {
+        page: number;
+        limit: number;
+        totalItems: number;
+        totalPages: number;
+    };
     traffic: {
         pageViewsToday: {
             total: number;
@@ -56,4 +82,56 @@ export type DashboardSummary = {
         admins: number;
         total: number;
     };
+};
+
+export type StatisticsFilterPreset =
+    | "today"
+    | "last7days"
+    | "thisMonth"
+    | "lastMonth"
+    | "thisQuarter"
+    | "thisYear"
+    | "custom";
+
+export type AdminStatistics = {
+    generatedAt: string;
+    filter: {
+        preset: StatisticsFilterPreset;
+        fromDate: string;
+        toDate: string;
+        chartUnit: "hour" | "day" | "week" | "month";
+    };
+    summary: {
+        totalRevenue: number;
+        totalOrders: number;
+        averageOrderValue: number;
+        newCustomers: number;
+        totalCustomers: number;
+        warrantyRequests: number;
+    };
+    revenueChart: Array<{
+        label: string;
+        revenue: number;
+        orders: number;
+    }>;
+    orderStats: {
+        totalOrders: number;
+        completedOrders: number;
+        cancelledOrders: number;
+        deliveryFailedOrders: number;
+        pendingOrders: number;
+        successRate: number;
+        cancelRate: number;
+        deliveryFailedRate: number;
+    };
+    topSellingProducts: DashboardProductStat[];
+    topRevenueProducts: DashboardProductStat[];
+    topWarrantyProducts: Array<{
+        productId: string;
+        variantId: string;
+        name: string;
+        productName: string;
+        imageUrl: string;
+        warrantyCount: number;
+    }>;
 };

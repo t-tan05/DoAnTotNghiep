@@ -142,6 +142,7 @@ export const checkoutOrderService = async (userId, payload, ipAddr) => {
                 payment_status: paymentStatus,
                 receiver_name: address.receiver_name,
                 receiver_phone: address.phone_number,
+                note: payload.note?.trim() || null,
             },
         });
         const orderDetails = cart.carts_items.map((item) => ({
@@ -312,6 +313,7 @@ export const cancelMyOrderService = async (userId, orderId, ipAddr) => {
                 data: {
                     status: orders_status.CANCELLED,
                     payment_status: refundState.orderPaymentStatus,
+                    cancelled_at: new Date(),
                 },
             });
         });
@@ -323,6 +325,7 @@ export const cancelMyOrderService = async (userId, orderId, ipAddr) => {
         },
         data: {
             status: orders_status.CANCELLED,
+            cancelled_at: new Date(),
         },
     });
     return { order: updatedOrder };
@@ -462,6 +465,7 @@ export const completeOrderService = async (orderId, employeeId) => {
             data: {
                 status: orders_status.COMPLETED,
                 employee_id: employeeId,
+                completed_at: soldDate,
                 ...(shouldMarkCodPaid
                     ? {
                         payment_status: orders_payment_status.PAID,
@@ -516,6 +520,7 @@ export const cancelOrderForStaffService = async (orderId, employeeId, ipAddr) =>
                     status: orders_status.CANCELLED,
                     payment_status: refundState.orderPaymentStatus,
                     employee_id: employeeId,
+                    cancelled_at: new Date(),
                 },
             });
         });
@@ -524,6 +529,7 @@ export const cancelOrderForStaffService = async (orderId, employeeId, ipAddr) =>
     const updateOrder = await update(orderId, {
         status: orders_status.CANCELLED,
         employee_id: employeeId,
+        cancelled_at: new Date(),
     });
     return { order: updateOrder };
 };
@@ -565,6 +571,7 @@ export const markDeliveryFailedService = async (orderId, employeeId, ipAddr) => 
                     status: orders_status.DELIVERY_FAILED,
                     payment_status: refundState.orderPaymentStatus,
                     employee_id: employeeId,
+                    delivery_failed_at: new Date(),
                 },
             });
         });
@@ -573,6 +580,7 @@ export const markDeliveryFailedService = async (orderId, employeeId, ipAddr) => 
     const updateOrder = await update(orderId, {
         status: orders_status.DELIVERY_FAILED,
         employee_id: employeeId,
+        delivery_failed_at: new Date(),
     });
     return { order: updateOrder };
 };
@@ -685,6 +693,7 @@ export const handleVnpayReturnService = async (query, ipAddr = "127.0.0.1") => {
                 data: {
                     payment_status: orders_payment_status.PAID,
                     status: orders_status.CANCELLED,
+                    cancelled_at: new Date(),
                 },
             });
             return {
@@ -741,7 +750,8 @@ export const handleVnpayReturnService = async (query, ipAddr = "127.0.0.1") => {
             },
             data: {
                 payment_status: orders_payment_status.FAILED,
-                status: orders_status.CANCELLED
+                status: orders_status.CANCELLED,
+                cancelled_at: new Date(),
             },
         });
         return {
@@ -934,6 +944,7 @@ export const handleVnpayIpnService = async (query, ipAddr = "127.0.0.1") => {
                 data: {
                     payment_status: orders_payment_status.FAILED,
                     status: orders_status.CANCELLED,
+                    cancelled_at: new Date(),
                 },
             });
             return {
@@ -1068,6 +1079,7 @@ export const checkoutBuyNowRequest = async (userId, request, ipAddr) => {
                 payment_status: paymentStatus,
                 receiver_name: address.receiver_name,
                 receiver_phone: address.phone_number,
+                note: request.note?.trim() || null,
             },
         });
         await tx.orders_details.create({

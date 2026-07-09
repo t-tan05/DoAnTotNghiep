@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { ACCESS_TOKEN } from "#config/jwt";
 import { findUserById } from "#models/user.model";
 import { removeOnlineStaff, removeOnlineVisitor, setOnlineStaff, setOnlineVisitor, } from "#utils/dashboardMetrics";
-import { getDashboardSummaryService } from "#services/dashboard.service";
+import { getDashboardSummaryAnalyticsService } from "#services/dashboardAnalytics.service";
 let io;
 export function initSocket(server) {
     io = new Server(server, {
@@ -75,7 +75,7 @@ export function initSocket(server) {
                 return;
             }
             socket.join("dashboard_admin");
-            socket.emit("dashboard:updated", await getDashboardSummaryService());
+            socket.emit("dashboard:updated", await getDashboardSummaryAnalyticsService());
         });
         socket.on("visitor:active", () => {
             setOnlineVisitor(socket.id, {
@@ -124,7 +124,7 @@ export async function emitDashboardUpdate() {
     if (!room?.size)
         return;
     try {
-        io.to("dashboard_admin").emit("dashboard:updated", await getDashboardSummaryService());
+        io.to("dashboard_admin").emit("dashboard:updated", await getDashboardSummaryAnalyticsService());
     }
     catch (error) {
         console.error("Emit dashboard update failed:", error);

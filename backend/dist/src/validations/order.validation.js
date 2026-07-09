@@ -11,6 +11,7 @@ export const checkoutOrderSchema = Joi.object({
         "any.only": "Phương thức thanh toán không hợp lệ.",
         "any.required": "Vui lòng chọn phương thức thanh toán.",
     }),
+    note: Joi.string().trim().allow("").max(500).optional(),
 });
 export const buyNowOrderSchema = Joi.object({
     variantId: Joi.string().trim().required().messages({
@@ -34,4 +35,5 @@ export const buyNowOrderSchema = Joi.object({
         "any.only": "Phương thức thanh toán không hợp lệ.",
         "any.required": "Vui lòng chọn phương thức thanh toán.",
     }),
+    note: Joi.string().trim().allow("").max(500).optional(),
 });

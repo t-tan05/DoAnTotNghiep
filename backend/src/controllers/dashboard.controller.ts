@@ -1,12 +1,25 @@
 import redisClient from "#config/redis";
 import { ACCESS_TOKEN } from "#config/jwt";
 import { findUserById } from "#models/user.model";
-import { getDashboardSummaryService } from "#services/dashboard.service";
+import {
+    getAdminStatisticsService,
+    getDashboardSummaryAnalyticsService,
+} from "#services/dashboardAnalytics.service";
 import { trackPageView } from "#utils/dashboardMetrics";
 import { CatchAsync } from "#utils/CatchAsync";
 import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
 import { emitDashboardUpdate } from "../socket.js";
+
+const statisticPresets = new Set([
+    "today",
+    "last7days",
+    "thisMonth",
+    "lastMonth",
+    "thisQuarter",
+    "thisYear",
+    "custom",
+]);
 
 async function getOptionalUserId(req: Request) {
     const authHeader = req.headers.authorization;
@@ -34,14 +47,34 @@ async function getOptionalUserId(req: Request) {
 }
 
 export const getDashboardSummaryController = CatchAsync(async(req: Request, res: Response) => {
-    const data = await getDashboardSummaryService({
+    const data = await getDashboardSummaryAnalyticsService({
         intervalMinutes: Number(req.query.intervalMinutes) || undefined,
         lowStockThreshold: Number(req.query.lowStockThreshold) || undefined,
+        lowStockPage: Number(req.query.lowStockPage) || undefined,
+        lowStockLimit: Number(req.query.lowStockLimit) || undefined,
     });
 
     res.status(200).json({
         success: true,
         message: "Lấy dữ liệu dashboard thành công.",
+        data,
+    });
+});
+
+export const getAdminStatisticsController = CatchAsync(async(req: Request, res: Response) => {
+    const preset = typeof req.query.preset === "string" && statisticPresets.has(req.query.preset)
+        ? req.query.preset as "today" | "last7days" | "thisMonth" | "lastMonth" | "thisQuarter" | "thisYear" | "custom"
+        : undefined;
+
+    const data = await getAdminStatisticsService({
+        preset,
+        fromDate: typeof req.query.fromDate === "string" ? req.query.fromDate : undefined,
+        toDate: typeof req.query.toDate === "string" ? req.query.toDate : undefined,
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Lấy dữ liệu thống kê thành công.",
         data,
     });
 });

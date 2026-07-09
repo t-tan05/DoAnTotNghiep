@@ -1,4 +1,5 @@
 import {
+    getAdminStatisticsController,
     getDashboardSummaryController,
     trackPageViewController,
 } from "#controllers/dashboard.controller";
@@ -13,5 +14,6 @@ router.post("/track", trackPageViewController);
 router.use(VerifyToken);
 
 router.get("/admin/summary", CheckRole("ADMIN"), getDashboardSummaryController);
+router.get("/admin/statistics", CheckRole("ADMIN"), getAdminStatisticsController);
 
 export default router;
