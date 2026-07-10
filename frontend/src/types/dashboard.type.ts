@@ -89,7 +89,6 @@ export type StatisticsFilterPreset =
     | "last7days"
     | "thisMonth"
     | "lastMonth"
-    | "thisQuarter"
     | "thisYear"
     | "custom";
 

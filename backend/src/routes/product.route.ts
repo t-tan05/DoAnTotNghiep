@@ -1,12 +1,10 @@
 import { 
     createProductController, 
     deleteProductController, 
-    downloadProductImportTemplateController,
     getAllProductsController, 
     getProductDetailController, 
     getPublicProductsController, 
     getRelatedProductsController, 
-    importProductsFromExcelController,
     updateProductController 
 } from "#controllers/product.controller";
 import { VerifyToken } from "#middlewares/Auth";
@@ -19,8 +17,6 @@ import { excelUpload } from "#config/excelMulter";
 const router = Router();
 
 router.post("/", VerifyToken, CheckRole("ADMIN"), Validate(createProductSchema), createProductController);
-router.post("/import-excel", VerifyToken, CheckRole("ADMIN"), excelUpload.single("file"), importProductsFromExcelController);
-router.get("/import-template", VerifyToken, CheckRole("ADMIN"), downloadProductImportTemplateController);
 router.get("/", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), getAllProductsController);
 
 router.get("/public", getPublicProductsController);

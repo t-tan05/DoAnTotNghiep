@@ -8,7 +8,6 @@ type DateFilterPreset =
     | "last7days"
     | "thisMonth"
     | "lastMonth"
-    | "thisQuarter"
     | "thisYear"
     | "custom";
 
@@ -125,16 +124,6 @@ function buildDateRange(query?: {
             preset,
             from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
             to: endOfDay(new Date(now.getFullYear(), now.getMonth(), 0)),
-        };
-    }
-
-    if(preset === "thisQuarter") {
-        const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
-
-        return {
-            preset,
-            from: new Date(now.getFullYear(), quarterStartMonth, 1),
-            to: endOfDay(),
         };
     }
 

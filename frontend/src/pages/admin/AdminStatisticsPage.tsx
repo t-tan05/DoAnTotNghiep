@@ -38,7 +38,6 @@ const filterLabels: Record<StatisticsFilterPreset, string> = {
     last7days: "7 ngày gần nhất",
     thisMonth: "Tháng này",
     lastMonth: "Tháng trước",
-    thisQuarter: "Quý này",
     thisYear: "Năm nay",
     custom: "Tùy chọn",
 };

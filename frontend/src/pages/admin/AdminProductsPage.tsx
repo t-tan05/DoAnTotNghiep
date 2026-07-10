@@ -4,7 +4,6 @@ import ProductFilterBar from "@/components/admin/prod/ProductFilterBar";
 import type { AdminColumn } from "@/components/admin/table/AdminDataTable";
 import AdminDataTable from "@/components/admin/table/AdminDataTable";
 import ConfirmDeleteDialog from "@/components/common/ConfirmDeleteDialog";
-import { Button } from "@/components/ui/button";
 import { brandService } from "@/services/brand.service";
 import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
@@ -15,7 +14,6 @@ import type { Category } from "@/types/category.type";
 import type { ProductLine } from "@/types/product-line.type";
 import type { AdminProduct, ProductSortBy } from "@/types/product.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { Download, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -84,7 +82,6 @@ export default function AdminProductsPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [productLines, setProductLines] = useState<ProductLine[]>([]);
     const [openCreate, setOpenCreate] = useState(false);
-    const [openImport, setOpenImport] = useState(false);
     const [deleteProduct, setDeleteProduct] = useState<AdminProduct | null>(null);
 
     const [page, setPage] = useState(1);
@@ -98,7 +95,6 @@ export default function AdminProductsPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
-    const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
     async function loadOptions() {
         try {
@@ -182,27 +178,6 @@ export default function AdminProductsPage() {
         }
     }
 
-    async function handleDownloadTemplate() {
-        try {
-            setDownloadingTemplate(true);
-
-            const blob = await productService.downloadImportTemplate();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement("a");
-
-            link.href = url;
-            link.download = "product-import-template.xlsx";
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-        } catch(error) {
-            toast.error(getErrorMessage(error));
-        } finally {
-            setDownloadingTemplate(false);
-        }
-    }
-
     const filteredProductLines = productLines.filter((line) => {
         if(brandId && line.brand_id !== brandId) return false;
         if(categoryId && line.category_id !== categoryId) return false;
@@ -261,29 +236,6 @@ export default function AdminProductsPage() {
                     onPageChange={setPage}
                     onSortChange={handleSortChange}
                     onAdd={() => setOpenCreate(true)}
-                    headerActions={(
-                        <>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-12 w-full cursor-pointer sm:w-auto"
-                                disabled={downloadingTemplate}
-                                onClick={handleDownloadTemplate}
-                            >
-                                <Download className="mr-2 h-4 w-4" />
-                                {downloadingTemplate ? "Đang tải..." : "Tải mẫu"}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-12 w-full cursor-pointer sm:w-auto"
-                                onClick={() => setOpenImport(true)}
-                            >
-                                <Upload className="mr-2 h-4 w-4" />
-                                Nhập Excel
-                            </Button>
-                        </>
-                    )}
                     onView={(product) => navigate(`/admin/products/${product.product_id}`)}
                     onDelete={setDeleteProduct}
                 />
@@ -297,15 +249,6 @@ export default function AdminProductsPage() {
                 onSuccess={(productId) => {
                     setOpenCreate(false);
                     navigate(`/admin/products/${productId}`);
-                }}
-            />
-
-            <ProductImportExcelDialog
-                open={openImport}
-                onOpenChange={setOpenImport}
-                onSuccess={() => {
-                    setPage(1);
-                    fetchProducts();
                 }}
             />
 
