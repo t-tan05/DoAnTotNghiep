@@ -1,4 +1,4 @@
-import { createProductService, deleteProductService, getAllProductsService, getProductDetailService, getPublicProductsService, updateProductService } from "#services/product.service";
+import { createProductService, deleteProductService, getAllProductsService, getProductDetailService, getPublicProductsService, getRelatedProductsService, updateProductService } from "#services/product.service";
 import { importProductsFromExcelService } from "#services/productImport.service";
 import { createProductImportTemplateService } from "#services/productImportTemplate.service";
 import { CatchAsync } from "#utils/CatchAsync";
@@ -106,6 +106,17 @@ export const getPublicProductsController = CatchAsync(async (req, res) => {
         message: "Lấy danh sách sản phẩm public thành công.",
         data: {
             ...data,
+        },
+    });
+});
+export const getRelatedProductsController = CatchAsync(async (req, res) => {
+    const productId = req.params.productId;
+    const data = await getRelatedProductsService(productId);
+    res.status(200).json({
+        success: true,
+        message: "Lấy sản phẩm liên quan thành công.",
+        data: {
+            ...data
         },
     });
 });

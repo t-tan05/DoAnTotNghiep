@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { cartService } from "@/services/cart.service";
 import { productService } from "@/services/product.service";
 import { wishlistService } from "@/services/wishlist.service";
-import type { AdminProduct } from "@/types/product.type";
+import type { AdminProduct, PublicProductCardItem } from "@/types/product.type";
 import type { AdminProductVariant } from "@/types/productVariant.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { ChevronLeft, ChevronRight, Heart, Home, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
@@ -15,6 +15,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import { toast } from "sonner";
 import ProductReviews from "@/components/prod/ProductReviews";
 import type { ProductReviewSummary } from "@/types/review.type";
+import HomeProductCard from "@/components/home/HomeProductCard";
 
 type ProductImage = {
     image_id: number | string;
@@ -38,6 +39,17 @@ const formatPrice = (value: number | string) => {
 
 const THUMBNAILS_PER_PAGE = 5;
 const BUY_NOW_STORAGE_KEY = "checkout:buy-now";
+const RELATED_PRODUCTS_PER_PAGE = 4;
+
+function chunkItems<T>(items: T[], size: number) {
+    const chunks: T[][] = [];
+
+    for(let index = 0; index < items.length; index += size) {
+        chunks.push(items.slice(index, index + size));
+    }
+
+    return chunks;
+}
 
 function getVariantImages(variant?: AdminProductVariant | null): ProductImage[] {
     if (!variant) return [];
@@ -165,6 +177,9 @@ export default function ProductDetailPage() {
     const [error, setError] = useState("");
     const [activeInfoTab, setActiveInfoTab] = useState<"specs" | "detail">("specs");
     const [reviewSummary, setReviewSummary] = useState<ProductReviewSummary | null> (null);
+    const [relatedProducts, setRelatedProducts] = useState<PublicProductCardItem[]>([]);
+    const [relatedLoading, setRelatedLoading] = useState(false);
+    const [relatedPage, setRelatedPage] = useState(0);
 
     useEffect(() => {
         async function loadProduct() {
@@ -190,6 +205,25 @@ export default function ProductDetailPage() {
         }
 
         loadProduct();
+    }, [productId]);
+
+    useEffect(() => {
+        async function loadRelatedProducts() {
+            if(!productId) return;
+
+            try {
+                setRelatedLoading(true);
+                const data = await productService.getRelated(productId);
+
+                setRelatedProducts(data.products ?? []);
+            }catch{
+                setRelatedProducts([]);
+            }finally{
+                setRelatedLoading(false);
+            }
+        }
+
+        loadRelatedProducts();
     }, [productId]);
 
     const selectedVariant = useMemo(() => {
@@ -230,6 +264,12 @@ export default function ProductDetailPage() {
     const currentPrice = getVariantPrice(selectedVariant);
     const originalPrice = getVariantOriginalPrice(selectedVariant);
     const discountPercent = getDiscountPercent(originalPrice, currentPrice);
+    const relatedPages = useMemo(() => chunkItems(relatedProducts, RELATED_PRODUCTS_PER_PAGE), [relatedProducts]);
+    const relatedTotalPages = relatedPages.length;
+    const currentRelatedPage = Math.min(relatedPage, Math.max(relatedTotalPages - 1, 0));
+    const canSlideRelated = relatedTotalPages > 1;
+    const isFirstRelatedPage = currentRelatedPage <= 0;
+    const isLastRelatedPage = currentRelatedPage >= relatedTotalPages - 1;
 
     useEffect(() => {
         if (!product) return;
@@ -250,6 +290,10 @@ export default function ProductDetailPage() {
         setThumbnailStartIndex(0);
         setDetailExpanded(false);
     }, [selectedVariant, galleryImages]);
+
+    useEffect(() => {
+        setRelatedPage(0);
+    }, [productId, relatedProducts.length]);
 
     useEffect(() => {
         setThumbnailStartIndex((currentIndex) => Math.min(currentIndex, maxThumbnailStartIndex));
@@ -829,6 +873,74 @@ export default function ProductDetailPage() {
                         </div>
                     )}
                 </div>
+
+                {(relatedLoading || relatedProducts.length > 0) && (
+                    <section className="group/related mt-6 overflow-hidden rounded-lg bg-white p-4 shadow-sm">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                            <h2 className="text-xl font-bold">Sản phẩm liên quan</h2>
+                            {relatedProducts.length > 0 && (
+                                <span className="text-sm text-muted-foreground">
+                                    {relatedProducts.length} sản phẩm
+                                </span>
+                            )}
+                        </div>
+
+                        {relatedLoading ? (
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                                {Array.from({ length: RELATED_PRODUCTS_PER_PAGE }).map((_, index) => (
+                                    <div key={index} className="h-[430px] animate-pulse rounded-md bg-muted" />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="relative">
+                                {canSlideRelated && (
+                                    <button
+                                        type="button"
+                                        disabled={isFirstRelatedPage}
+                                        onClick={() => setRelatedPage((current) => Math.max(0, current - 1))}
+                                        className="absolute left-0 top-1/2 z-10 flex size-10 -translate-x-1/3 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-blue-950/80 text-white opacity-0 shadow-lg ring-1 ring-white/30 transition hover:bg-blue-950 focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-0 group-hover/related:opacity-100 group-hover/related:disabled:opacity-35"
+                                        aria-label="Xem sản phẩm liên quan trước"
+                                    >
+                                        <ChevronLeft className="size-6" />
+                                    </button>
+                                )}
+
+                                <div className="overflow-hidden">
+                                    <div
+                                        className="flex flex-nowrap transition-all duration-500 ease-out"
+                                        style={{ transform: `translateX(-${currentRelatedPage * 100}%)` }}
+                                    >
+                                        {relatedPages.map((page, pageIndex) => (
+                                            <div
+                                                key={`related-page-${pageIndex}`}
+                                                className="grid min-w-full grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4"
+                                            >
+                                                {page.map((item) => (
+                                                    <HomeProductCard
+                                                        key={`${item.product_id}-${item.variant.variant_id}`}
+                                                        product={item}
+                                                    />
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {canSlideRelated && (
+                                    <button
+                                        type="button"
+                                        disabled={isLastRelatedPage}
+                                        onClick={() => setRelatedPage((current) => Math.min(relatedTotalPages - 1, current + 1))}
+                                        className="absolute right-0 top-1/2 z-10 flex size-10 -translate-y-1/2 translate-x-1/3 cursor-pointer items-center justify-center rounded-full bg-blue-950/80 text-white opacity-0 shadow-lg ring-1 ring-white/30 transition hover:bg-blue-950 focus-visible:opacity-100 disabled:cursor-not-allowed disabled:opacity-0 group-hover/related:opacity-100 group-hover/related:disabled:opacity-35"
+                                        aria-label="Xem sản phẩm liên quan tiếp theo"
+                                    >
+                                        <ChevronRight className="size-6" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 {/* Review */}
                 <ProductReviews

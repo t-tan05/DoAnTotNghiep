@@ -5,6 +5,7 @@ import {
     getAllProductsController, 
     getProductDetailController, 
     getPublicProductsController, 
+    getRelatedProductsController, 
     importProductsFromExcelController,
     updateProductController 
 } from "#controllers/product.controller";
@@ -24,6 +25,7 @@ router.get("/", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), getAllProductsContr
 
 router.get("/public", getPublicProductsController);
 router.get("/:productId", getProductDetailController);
+router.get("/:productId/related", getRelatedProductsController);
 router.patch("/:productId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductSchema), updateProductController);
 router.delete("/:productId", VerifyToken, CheckRole("ADMIN"), deleteProductController);
 

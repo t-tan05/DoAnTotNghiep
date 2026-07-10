@@ -141,3 +141,7 @@ export type PublicProductsResponse = {
         };
     };
 };
+
+export type RelatedProductsResponse = {
+    products: PublicProductCardItem[];
+};

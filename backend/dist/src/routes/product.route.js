@@ -1,4 +1,4 @@
-import { createProductController, deleteProductController, downloadProductImportTemplateController, getAllProductsController, getProductDetailController, getPublicProductsController, importProductsFromExcelController, updateProductController } from "#controllers/product.controller";
+import { createProductController, deleteProductController, downloadProductImportTemplateController, getAllProductsController, getProductDetailController, getPublicProductsController, getRelatedProductsController, importProductsFromExcelController, updateProductController } from "#controllers/product.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { Validate } from "#middlewares/Validate";
@@ -12,6 +12,7 @@ router.get("/import-template", VerifyToken, CheckRole("ADMIN"), downloadProductI
 router.get("/", VerifyToken, CheckRole("ADMIN", "EMPLOYEE"), getAllProductsController);
 router.get("/public", getPublicProductsController);
 router.get("/:productId", getProductDetailController);
+router.get("/:productId/related", getRelatedProductsController);
 router.patch("/:productId", VerifyToken, CheckRole("ADMIN"), Validate(updateProductSchema), updateProductController);
 router.delete("/:productId", VerifyToken, CheckRole("ADMIN"), deleteProductController);
 export default router;

@@ -9,6 +9,7 @@ import {
     getProductWithQuery, 
     getPublicProductFilterOptions, 
     getPublicProductVariantsWithQuery, 
+    getRelatedProductVariants, 
     ProductListQuery, 
     updateProduct 
 } from "#models/product.model";
@@ -526,5 +527,34 @@ export const getPublicProductsService = async(params: PublicProductListQuery) =>
                 maxPrice: params.maxPrice,
             },
         },
+    };
+};
+
+export const getRelatedProductsService = async(productId: string) => {
+    const product = await findProductById(productId);
+
+    if(!product) throw new AppError("Không tìm thấy sản phẩm.", 404);
+
+    const { variants } = await getRelatedProductVariants({
+        productId: product.product_id,
+        brandId: product.brands.brand_id,
+        lineId: product.line_id,
+        limit: 20,
+    });
+
+    const groupedProducts = groupPublicVariants(variants);
+
+    const uniqueByProduct = new Map<string, any>();
+
+    for(const item of groupedProducts) {
+        if(!uniqueByProduct.has(item.product_id)) {
+            uniqueByProduct.set(item.product_id, item);
+        }
+
+        if(uniqueByProduct.size >= 20) break;
+    }
+
+    return {
+        products: Array.from(uniqueByProduct.values()),
     };
 };

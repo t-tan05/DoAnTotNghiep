@@ -10,13 +10,14 @@ import { toast } from "sonner";
 
 type Props = {
     product: PublicProductCardItem;
+    disableImageZoom?: boolean;
 };
 
 function formatMoney(value: number | string | null | undefined) {
     return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 }
 
-export default function HomeProductCard({ product }: Props) {
+export default function HomeProductCard({ product, disableImageZoom = false }: Props) {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAuthenticated } = useAuth();
@@ -77,7 +78,10 @@ export default function HomeProductCard({ product }: Props) {
                         <img
                             src={variant.image_url}
                             alt={displayName}
-                            className="h-full w-full object-contain transition duration-300 group-hover/card:scale-110"
+                            className={[
+                                "h-full w-full object-contain transition duration-300",
+                                disableImageZoom ? "" : "group-hover/card:scale-110",
+                            ].join(" ")}
                         />
                     ) : (
                         <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

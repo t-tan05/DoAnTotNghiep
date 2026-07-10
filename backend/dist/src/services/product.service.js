@@ -1,7 +1,7 @@
 import { findBrandById } from "#models/brand.model";
 import { findCategoryById } from "#models/category.model";
 import { findProductLineById } from "#models/productLine.model";
-import { createProduct, deleteProduct, findProductById, findProductByNormalizeName, getProductWithQuery, getPublicProductFilterOptions, getPublicProductVariantsWithQuery, updateProduct } from "#models/product.model";
+import { createProduct, deleteProduct, findProductById, findProductByNormalizeName, getProductWithQuery, getPublicProductFilterOptions, getPublicProductVariantsWithQuery, getRelatedProductVariants, updateProduct } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
@@ -412,5 +412,28 @@ export const getPublicProductsService = async (params) => {
                 maxPrice: params.maxPrice,
             },
         },
+    };
+};
+export const getRelatedProductsService = async (productId) => {
+    const product = await findProductById(productId);
+    if (!product)
+        throw new AppError("Không tìm thấy sản phẩm.", 404);
+    const { variants } = await getRelatedProductVariants({
+        productId: product.product_id,
+        brandId: product.brands.brand_id,
+        lineId: product.line_id,
+        limit: 20,
+    });
+    const groupedProducts = groupPublicVariants(variants);
+    const uniqueByProduct = new Map();
+    for (const item of groupedProducts) {
+        if (!uniqueByProduct.has(item.product_id)) {
+            uniqueByProduct.set(item.product_id, item);
+        }
+        if (uniqueByProduct.size >= 20)
+            break;
+    }
+    return {
+        products: Array.from(uniqueByProduct.values()),
     };
 };

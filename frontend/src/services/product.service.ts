@@ -1,4 +1,4 @@
-import type { CreateProductPayload, ProductDetailData, ProductListData, ProductListQuery, PublicProductQuery, PublicProductsResponse, UpdateProductPayload } from "@/types/product.type";
+import type { CreateProductPayload, ProductDetailData, ProductListData, ProductListQuery, PublicProductQuery, PublicProductsResponse, RelatedProductsResponse, UpdateProductPayload } from "@/types/product.type";
 import { api } from "./api";
 import type { BackendSuccess } from "@/types/api.type";
 
@@ -82,6 +82,18 @@ export const productService = {
                 },
             },
         );
+
+        return res.data.data;
+    },
+
+    getRelated: async(productId: string) => {
+        const res = await api.get<BackendSuccess<RelatedProductsResponse>>(
+            `/products/${productId}/related`
+        );
+
+        if(!res.data.data) {
+            throw new Error("Không lấy được sản phẩm liên quan.");
+        }
 
         return res.data.data;
     },

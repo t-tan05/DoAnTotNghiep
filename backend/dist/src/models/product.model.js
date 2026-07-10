@@ -514,3 +514,95 @@ export const getPublicProductFilterOptions = async () => {
         maxPrice: Number(priceAggregate._max.price ?? 0),
     };
 };
+export const getRelatedProductVariants = async (params) => {
+    const where = {
+        products: {
+            product_id: {
+                not: params.productId,
+            },
+            OR: [
+                ...(params.lineId ? [{ line_id: params.lineId }] : []),
+                { brand_id: params.brandId },
+            ],
+        },
+    };
+    const variants = await prisma.product_variants.findMany({
+        where,
+        take: 200,
+        orderBy: [
+            { sold_quantity: "desc" },
+            { created_at: "desc" },
+        ],
+        select: {
+            variant_id: true,
+            product_id: true,
+            sku: true,
+            variant_name: true,
+            price: true,
+            quantity_in_stock: true,
+            image_url: true,
+            created_at: true,
+            product_images: {
+                select: {
+                    image_url: true,
+                    is_default: true,
+                },
+                orderBy: {
+                    is_default: "desc",
+                },
+                take: 1,
+            },
+            variant_attribute_values: {
+                select: {
+                    attribute_values: {
+                        select: {
+                            attribute_value_id: true,
+                            value: true,
+                            product_attributes: {
+                                select: {
+                                    attribute_id: true,
+                                    attribute_name: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            products: {
+                select: {
+                    product_id: true,
+                    product_name: true,
+                    warranty_period: true,
+                    brands: {
+                        select: {
+                            brand_id: true,
+                            brand_name: true,
+                        },
+                    },
+                    categories: {
+                        select: {
+                            category_id: true,
+                            category_name: true,
+                        },
+                    },
+                    products_promotions: {
+                        select: {
+                            promotions: {
+                                select: {
+                                    promotion_id: true,
+                                    promotion_name: true,
+                                    discount_type: true,
+                                    discount_value: true,
+                                    start_date: true,
+                                    end_date: true,
+                                    is_active: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    });
+    return { variants };
+};
