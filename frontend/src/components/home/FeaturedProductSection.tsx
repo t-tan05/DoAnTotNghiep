@@ -8,6 +8,7 @@ type Props = {
     title: string;
     products: PublicProductCardItem[];
     href?: string;
+    pageSize?: number;
 };
 
 function chunkItems<T>(items: T[], size: number) {
@@ -20,10 +21,9 @@ function chunkItems<T>(items: T[], size: number) {
     return chunks;
 }
 
-export default function FeaturedProductSection({ title, products, href }: Props) {
+export default function FeaturedProductSection({ title, products, href, pageSize = 4 }: Props) {
     const [page, setPage] = useState(0);
-    const pageSize = 4;
-    const productPages = useMemo(() => chunkItems(products, pageSize), [products]);
+    const productPages = useMemo(() => chunkItems(products, pageSize), [pageSize, products]);
     const totalPages = productPages.length;
     const canSlide = products.length > pageSize;
     const viewAllHref = href?.trim();
@@ -81,7 +81,10 @@ export default function FeaturedProductSection({ title, products, href }: Props)
                         {productPages.map((productPage, pageIndex) => (
                             <div
                                 key={`featured-page-${pageIndex}`}
-                                className="grid min-w-full grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4"
+                                className={[
+                                    "grid min-w-full grid-cols-2 gap-2 md:grid-cols-3",
+                                    pageSize >= 5 ? "xl:grid-cols-5" : "lg:grid-cols-4",
+                                ].join(" ")}
                             >
                                 {productPage.map((product) => (
                                     <HomeProductCard

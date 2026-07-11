@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 type Props = {
     collection?: CmsCollection | null;
     afterBanner?: ReactNode;
+    productPageSize?: number;
 };
 
 function chunkItems<T>(items: T[], size: number) {
@@ -287,7 +288,7 @@ function ShortcutCardsSection({ section }: { section: CmsSection }) {
     );
 }
 
-export default function PublicCmsSections({ collection, afterBanner }: Props) {
+export default function PublicCmsSections({ collection, afterBanner, productPageSize }: Props) {
     const sections = (collection?.cms_sections ?? [])
         .filter((section) => section.is_active)
         .sort((a, b) => Number(a.sort_order) - Number(b.sort_order));
@@ -300,18 +301,28 @@ export default function PublicCmsSections({ collection, afterBanner }: Props) {
         ) : null;
     }
 
-    const bannerSections = sections.filter((section) => section.section_type === "BANNER");
-    const contentSections = sections.filter((section) => section.section_type !== "BANNER");
+    let insertedAfterBanner = false;
 
     return (
         <div className="space-y-5">
-            {bannerSections.map((section) => (
-                <BannerSection key={section.section_id} section={section} />
-            ))}
+            {sections.map((section) => {
+                if(section.section_type === "BANNER") {
+                    const banner = <BannerSection key={section.section_id} section={section} />;
 
-            {afterBanner}
+                    if(!insertedAfterBanner) {
+                        insertedAfterBanner = true;
 
-            {contentSections.map((section) => {
+                        return (
+                            <div key={section.section_id} className="space-y-5">
+                                {banner}
+                                {afterBanner}
+                            </div>
+                        );
+                    }
+
+                    return banner;
+                }
+
                 if(section.section_type === "SHORTCUT_BUTTONS") {
                     return <ShortcutButtonsSection key={section.section_id} section={section} />;
                 }
@@ -333,12 +344,15 @@ export default function PublicCmsSections({ collection, afterBanner }: Props) {
                             title={section.title}
                             href={section.href?.trim() || undefined}
                             products={products}
+                            pageSize={productPageSize}
                         />
                     );
                 }
 
                 return null;
             })}
+
+            {!insertedAfterBanner ? afterBanner : null}
         </div>
     );
 }

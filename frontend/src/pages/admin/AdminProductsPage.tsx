@@ -1,5 +1,4 @@
 import ProductCreateDialog from "@/components/admin/catalog/ProductCreateDialog";
-import ProductImportExcelDialog from "@/components/admin/catalog/ProductImportExcelDialog";
 import ProductFilterBar from "@/components/admin/prod/ProductFilterBar";
 import type { AdminColumn } from "@/components/admin/table/AdminDataTable";
 import AdminDataTable from "@/components/admin/table/AdminDataTable";

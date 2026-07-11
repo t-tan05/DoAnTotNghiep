@@ -331,6 +331,7 @@ model product_variants {
   public_id                String?                    @db.VarChar(255)
   created_at               DateTime?                  @default(now()) @db.DateTime(0)
   updated_at               DateTime?                  @default(now()) @db.DateTime(0)
+  ai_product_suggestions   ai_product_suggestions[]
   carts_items              carts_items[]
   cms_section_items        cms_section_items[]
   devices                  devices[]
@@ -347,26 +348,27 @@ model product_variants {
 }
 
 model products {
-  product_id          String                @id @db.VarChar(50)
-  product_name        String                @db.VarChar(255)
-  normalized_name     String                @unique(map: "uq_products_normalized_name") @db.VarChar(255)
-  brand_id            String                @db.VarChar(50)
-  category_id         String                @db.VarChar(50)
-  line_id             String?               @db.VarChar(50)
-  description         String?               @db.Text
-  warranty_period     Int
-  created_at          DateTime?             @default(now()) @db.DateTime(0)
-  updated_at          DateTime?             @default(now()) @db.DateTime(0)
-  cms_section_items   cms_section_items[]
-  product_images      product_images[]
-  product_variants    product_variants[]
-  brands              brands                @relation(fields: [brand_id], references: [brand_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_brand")
-  categories          categories            @relation(fields: [category_id], references: [category_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_category")
-  product_lines       product_lines?        @relation(fields: [line_id], references: [line_id], onUpdate: NoAction, map: "fk_products_line")
-  products_promotions products_promotions[]
-  reviews             reviews[]
-  statistics_products statistics_products[]
-  warranty_policies   warranty_policies[]
+  product_id             String                   @id @db.VarChar(50)
+  product_name           String                   @db.VarChar(255)
+  normalized_name        String                   @unique(map: "uq_products_normalized_name") @db.VarChar(255)
+  brand_id               String                   @db.VarChar(50)
+  category_id            String                   @db.VarChar(50)
+  line_id                String?                  @db.VarChar(50)
+  description            String?                  @db.Text
+  warranty_period        Int
+  created_at             DateTime?                @default(now()) @db.DateTime(0)
+  updated_at             DateTime?                @default(now()) @db.DateTime(0)
+  ai_product_suggestions ai_product_suggestions[]
+  cms_section_items      cms_section_items[]
+  product_images         product_images[]
+  product_variants       product_variants[]
+  brands                 brands                   @relation(fields: [brand_id], references: [brand_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_brand")
+  categories             categories               @relation(fields: [category_id], references: [category_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_category")
+  product_lines          product_lines?           @relation(fields: [line_id], references: [line_id], onUpdate: NoAction, map: "fk_products_line")
+  products_promotions    products_promotions[]
+  reviews                reviews[]
+  statistics_products    statistics_products[]
+  warranty_policies      warranty_policies[]
 
   @@index([brand_id], map: "fk_product_brand")
   @@index([category_id], map: "fk_product_category")
@@ -468,6 +470,7 @@ model users {
   created_at                                          DateTime?                @default(now()) @db.DateTime(0)
   updated_at                                          DateTime?                @default(now()) @updatedAt @db.DateTime(0)
   addresses                                           addresses[]
+  ai_conversations                                    ai_conversations[]
   blog_posts                                          blog_posts[]
   carts                                               carts?
   inventory_transactions                              inventory_transactions[]
@@ -725,6 +728,65 @@ model product_lines {
   @@index([category_id], map: "idx_product_lines_category")
 }
 
+model ai_conversations {
+  conversation_id String                  @id @db.VarChar(50)
+  user_id         String?                 @db.VarChar(50)
+  guest_id        String?                 @db.VarChar(100)
+  title           String?                 @db.VarChar(255)
+  status          ai_conversations_status @default(ACTIVE)
+  closed_at       DateTime?               @db.DateTime(0)
+  created_at      DateTime                @default(now()) @db.DateTime(0)
+  updated_at      DateTime                @default(now()) @db.DateTime(0)
+  users           users?                  @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "fk_ai_conversations_user")
+  ai_messages     ai_messages[]
+
+  @@index([guest_id, updated_at], map: "idx_ai_conversations_guest_updated")
+  @@index([status, updated_at], map: "idx_ai_conversations_status_updated")
+  @@index([user_id, updated_at], map: "idx_ai_conversations_user_updated")
+}
+
+model ai_messages {
+  message_id             String                   @id @db.VarChar(50)
+  conversation_id        String                   @db.VarChar(50)
+  role                   ai_messages_role
+  content                String                   @db.LongText
+  status                 ai_messages_status       @default(COMPLETED)
+  model_name             String?                  @db.VarChar(100)
+  prompt_tokens          Int?
+  completion_tokens      Int?
+  response_time_ms       Int?
+  error_message          String?                  @db.VarChar(500)
+  metadata               Json?
+  created_at             DateTime                 @default(now()) @db.DateTime(0)
+  ai_conversations       ai_conversations         @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ai_messages_conversation")
+  ai_product_suggestions ai_product_suggestions[]
+
+  @@index([conversation_id, created_at], map: "idx_ai_messages_conversation_created")
+  @@index([role], map: "idx_ai_messages_role")
+  @@index([status], map: "idx_ai_messages_status")
+}
+
+model ai_product_suggestions {
+  suggestion_id         String            @id @db.VarChar(50)
+  message_id            String            @db.VarChar(50)
+  product_id            String?           @db.VarChar(50)
+  variant_id            String?           @db.VarChar(50)
+  reason                String?           @db.Text
+  sort_order            Int               @default(0)
+  product_name_snapshot String?           @db.VarChar(255)
+  variant_name_snapshot String?           @db.VarChar(255)
+  price_snapshot        Decimal?          @db.Decimal(15, 2)
+  image_url_snapshot    String?           @db.VarChar(500)
+  created_at            DateTime          @default(now()) @db.DateTime(0)
+  ai_messages           ai_messages       @relation(fields: [message_id], references: [message_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ai_suggestions_message")
+  products              products?         @relation(fields: [product_id], references: [product_id], onUpdate: NoAction, map: "fk_ai_suggestions_product")
+  product_variants      product_variants? @relation(fields: [variant_id], references: [variant_id], onUpdate: NoAction, map: "fk_ai_suggestions_variant")
+
+  @@index([message_id, sort_order], map: "idx_ai_suggestions_message_sort")
+  @@index([product_id], map: "idx_ai_suggestions_product")
+  @@index([variant_id], map: "idx_ai_suggestions_variant")
+}
+
 enum cms_collection_page_type {
   HOME
   CATEGORY
@@ -878,4 +940,21 @@ enum orders_payment_status {
   REFUND_PENDING
   REFUND_FAILED
   REFUNDED
+}
+
+enum ai_messages_role {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum ai_conversations_status {
+  ACTIVE
+  CLOSED
+}
+
+enum ai_messages_status {
+  PENDING
+  COMPLETED
+  FAILED
 }
