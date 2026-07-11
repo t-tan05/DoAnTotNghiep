@@ -1,6 +1,4 @@
 import { createProductService, deleteProductService, getAllProductsService, getProductDetailService, getPublicProductsService, getRelatedProductsService, updateProductService } from "#services/product.service";
-import { importProductsFromExcelService } from "#services/productImport.service";
-import { createProductImportTemplateService } from "#services/productImportTemplate.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { parseListQuery } from "#utils/parseListQuery";
 export const createProductController = CatchAsync(async (req, res) => {
@@ -65,24 +63,6 @@ export const updateProductController = CatchAsync(async (req, res) => {
             ...data,
         },
     });
-});
-export const importProductsFromExcelController = CatchAsync(async (req, res) => {
-    const userId = req.user?.user_id;
-    const data = await importProductsFromExcelService(req.file, userId);
-    const hasErrors = data.errors && data.errors.length > 0;
-    res.status(hasErrors ? 400 : 201).json({
-        success: !hasErrors,
-        message: hasErrors ? "File Excel có dữ liệu không hợp lệ" : "Import sản phẩm từ Excel thành công",
-        data: {
-            ...data,
-        },
-    });
-});
-export const downloadProductImportTemplateController = CatchAsync(async (req, res) => {
-    const buffer = await createProductImportTemplateService();
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", 'attachment; filename="product-import-template.xlsx"');
-    res.status(200).send(buffer);
 });
 const getPublicSortBy = (value) => {
     const allowed = ["newest", "price_asc", "price_desc", "name_asc", "promotion", "best_selling"];

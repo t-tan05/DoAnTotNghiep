@@ -16,7 +16,6 @@ const statisticPresets = new Set([
     "last7days",
     "thisMonth",
     "lastMonth",
-    "thisQuarter",
     "thisYear",
     "custom",
 ]);
@@ -63,7 +62,7 @@ export const getDashboardSummaryController = CatchAsync(async(req: Request, res:
 
 export const getAdminStatisticsController = CatchAsync(async(req: Request, res: Response) => {
     const preset = typeof req.query.preset === "string" && statisticPresets.has(req.query.preset)
-        ? req.query.preset as "today" | "last7days" | "thisMonth" | "lastMonth" | "thisQuarter" | "thisYear" | "custom"
+        ? req.query.preset as "today" | "last7days" | "thisMonth" | "lastMonth" | "thisYear" | "custom"
         : undefined;
 
     const data = await getAdminStatisticsService({

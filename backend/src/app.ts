@@ -30,6 +30,7 @@ import wishlistRoute from "#routes/wishlist.route";
 import warrantyRoute from "#routes/warranty.route";
 import cmsRoute from "#routes/cms.route";
 import dashboardRoute from "#routes/dashboard.route";
+import aiRoute from "#routes/ai.route";
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use("/api/wishlists", wishlistRoute);
 app.use("/api/warranties", warrantyRoute);
 app.use("/api/cms", cmsRoute);
 app.use("/api/dashboard", dashboardRoute);
+app.use("/api/ai", aiRoute);
 
 app.use(globalErrorHandler);
 

@@ -11,7 +11,6 @@ const statisticPresets = new Set([
     "last7days",
     "thisMonth",
     "lastMonth",
-    "thisQuarter",
     "thisYear",
     "custom",
 ]);
