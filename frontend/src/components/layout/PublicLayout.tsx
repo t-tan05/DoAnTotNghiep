@@ -4,6 +4,7 @@ import HomeNavbar from "../navbar/HomeNavbar";
 import { useEffect } from "react";
 import { socket } from "@/lib/socket";
 import { dashboardService } from "@/services/dashboard.service";
+import AiChatBox from "../ai/AiChatBox";
 
 export default function PublicLayout() {
     const location = useLocation();
@@ -41,6 +42,7 @@ export default function PublicLayout() {
             </main>
             
             <Footer />
+            <AiChatBox />
         </div>
     )
 }

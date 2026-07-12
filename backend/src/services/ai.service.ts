@@ -12,7 +12,26 @@ function buildSystemPrompt() {
         "Chỉ gợi ý sản phẩm có trong danh sách backend cung cấp.",
         "Không bịa giá, tồn kho, khuyến mãi hoặc link.",
         "Không tiết lộ các thông tin nhạy cảm của các tài khoản khác và dữ liệu nhạy cảm ra ngoài.",
+    ].join("\n") + [
+        "",
+        "Important: only recommend products from the backend product list provided in this request.",
+        "If the user asks for the newest/current product, choose the best matching product from the backend list, not from general model knowledge.",
+        "Do not mention product names, generations, prices, stock, or links that are not present in the backend product list.",
     ].join("\n");
+}
+
+function normalizeIntentText(value: string) {
+    return value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d");
+}
+
+function hasExplicitProductIntent(message: string) {
+    const normalized = normalizeIntentText(message);
+
+    return /\b(laptop|macbook|notebook|may tinh xach tay|dien thoai|smartphone|iphone|ipad|tablet|may tinh bang|man hinh|pc|may tinh de ban|vga|card do hoa|cpu|ram|ssd)\b/.test(normalized);
 }
 
 function mapSuggestion(variant: any): AiProductSuggestion {
@@ -121,9 +140,16 @@ export async function chatWithAiService(payload: AiChatPayload, owner: { userId?
         content: payload.message,
     });
 
-    const variants = await findProductsForAi(payload.message);
-    const suggestions = variants.map(mapSuggestion);
     const history = (await getConversationMessages(activeConversationId, 12)).reverse();
+    const userHistoryText = history
+        .filter((item) => item.role === ai_messages_role.USER)
+        .map((item) => item.content)
+        .join("\n");
+    const productSearchText = hasExplicitProductIntent(payload.message)
+        ? payload.message
+        : userHistoryText;
+    const variants = await findProductsForAi(productSearchText || payload.message);
+    const suggestions = variants.map(mapSuggestion);
 
     const messages = [
         { role: "system", content: buildSystemPrompt() },

@@ -10,7 +10,23 @@ function buildSystemPrompt() {
         "Chỉ gợi ý sản phẩm có trong danh sách backend cung cấp.",
         "Không bịa giá, tồn kho, khuyến mãi hoặc link.",
         "Không tiết lộ các thông tin nhạy cảm của các tài khoản khác và dữ liệu nhạy cảm ra ngoài.",
+    ].join("\n") + [
+        "",
+        "Important: only recommend products from the backend product list provided in this request.",
+        "If the user asks for the newest/current product, choose the best matching product from the backend list, not from general model knowledge.",
+        "Do not mention product names, generations, prices, stock, or links that are not present in the backend product list.",
     ].join("\n");
+}
+function normalizeIntentText(value) {
+    return value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d");
+}
+function hasExplicitProductIntent(message) {
+    const normalized = normalizeIntentText(message);
+    return /\b(laptop|macbook|notebook|may tinh xach tay|dien thoai|smartphone|iphone|ipad|tablet|may tinh bang|man hinh|pc|may tinh de ban|vga|card do hoa|cpu|ram|ssd)\b/.test(normalized);
 }
 function mapSuggestion(variant) {
     const product = variant.products;
@@ -99,9 +115,16 @@ export async function chatWithAiService(payload, owner) {
         role: ai_messages_role.USER,
         content: payload.message,
     });
-    const variants = await findProductsForAi(payload.message);
-    const suggestions = variants.map(mapSuggestion);
     const history = (await getConversationMessages(activeConversationId, 12)).reverse();
+    const userHistoryText = history
+        .filter((item) => item.role === ai_messages_role.USER)
+        .map((item) => item.content)
+        .join("\n");
+    const productSearchText = hasExplicitProductIntent(payload.message)
+        ? payload.message
+        : userHistoryText;
+    const variants = await findProductsForAi(productSearchText || payload.message);
+    const suggestions = variants.map(mapSuggestion);
     const messages = [
         { role: "system", content: buildSystemPrompt() },
         { role: "system", content: `Sản phẩm hệ thống tìm được:\n${buildProductContext(suggestions)}` },
@@ -134,17 +157,17 @@ export async function chatWithAiService(payload, owner) {
                 message_id: crypto.randomUUID(),
                 conversation_id: activeConversationId,
                 role: ai_messages_role.ASSISTANT,
-                content: "Xin lá»—i, hiá»‡n táº¡i mÃ¬nh chÆ°a tÆ° váº¥n Ä‘Æ°á»£c. Báº¡n thá»­ láº¡i sau nhÃ©.",
+                content: "Xin lỗi, hiện tại mình chưa tư vấn được. Bạn thử lại sau nhé.",
                 status: ai_messages_status.FAILED,
                 model_name: model,
                 response_time_ms: responseTimeMs,
                 error_message: text.slice(0, 500),
             });
-            throw new AppError("AI API Ä‘ang lá»—i.", 502);
+            throw new AppError("AI API đang lỗi.", 502);
         }
         const text = await response.text();
         const data = parseAiResponseText(text);
-        const answer = data?.choices?.[0]?.message?.content || "Xin lá»—i, mÃ¬nh chÆ°a cÃ³ cÃ¢u tráº£ lá»i phÃ¹ há»£p.";
+        const answer = data?.choices?.[0]?.message?.content || "Xin lỗi, mình chưa có câu trả lời phù hợp.";
         const usage = data?.usage;
         const assistantMessage = await createAiMessage({
             message_id: crypto.randomUUID(),
@@ -180,14 +203,14 @@ export async function chatWithAiService(payload, owner) {
         console.error("AI connection error:", error);
         if (error instanceof AppError)
             throw error;
-        throw new AppError("KhÃ´ng thá»ƒ káº¿t ná»‘i AI.", 502);
+        throw new AppError("Không thể kết nối AI.", 502);
     }
 }
 function mapStoredSuggestion(item) {
     return {
         productId: item.product_id,
         variantId: item.variant_id,
-        name: item.product_name_snapshot || "Sáº£n pháº©m",
+        name: item.product_name_snapshot || "Sản phẩm",
         variantName: item.variant_name_snapshot || null,
         price: Number(item.price_snapshot ?? 0),
         imageUrl: item.image_url_snapshot || null,
@@ -231,7 +254,7 @@ export async function getLatestAiConversationService(owner) {
 export async function getAiConversationDetailService(conversationId, owner) {
     const conversation = await findConversationByOwner(conversationId, owner);
     if (!conversation) {
-        throw new AppError("KhÃ´ng tÃ¬m tháº¥y cuá»™c trÃ² chuyá»‡n.", 404);
+        throw new AppError("Không tìm thấy cuộc trò chuyện.", 404);
     }
     return buildConversationHistoryResponse(conversation);
 }

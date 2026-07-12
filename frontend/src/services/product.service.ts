@@ -61,6 +61,24 @@ export const productService = {
         return res.data;
     },
 
+    importFromExcel: async(file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await api.post<BackendSuccess<ProductImportResult>>(
+            "/products/import-excel",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                timeout: 120000,
+            }
+        );
+
+        return res.data.data;
+    },
+
     getRelated: async(productId: string) => {
         const res = await api.get<BackendSuccess<RelatedProductsResponse>>(
             `/products/${productId}/related`

@@ -1,3 +1,4 @@
+import { attachGuestConversationsToUser } from "#models/ai.model";
 import { chatWithAiService, getAiConversationDetailService, getLatestAiConversationService } from "#services/ai.service";
 import { CatchAsync } from "#utils/CatchAsync";
 import { Request, Response } from "express";
@@ -21,9 +22,25 @@ function getOrSetGuestId(req: Request, res: Response) {
     return guestId;
 };
 
+async function mergeGuestChatIfLoggedIn(req: Request, res: Response, userId: string | null) {
+    const guestId = req.cookies?.[COOKIE_NAME];
+
+    if(!userId || !guestId) return;
+
+    await attachGuestConversationsToUser(guestId, userId);
+
+    res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+    });
+}
+
 export const chatWithAiController = CatchAsync(async(req: Request, res: Response) => {
     const user = (req as any).user;
     const userId = user?.user_id || null;
+
+    await mergeGuestChatIfLoggedIn(req, res, userId);
     const guestId = userId ? null : getOrSetGuestId(req, res);
 
     const data = await chatWithAiService(req.body, {
@@ -42,6 +59,8 @@ export const chatWithAiController = CatchAsync(async(req: Request, res: Response
 export const getLatestAiConversationController = CatchAsync(async(req: Request, res: Response) => {
     const user = (req as any).user;
     const userId = user?.user_id || null;
+
+    await mergeGuestChatIfLoggedIn(req, res, userId);
     const guestId = userId ? null : req.cookies?.[COOKIE_NAME] || null;
 
     if(!userId && !guestId) {
@@ -70,6 +89,8 @@ export const getLatestAiConversationController = CatchAsync(async(req: Request, 
 export const getAiConversationDetailController = CatchAsync(async(req: Request, res: Response) => {
     const user = (req as any).user;
     const userId = user?.user_id || null;
+
+    await mergeGuestChatIfLoggedIn(req, res, userId);
     const guestId = userId ? null : req.cookies?.[COOKIE_NAME] || null;
 
     const conversationId = String(req.params.conversationId || "");
@@ -81,7 +102,7 @@ export const getAiConversationDetailController = CatchAsync(async(req: Request, 
     res.status(200).json({
         message: "Lấy chi tiết lịch sử chat AI thành công.",
         data: {
-            data
+            ...data
         },
     });
 });

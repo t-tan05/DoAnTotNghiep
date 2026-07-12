@@ -36,7 +36,7 @@ export const getLatestAiConversationController = CatchAsync(async (req, res) => 
     const guestId = userId ? null : req.cookies?.[COOKIE_NAME] || null;
     if (!userId && !guestId) {
         return res.status(200).json({
-            message: "Láº¥y lá»‹ch sá»­ chat AI thÃ nh cÃ´ng.",
+            message: "Lấy lịch sử chat AI thành công.",
             data: {
                 conversation: null,
                 messages: [],
@@ -48,8 +48,10 @@ export const getLatestAiConversationController = CatchAsync(async (req, res) => 
         guestId,
     });
     res.status(200).json({
-        message: "Láº¥y lá»‹ch sá»­ chat AI thÃ nh cÃ´ng.",
-        data,
+        message: "Lấy lịch sử chat AI thành công.",
+        data: {
+            ...data
+        },
     });
 });
 export const getAiConversationDetailController = CatchAsync(async (req, res) => {
@@ -62,7 +64,9 @@ export const getAiConversationDetailController = CatchAsync(async (req, res) => 
         guestId,
     });
     res.status(200).json({
-        message: "Láº¥y chi tiáº¿t lá»‹ch sá»­ chat AI thÃ nh cÃ´ng.",
-        data,
+        message: "Lấy chi tiết lịch sử chat AI thành công.",
+        data: {
+            data
+        },
     });
 });

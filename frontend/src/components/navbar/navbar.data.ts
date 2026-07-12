@@ -4,10 +4,6 @@ export const navItems = [
         href: "/",
     },
     {
-        label: "GIỚI THIỆU",
-        href: "/gioi-thieu",
-    },
-    {
         label: "SẢN PHẨM",
         href: "/products",
         hasMegaMenu: true,
@@ -15,10 +11,6 @@ export const navItems = [
     {
         label: "TIN TỨC",
         href: "/tin-tuc",
-    },
-    {
-        label: "LIÊN HỆ",
-        href: "/lien-he",
     },
 ];
 
