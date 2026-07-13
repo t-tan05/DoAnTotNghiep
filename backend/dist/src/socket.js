@@ -51,6 +51,7 @@ export function initSocket(server) {
         const currentUserId = socket.data.user?.user_id;
         const roles = socket.data.user?.roles || [];
         if (currentUserId) {
+            socket.join(`user:${currentUserId}`);
             socket.join(`warranty_user:${currentUserId}`);
         }
         if (currentUserId && (roles.includes("ADMIN") || roles.includes("EMPLOYEE"))) {

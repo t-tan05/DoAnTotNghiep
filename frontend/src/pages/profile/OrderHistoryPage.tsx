@@ -4,9 +4,11 @@ import OrderReviewButton from "@/components/profile/OrderReviewButton";
 import { Button } from "@/components/ui/button";
 import { orderService } from "@/services/order.service";
 import type { MyOrder, OrderDetail, OrderHistoryTab } from "@/types/order.type";
+import { socket } from "@/lib/socket";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { getGhnStatusLabel } from "@/utils/orderFormat";
 import { Clock3, PackageSearch, RotateCcw, Truck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -108,7 +110,7 @@ export default function OrderHistoryPage() {
         cancelled: 0,
     });
 
-    async function loadOrders(nextPage = page, nextTab = activeTab) {
+    const loadOrders = useCallback(async(nextPage = page, nextTab = activeTab) => {
         setLoading(true);
         setError("");
 
@@ -135,11 +137,31 @@ export default function OrderHistoryPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [activeTab, page]);
 
     useEffect(() => {
         loadOrders(page, activeTab);
-    }, [page, activeTab]);
+    }, [loadOrders, page, activeTab]);
+
+    useEffect(() => {
+        const token = localStorage.getItem("accessToken");
+        if(!token) return;
+
+        function handleOrderUpdated() {
+            loadOrders();
+        }
+
+        socket.auth = { token };
+        socket.on("order:updated", handleOrderUpdated);
+
+        if(!socket.connected) {
+            socket.connect();
+        }
+
+        return () => {
+            socket.off("order:updated", handleOrderUpdated);
+        };
+    }, [loadOrders]);
 
     async function handleConfirmCancelOrder() {
         if(!cancelOrder) return;
@@ -253,6 +275,27 @@ export default function OrderHistoryPage() {
                                         </span>
                                     </div>
                                 </div>
+
+                                {(order.ghn_order_code || order.ghn_status || order.ghn_expected_delivery) && (
+                                    <div className="grid gap-2 border-b bg-blue-50/60 p-4 text-sm text-blue-900 md:grid-cols-3">
+                                        <div>
+                                            <span className="text-blue-700">Mã vận đơn:</span>{" "}
+                                            <span className="font-semibold">{order.ghn_order_code || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Trạng thái GHN:</span>{" "}
+                                            <span className="font-semibold">{getGhnStatusLabel(order.ghn_status)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-blue-700">Dự kiến giao:</span>{" "}
+                                            <span className="font-semibold">
+                                                {order.ghn_expected_delivery
+                                                    ? formatDate(order.ghn_expected_delivery)
+                                                    : "-"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="divide-y">
                                     {order.orders_details.map((detail) => {

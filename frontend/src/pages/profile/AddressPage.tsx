@@ -107,7 +107,7 @@ export default function AddressPage() {
                                 </div>
 
                                 <p className="mt-2 break-words text-sm text-muted-foreground">
-                                    Địa chỉ: {address.street}, {address.ward}, {address.province}
+                                    Địa chỉ: {address.street}, {address.ward}, {address.district}, {address.province}
                                 </p>
 
                                 <p className="mt-2 break-words text-sm text-muted-foreground">

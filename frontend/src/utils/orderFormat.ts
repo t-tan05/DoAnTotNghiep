@@ -39,3 +39,26 @@ export function getPaymentMethodLabel(method: PaymentMethod) {
 
     return map[method] || method;
 }
+
+export function getGhnStatusLabel(status?: string | null) {
+    if(!status) return "Chưa có thông tin";
+
+    const map: Record<string, string> = {
+        ready_to_pick: "Chờ GHN lấy hàng",
+        picking: "GHN đang lấy hàng",
+        picked: "GHN đã lấy hàng",
+        storing: "Đang lưu kho",
+        transporting: "Đang vận chuyển",
+        sorting: "Đang phân loại",
+        delivering: "Đang giao cho khách",
+        delivered: "Giao thành công",
+        delivery_fail: "Giao thất bại",
+        waiting_to_return: "Chờ hoàn hàng",
+        return: "Đang hoàn hàng",
+        returned: "Đã hoàn hàng",
+        cancel: "Đã hủy vận đơn",
+        cancelled: "Đã hủy vận đơn",
+    };
+
+    return map[status] || status;
+}

@@ -12,8 +12,12 @@ export const createAddressService = async(userId: string, payload: CreateAddress
         receiver_name: payload.receiverName,
         phone_number: payload.phoneNumber,
         province: payload.province,
+        district: payload.district,
         ward: payload.ward,
         street: payload.street,
+        ghn_province_id: payload.ghnProvinceId,
+        ghn_ward_code: payload.ghnWardCode,
+        ghn_legacy_district_id: payload.ghnLegacyDistrictId,
         is_default: false,
     };
 
@@ -51,8 +55,12 @@ export const updateAddressService = async(userId: string, addressId: string, pay
         receiver_name: payload.receiverName,
         phone_number: payload.phoneNumber,
         province: payload.province,
+        district: payload.district,
         ward: payload.ward,
         street: payload.street,
+        ghn_province_id: payload.ghnProvinceId,
+        ghn_ward_code: payload.ghnWardCode,
+        ghn_legacy_district_id: payload.ghnLegacyDistrictId,
     };
 
     const updateAddress = await updateAddressByTransaction(userId, addressId, updateData, payload.isDefault);

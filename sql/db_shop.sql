@@ -28,8 +28,12 @@ CREATE TABLE `addresses` (
   `address_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `user_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `province` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ghn_province_id` INT NULL,
+  `district` VARCHAR(100) NULL,
+  `ghn_legacy_district_id` INT NULL,
   `street` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `ward` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ghn_ward_code` VARCHAR(20) NULL,
   `receiver_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone_number` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `is_default` tinyint(1) DEFAULT '0',
@@ -39,6 +43,8 @@ CREATE TABLE `addresses` (
   KEY `fk_address_user` (`user_id`),
   KEY `idx_user_addess_default` (`user_id`, `is_default`),
   KEY `idx_user_addess_id` (`user_id`, `address_id`),
+  KEY  `idx_addresses_ghn_ward` (`ghn_ward_code`),
+  KEY  `idx_addresses_ghn_legacy_district` (`ghn_legacy_district_id`),
   CONSTRAINT `fk_address_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Table structure for table `brands`
@@ -166,6 +172,14 @@ CREATE TABLE `orders` (
   `employee_id` varchar(50) DEFAULT NULL,
   `order_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `total_price` decimal(12,2) NOT NULL,
+  `subtotal_price` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `shipping_fee` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `free_shipping` BOOLEAN NOT NULL DEFAULT FALSE,
+  `ghn_order_code` VARCHAR(50) NULL,
+  `ghn_status` VARCHAR(50) NULL,
+  `ghn_expected_delivery` DATETIME NULL,
+  `ghn_raw_response` JSON NULL,
+
   `address_id` varchar(50) DEFAULT NULL,
   `note` text default null,
   `status` enum(
@@ -215,7 +229,9 @@ CREATE TABLE `orders` (
   KEY `idx_orders_completed_at` (`completed_at`),
   KEY `idx_orders_cancelled_at` (`cancelled_at`),
   KEY `idx_orders_delivery_failed_at` (`delivery_failed_at`),
-  KEY `idx_orders_updated_at` (`updated_at`);
+  KEY `idx_orders_updated_at` (`updated_at`),
+  KEY `idx_orders_ghn_order_code` (`ghn_order_code`),
+  KEY `idx_orders_ghn_status` (`ghn_status`),
 
   CONSTRAINT `fk_orders_address`
     FOREIGN KEY (`address_id`)

@@ -4,12 +4,9 @@ import {
     getMyOrderDetailController,
     getMyOrdersController,
     cancelOrderForStaffController,
-    completeOrderController,
     confirmOrderController,
     getAllOrdersController,
     getOrderDetailForStaffController,
-    markDeliveryFailedController,
-    shipOrderController,
     vnpayReturnController,
     vnpayIpnController,
     buyNowOrderController
@@ -36,9 +33,6 @@ router.patch("/me/:orderId/cancel", cancelMyOrderController);
 router.get("/", CheckRole("ADMIN", "EMPLOYEE"), getAllOrdersController);
 router.get("/:orderId", CheckRole("ADMIN", "EMPLOYEE"), getOrderDetailForStaffController);
 router.patch("/:orderId/confirm", CheckRole("ADMIN", "EMPLOYEE"), confirmOrderController);
-router.patch("/:orderId/ship", CheckRole("ADMIN", "EMPLOYEE"), shipOrderController);
-router.patch("/:orderId/complete", CheckRole("ADMIN", "EMPLOYEE"), completeOrderController);
 router.patch("/:orderId/cancel", CheckRole("ADMIN", "EMPLOYEE"), cancelOrderForStaffController);
-router.patch("/:orderId/delivery-failed", CheckRole("ADMIN", "EMPLOYEE"), markDeliveryFailedController);
 
 export default router;

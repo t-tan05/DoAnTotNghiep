@@ -14,7 +14,15 @@ export default function ProtectedRoute(){
         )
     }
 
-    if(!isAuthenticated) return <Navigate to="/login" replace state={{from: location.pathname}}/>;
+    if(!isAuthenticated) {
+        return (
+            <Navigate
+                to="/login"
+                replace
+                state={{from: `${location.pathname}${location.search}${location.hash}`}}
+            />
+        );
+    }
 
     if(user?.must_change_password && location.pathname !== "/account/password"){
         return <Navigate to="/account/password" replace />;

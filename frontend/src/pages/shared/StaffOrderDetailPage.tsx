@@ -1,16 +1,18 @@
-import PageLoading from "@/components/common/PageLoading";
+﻿import PageLoading from "@/components/common/PageLoading";
 import ConfirmDeleteDialog from "@/components/common/ConfirmDeleteDialog";
 import { Button } from "@/components/ui/button";
 import { orderService } from "@/services/order.service";
 import type { StaffOrder } from "@/types/order.type";
 import {
+    getGhnStatusLabel,
     getOrderStatusLabel,
     getPaymentMethodLabel,
     getPaymentStatusLabel,
 } from "@/utils/orderFormat";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { socket } from "@/lib/socket";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -33,7 +35,7 @@ export default function StaffOrderDetailPage({basePath}: Props) {
     const [actionLoading, setActionLoading] = useState(false);
     const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
 
-    async function loadOrder() {
+    const loadOrder = useCallback(async() => {
         if(!orderId) return;
 
         try {
@@ -45,11 +47,43 @@ export default function StaffOrderDetailPage({basePath}: Props) {
         }finally{
             setLoading(false);
         }
-    }
+    }, [orderId]);
 
     useEffect(() => {
         loadOrder();
     }, [orderId]);
+
+    useEffect(() => {
+        if(!orderId) return;
+
+        const token = localStorage.getItem("accessToken");
+        if(!token) return;
+
+        function handleConnect() {
+            socket.emit("join_admin");
+        }
+
+        function handleOrderUpdated(payload?: { orderId?: string }) {
+            if(!payload?.orderId || payload.orderId === orderId) {
+                loadOrder();
+            }
+        }
+
+        socket.auth = { token };
+        socket.on("connect", handleConnect);
+        socket.on("order:updated", handleOrderUpdated);
+
+        if(!socket.connected) {
+            socket.connect();
+        } else {
+            socket.emit("join_admin");
+        }
+
+        return () => {
+            socket.off("connect", handleConnect);
+            socket.off("order:updated", handleOrderUpdated);
+        };
+    }, [loadOrder, orderId]);
 
     async function runAction(action: () => Promise<unknown>) {
         try {
@@ -68,14 +102,13 @@ export default function StaffOrderDetailPage({basePath}: Props) {
     if(loading) return <PageLoading text="Đang tải chi tiết đơn hàng..." />;
     if(!order) return <p>Không tìm thấy đơn hàng.</p>;
 
-    const canConfirm = 
+    const isGhnManaged = Boolean(order.ghn_order_code);
+    const canConfirm =
+        !isGhnManaged &&
         order.status === "PENDING" &&
         (order.payment_method === "COD" || order.payment_status === "PAID");
 
-    const canShip = order.status === "CONFIRMED";
-    const canComplete = order.status === "SHIPPED";
-    const canDeliveryFailed = order.status === "SHIPPED";
-    const canCancel = !["COMPLETED", "CANCELLED", "RETURNED"].includes(order.status);
+    const canCancel = !isGhnManaged && !["COMPLETED", "CANCELLED", "RETURNED"].includes(order.status);
 
     return (
         <>
@@ -102,6 +135,12 @@ export default function StaffOrderDetailPage({basePath}: Props) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                        {/* {isGhnManaged && !["COMPLETED", "CANCELLED", "RETURNED", "DELIVERY_FAILED"].includes(order.status) && (
+                            <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                                Đơn hàng đang cập nhật theo webhook GHN, không thao tác thủ công.
+                            </div>
+                        )} */}
+
                         {canConfirm && (
                             <Button
                                 type="button"
@@ -114,51 +153,6 @@ export default function StaffOrderDetailPage({basePath}: Props) {
                                 Xác nhận
                             </Button>
                         )}
-
-                        {canShip && (
-                            <Button
-                                type="button"
-                                disabled={actionLoading}
-                                onClick={() =>
-                                    runAction(() => orderService.ship(order.order_id))
-                                }
-                                className="cursor-pointer"
-                            >
-                                Giao hàng
-                            </Button>
-                        )}
-
-                        {canComplete && (
-                            <Button
-                                type="button"
-                                disabled={actionLoading}
-                                onClick={() =>
-                                    runAction(() => orderService.complete(order.order_id))
-                                }
-                                className="cursor-pointer"
-                            >
-                                Hoàn tất
-                            </Button>
-                        )}
-
-                        {canDeliveryFailed && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={actionLoading}
-                                onClick={() =>
-                                    setConfirmAction({
-                                        title: "Đánh dấu giao hàng thất bại",
-                                        description: "Hệ thống có thể hoàn tiền nếu đơn hàng đã thanh toán bằng VNPay. Bạn có chắc muốn tiếp tục?",
-                                        action: () => orderService.markDeliveryFailed(order.order_id),
-                                    })
-                                }
-                                className="cursor-pointer"
-                            >
-                                Giao thất bại
-                            </Button>
-                        )}
-
                         {canCancel && (
                             <Button
                                 type="button"
@@ -300,6 +294,34 @@ export default function StaffOrderDetailPage({basePath}: Props) {
 
                                 <div className="font-semibold">
                                     Tổng tiền: {Number(order.total_price).toLocaleString("vi-VN")}đ
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border bg-background p-5">
+                            <h2 className="text-lg font-semibold">Vận chuyển GHN</h2>
+
+                            <div className="mt-4 space-y-2 text-sm">
+                                <div>
+                                    Mã vận đơn:{" "}
+                                    <span className="font-semibold">
+                                        {order.ghn_order_code || "Chưa tạo vận đơn"}
+                                    </span>
+                                </div>
+                                <div>Trạng thái GHN: {getGhnStatusLabel(order.ghn_status)}</div>
+                                <div>
+                                    Dự kiến giao:{" "}
+                                    {order.ghn_expected_delivery
+                                        ? new Date(order.ghn_expected_delivery).toLocaleString("vi-VN")
+                                        : "-"}
+                                </div>
+                                <div>
+                                    Phí khách trả:{" "}
+                                    {Number(order.shipping_fee ?? 0).toLocaleString("vi-VN")}đ
+                                </div>
+                                <div>
+                                    Chính sách:{" "}
+                                    {order.free_shipping ? "Shop hỗ trợ phí giao hàng" : "Phí giao tiêu chuẩn"}
                                 </div>
                             </div>
                         </div>

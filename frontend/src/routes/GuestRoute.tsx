@@ -1,9 +1,12 @@
 import PageLoading from "@/components/common/PageLoading";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate, Outlet } from "react-router-dom";
+import { getSafeRedirectPath } from "@/utils/authRedirect";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 export default function GuestRoute() {
     const { loading, user, isAuthenticated } = useAuth();
+    const location = useLocation();
+    const redirectTo = getSafeRedirectPath((location.state as { from?: unknown } | null)?.from);
 
     if (loading) {
         return (
@@ -26,7 +29,7 @@ export default function GuestRoute() {
             return <Navigate to="/employee" replace />;
         }
 
-        return <Navigate to="/" replace />;
+        return <Navigate to={redirectTo || "/"} replace />;
     }
 
     return <Outlet />;

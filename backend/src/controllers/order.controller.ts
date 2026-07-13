@@ -4,12 +4,9 @@ import {
     getMyOrderDetailService,
     getMyOrdersService,
     cancelOrderForStaffService,
-    completeOrderService,
     confirmOrderService,
     getAllOrdersService,
     getOrderDetailForStaffService,
-    markDeliveryFailedService,
-    shipOrderService,
     handleVnpayReturnService,
     handleVnpayIpnService,
     checkoutBuyNowRequest,
@@ -33,14 +30,19 @@ const getEnumQuery = <T extends string>(value: unknown, values: T[]) => {
         : undefined;
 };
 const emitOrderUpdated = (order: any, eventType = "updated") => {
-    getIO().to("admin").emit("order:updated", {
+    const payload = {
         eventType,
         orderId: order.order_id,
         status: order.status,
         paymentStatus: order.payment_status,
         employeeId: order.employee_id,
         updatedAt: order.updated_at || new Date(),
-    });
+    };
+
+    getIO().to("admin").emit("order:updated", payload);
+    if(order.user_id) {
+        getIO().to(`user:${order.user_id}`).emit("order:updated", payload);
+    }
     emitDashboardUpdate();
 };
 
@@ -204,34 +206,6 @@ export const confirmOrderController = CatchAsync(async(req: AuthRequest, res: Re
     });
 });
 
-export const shipOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
-    const data = await shipOrderService(req.params.orderId as string, req.user.user_id);
-
-    emitOrderUpdated(data.order, "shipped");
-
-    res.status(200).json({
-        success: true,
-        message: "Cập nhật đơn hàng sang đang giao thành công.",
-        data: {
-            ...data
-        },
-    });
-});
-
-export const completeOrderController = CatchAsync(async(req: AuthRequest, res: Response) => {
-    const data = await completeOrderService(req.params.orderId as string, req.user.user_id);
-
-    emitOrderUpdated(data.order, "completed");
-
-    res.status(200).json({
-        success: true,
-        message: "Hoàn tất đơn hàng thành công.",
-        data: {
-            ...data
-        },
-    });
-});
-
 export const cancelOrderForStaffController = CatchAsync(async(req: AuthRequest, res: Response) => {
     const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
         || req.socket.remoteAddress
@@ -244,24 +218,6 @@ export const cancelOrderForStaffController = CatchAsync(async(req: AuthRequest, 
     res.status(200).json({
         success: true,
         message: "Hủy đơn hàng thành công.",
-        data: {
-            ...data
-        },
-    });
-});
-
-export const markDeliveryFailedController = CatchAsync(async(req: AuthRequest, res: Response) => {
-    const ipAddr = req.headers["x-forwarded-for"]?.toString().split(",")[0]
-        || req.socket.remoteAddress
-        || "127.0.0.1";
-
-    const data = await markDeliveryFailedService(req.params.orderId as string, req.user.user_id, ipAddr);
-
-    emitOrderUpdated(data.order, "delivery_failed");
-
-    res.status(200).json({
-        success: true,
-        message: "Cập nhật giao hàng thất bại thành công.",
         data: {
             ...data
         },

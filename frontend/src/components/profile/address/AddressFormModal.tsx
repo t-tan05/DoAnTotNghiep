@@ -1,6 +1,11 @@
 import FormError from "@/components/common/FormError";
 import SpinnerButton from "@/components/common/SpinnerButton";
-import { addressService, type ProvinceOption, type WardOption } from "@/services/address.service";
+import {
+    addressService,
+    type DistrictOption,
+    type ProvinceOption,
+    type WardOption,
+} from "@/services/address.service";
 import type { Address } from "@/types/address.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { X } from "lucide-react";
@@ -8,16 +13,16 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type AddressFormModalProps = {
-  open: boolean;
-  mode: "create" | "edit";
-  initialDefault?: boolean;
-  address?: Address | null;
-  onClose: () => void;
-  onSuccess: () => void;
+    open: boolean;
+    mode: "create" | "edit";
+    initialDefault?: boolean;
+    address?: Address | null;
+    onClose: () => void;
+    onSuccess: () => void;
 };
 
 type SearchableOption = {
-    code: number;
+    code: number | string;
     name: string;
 };
 
@@ -63,8 +68,8 @@ function SearchableSelect({
                 autoComplete="off"
                 required
                 onFocus={() => setOpen(true)}
-                onChange={(e) => {
-                    setKeyword(e.target.value);
+                onChange={(event) => {
+                    setKeyword(event.target.value);
                     setOpen(true);
                     onSearchChange?.();
                 }}
@@ -78,10 +83,10 @@ function SearchableSelect({
                     {filteredOptions.length > 0 ? (
                         filteredOptions.map((option) => (
                             <button
-                                key={option.code}
+                                key={String(option.code)}
                                 type="button"
                                 className="block w-full px-4 py-3 text-left text-sm hover:bg-gray-100"
-                                onMouseDown={(e) => e.preventDefault()}
+                                onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => {
                                     onSelect(option);
                                     setKeyword(option.name);
@@ -114,17 +119,22 @@ export default function AddressFormModal({
         receiverName: "",
         phoneNumber: "",
         province: "",
+        district: "",
         ward: "",
         street: "",
+        ghnProvinceId: 0,
+        ghnLegacyDistrictId: 0,
+        ghnWardCode: "",
         isDefault: initialDefault,
     });
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [provinces, setProvinces] = useState<ProvinceOption[]>([]);
+    const [districts, setDistricts] = useState<DistrictOption[]>([]);
     const [wards, setWards] = useState<WardOption[]>([]);
-    const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
     const [loadingProvinces, setLoadingProvinces] = useState(false);
+    const [loadingDistricts, setLoadingDistricts] = useState(false);
     const [loadingWards, setLoadingWards] = useState(false);
 
     useEffect(() => {
@@ -133,12 +143,12 @@ export default function AddressFormModal({
         async function fetchProvinces() {
             setLoadingProvinces(true);
 
-            try{
-                const data = await addressService.getProvinces();
+            try {
+                const data = await addressService.getGhnProvinces();
                 setProvinces(data);
-            }catch{
+            } catch {
                 toast.error("Không thể tải danh sách tỉnh/thành phố.");
-            }finally{
+            } finally {
                 setLoadingProvinces(false);
             }
         }
@@ -147,14 +157,29 @@ export default function AddressFormModal({
     }, [open]);
 
     useEffect(() => {
-        if(!open || !form.province || !provinces.length) return;
+        if(!open || !form.ghnProvinceId) {
+            setDistricts([]);
+            return;
+        }
 
-        const province = provinces.find((item) => item.name === form.province);
-        setSelectedProvinceCode(province ? String(province.code) : "");
-    }, [open, form.province, provinces]);
+        async function fetchDistricts() {
+            setLoadingDistricts(true);
+
+            try {
+                const data = await addressService.getGhnDistricts(form.ghnProvinceId);
+                setDistricts(data);
+            } catch {
+                toast.error("Không thể tải danh sách quận/huyện.");
+            } finally {
+                setLoadingDistricts(false);
+            }
+        }
+
+        fetchDistricts();
+    }, [open, form.ghnProvinceId]);
 
     useEffect(() => {
-        if(!open || !selectedProvinceCode) {
+        if(!open || !form.ghnLegacyDistrictId) {
             setWards([]);
             return;
         }
@@ -162,32 +187,37 @@ export default function AddressFormModal({
         async function fetchWards() {
             setLoadingWards(true);
 
-            try{
-                const data = await addressService.getWardsByProvince(selectedProvinceCode);
+            try {
+                const data = await addressService.getGhnWards(form.ghnLegacyDistrictId);
                 setWards(data);
-            }catch{
+            } catch {
                 toast.error("Không thể tải danh sách phường/xã.");
-            }finally{
+            } finally {
                 setLoadingWards(false);
             }
         }
 
         fetchWards();
-    }, [open, selectedProvinceCode]);
+    }, [open, form.ghnLegacyDistrictId]);
 
     useEffect(() => {
         if(!open) return;
 
-        setSelectedProvinceCode("");
+        setDistricts([]);
         setWards([]);
+        setError("");
 
-        if(mode === "edit" && address){
+        if(mode === "edit" && address) {
             setForm({
                 receiverName: address.receiver_name,
                 phoneNumber: address.phone_number,
                 province: address.province,
+                district: address.district,
                 ward: address.ward,
                 street: address.street,
+                ghnProvinceId: Number(address.ghn_province_id || 0),
+                ghnLegacyDistrictId: Number(address.ghn_legacy_district_id || 0),
+                ghnWardCode: address.ghn_ward_code || "",
                 isDefault: address.is_default,
             });
             return;
@@ -197,15 +227,19 @@ export default function AddressFormModal({
             receiverName: "",
             phoneNumber: "",
             province: "",
+            district: "",
             ward: "",
             street: "",
+            ghnProvinceId: 0,
+            ghnLegacyDistrictId: 0,
+            ghnWardCode: "",
             isDefault: initialDefault,
         });
     }, [open, mode, address, initialDefault]);
 
     if(!open) return null;
 
-    function updateField(name: keyof typeof form, value: string | boolean) {
+    function updateField(name: keyof typeof form, value: string | number | boolean) {
         setForm((prev) => ({
             ...prev,
             [name]: value,
@@ -213,55 +247,95 @@ export default function AddressFormModal({
     }
 
     function handleProvinceSearchChange() {
-        setSelectedProvinceCode("");
         updateField("province", "");
+        updateField("district", "");
         updateField("ward", "");
+        updateField("ghnProvinceId", 0);
+        updateField("ghnLegacyDistrictId", 0);
+        updateField("ghnWardCode", "");
+        setDistricts([]);
         setWards([]);
     }
 
-    function handleProvinceSelect(province: ProvinceOption) {
-        setSelectedProvinceCode(String(province.code));
+    function handleProvinceSelect(province: SearchableOption) {
         updateField("province", province.name);
+        updateField("district", "");
         updateField("ward", "");
+        updateField("ghnProvinceId", Number(province.code));
+        updateField("ghnLegacyDistrictId", 0);
+        updateField("ghnWardCode", "");
+        setWards([]);
+    }
+
+    function handleDistrictSearchChange() {
+        updateField("district", "");
+        updateField("ward", "");
+        updateField("ghnLegacyDistrictId", 0);
+        updateField("ghnWardCode", "");
+        setWards([]);
+    }
+
+    function handleDistrictSelect(district: SearchableOption) {
+        updateField("district", district.name);
+        updateField("ward", "");
+        updateField("ghnLegacyDistrictId", Number(district.code));
+        updateField("ghnWardCode", "");
     }
 
     function handleWardSearchChange() {
         updateField("ward", "");
+        updateField("ghnWardCode", "");
     }
 
-    function handleWardSelect(ward: WardOption) {
+    function handleWardSelect(ward: SearchableOption) {
         updateField("ward", ward.name);
+        updateField("ghnWardCode", String(ward.code));
     }
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
         setError("");
 
-        if(!form.province || !form.ward) {
-            setError("Vui lòng chọn tỉnh/thành phố và phường/xã từ danh sách gợi ý.");
+        if(
+            !form.province ||
+            !form.district ||
+            !form.ward ||
+            !form.ghnProvinceId ||
+            !form.ghnLegacyDistrictId ||
+            !form.ghnWardCode
+        ) {
+            setError("Vui lòng chọn tỉnh/thành phố, quận/huyện và phường/xã từ danh sách gợi ý.");
             return;
         }
 
         setLoading(true);
 
-        try{
-            if(mode === "edit" && address){
+        try {
+            if(mode === "edit" && address) {
                 await addressService.updateAddress(address.address_id, {
                     receiverName: form.receiverName,
                     phoneNumber: form.phoneNumber,
                     province: form.province,
+                    district: form.district,
                     ward: form.ward,
                     street: form.street,
                     isDefault: form.isDefault,
+                    ghnProvinceId: form.ghnProvinceId,
+                    ghnLegacyDistrictId: form.ghnLegacyDistrictId,
+                    ghnWardCode: form.ghnWardCode,
                 });
                 toast.success("Cập nhật địa chỉ thành công.");
-            }else {
+            } else {
                 await addressService.createAddress({
                     receiverName: form.receiverName,
                     phoneNumber: form.phoneNumber,
                     province: form.province,
+                    district: form.district,
                     ward: form.ward,
                     street: form.street,
+                    ghnProvinceId: form.ghnProvinceId,
+                    ghnLegacyDistrictId: form.ghnLegacyDistrictId,
+                    ghnWardCode: form.ghnWardCode,
                     setDefault: form.isDefault,
                 });
                 toast.success("Thêm địa chỉ thành công.");
@@ -269,18 +343,18 @@ export default function AddressFormModal({
 
             onSuccess();
             onClose();
-        }catch(error){
+        } catch(error) {
             setError(getErrorMessage(error));
-        }finally{
+        } finally {
             setLoading(false);
         }
     }
 
     const disableDefaultCheckbox = mode === "edit" && address?.is_default;
 
-    return(
+    return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 px-4 py-6">
-            <div className="flex max-h-[90vh] w-full max-w-[680px] flex-col rounded-xl bg-white shadow-xl">
+            <div className="flex max-h-[90vh] w-full max-w-[760px] flex-col rounded-xl bg-white shadow-xl">
                 <div className="flex shrink-0 items-center justify-between px-6 py-6 md:px-8">
                     <h2 className="text-2xl font-bold text-gray-900 md:text-3xl">Thông tin người nhận hàng</h2>
 
@@ -295,17 +369,15 @@ export default function AddressFormModal({
 
                         <div>
                             <label htmlFor="name" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
-                                <span className="mr-1 text-red-500">
-                                    *
-                                </span> Họ tên
+                                <span className="mr-1 text-red-500">*</span> Họ tên
                             </label>
-                            <input 
+                            <input
                                 id="name"
                                 className="h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
-                                type="text" 
+                                type="text"
                                 placeholder="Họ tên người nhận"
                                 value={form.receiverName}
-                                onChange={(e) => updateField("receiverName", e.target.value)}
+                                onChange={(event) => updateField("receiverName", event.target.value)}
                                 required
                             />
                         </div>
@@ -314,13 +386,13 @@ export default function AddressFormModal({
                             <label htmlFor="phoneNumber" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
                                 <span className="mr-1 text-red-500">*</span> Số điện thoại
                             </label>
-                            <input 
+                            <input
                                 id="phoneNumber"
                                 className="h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
-                                type="text" 
+                                type="text"
                                 placeholder="Số điện thoại"
                                 value={form.phoneNumber}
-                                onChange={(e) => updateField("phoneNumber", e.target.value)}
+                                onChange={(event) => updateField("phoneNumber", event.target.value)}
                                 required
                             />
                         </div>
@@ -330,7 +402,7 @@ export default function AddressFormModal({
                                 Địa chỉ nhận hàng
                             </h2>
 
-                            <div className="grid gap-5 md:grid-cols-2">
+                            <div className="grid gap-5 md:grid-cols-3">
                                 <div>
                                     <label htmlFor="province" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
                                         <span className="mr-1 text-red-500">*</span> Tỉnh/Thành phố
@@ -347,6 +419,27 @@ export default function AddressFormModal({
                                 </div>
 
                                 <div>
+                                    <label htmlFor="district" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
+                                        <span className="mr-1 text-red-500">*</span> Quận/Huyện
+                                    </label>
+                                    <SearchableSelect
+                                        id="district"
+                                        value={form.district}
+                                        placeholder={
+                                            !form.ghnProvinceId
+                                                ? "Chọn tỉnh/thành phố trước"
+                                                : loadingDistricts
+                                                    ? "Đang tải quận/huyện..."
+                                                    : "Nhập quận/huyện"
+                                        }
+                                        disabled={!form.ghnProvinceId || loadingDistricts}
+                                        options={districts}
+                                        onSearchChange={handleDistrictSearchChange}
+                                        onSelect={handleDistrictSelect}
+                                    />
+                                </div>
+
+                                <div>
                                     <label htmlFor="ward" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
                                         <span className="mr-1 text-red-500">*</span> Phường/Xã
                                     </label>
@@ -354,13 +447,13 @@ export default function AddressFormModal({
                                         id="ward"
                                         value={form.ward}
                                         placeholder={
-                                            !selectedProvinceCode
-                                                ? "Chọn tỉnh/thành phố trước"
+                                            !form.ghnLegacyDistrictId
+                                                ? "Chọn quận/huyện trước"
                                                 : loadingWards
                                                     ? "Đang tải phường/xã..."
                                                     : "Nhập phường/xã"
                                         }
-                                        disabled={!selectedProvinceCode || loadingWards}
+                                        disabled={!form.ghnLegacyDistrictId || loadingWards}
                                         options={wards}
                                         onSearchChange={handleWardSearchChange}
                                         onSelect={handleWardSelect}
@@ -373,23 +466,23 @@ export default function AddressFormModal({
                             <label htmlFor="street" className="hover:cursor-pointer mb-2 block font-bold text-gray-900">
                                 <span className="mr-1 text-red-500">*</span> Địa chỉ cụ thể
                             </label>
-                            <input 
+                            <input
                                 id="street"
                                 className="h-14 w-full rounded-lg border border-gray-300 bg-white px-4 text-base outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
-                                type="text" 
+                                type="text"
                                 placeholder="Số nhà, ngõ, tên đường..."
                                 value={form.street}
-                                onChange={(e) => updateField("street", e.target.value)}
+                                onChange={(event) => updateField("street", event.target.value)}
                                 required
                             />
                         </div>
 
-                        <label htmlFor="" className="flex items-center justify-end gap-2 text-sm">
-                            <input 
-                                type="checkbox" 
+                        <label className="flex items-center justify-end gap-2 text-sm">
+                            <input
+                                type="checkbox"
                                 checked={form.isDefault}
                                 disabled={disableDefaultCheckbox}
-                                onChange={(e) => updateField("isDefault", e.target.checked)}
+                                onChange={(event) => updateField("isDefault", event.target.checked)}
                             />
                             Đặt làm mặc định
                         </label>
@@ -416,5 +509,5 @@ export default function AddressFormModal({
                 </form>
             </div>
         </div>
-    )
+    );
 }

@@ -53,7 +53,7 @@ function readBuyNowItem() {
 }
 
 function formatAddress(address: Address) {
-    return `${address.street}, ${address.ward}, ${address.province}`;
+    return `${address.street}, ${address.ward}, ${address.district}, ${address.province}`;
 }
 
 function getCartItemName(item: CartItem) {
@@ -159,6 +159,9 @@ export default function CheckoutPage() {
             return sum + Number(item.price) * item.quantity;
         }, 0);
     }, [summaryItems]);
+
+    const shippingFee = totalPrice >= 5_000_000 ? 0 : 40_000;
+    const grandTotal = totalPrice + shippingFee;
 
     const hasAddress = addresses.length > 0;
 
@@ -446,12 +449,14 @@ export default function CheckoutPage() {
 
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Phí vận chuyển</span>
-                            <span className="font-semibold">Miễn phí</span>
+                            <span className="font-semibold">
+                                {shippingFee === 0 ? "Miễn phí" : formatPrice(shippingFee)}
+                            </span>
                         </div>
 
                         <div className="flex justify-between text-base font-semibold">
                             <span>Thành tiền</span>
-                            <span className="text-xl text-red-600">{formatPrice(totalPrice)}</span>
+                            <span className="text-xl text-red-600">{formatPrice(grandTotal)}</span>
                         </div>
                     </div>
 

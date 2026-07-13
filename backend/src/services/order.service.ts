@@ -1,4 +1,4 @@
-import prisma from "#config/prisma";
+﻿import prisma from "#config/prisma";
 import type { 
     BuyNowRequest,
     CheckoutOrderPayload, 
@@ -22,11 +22,13 @@ import {
 } from "#models/order.model";
 import { createVnpayPaymentUrl, refundVnpayPayment, verifyVnpayReturn } from "./vnpay.service.js";
 import { findUserById } from "#models/user.model";
+import { createGhnOrderService } from "./ghn.service.js";
 
 const PAYMENT_TRANSACTION_REFUND_PENDING = "REFUND_PENDING" as payment_transactions_status;
 const PAYMENT_TRANSACTION_REFUND_FAILED = "REFUND_FAILED" as payment_transactions_status;
 const ORDER_PAYMENT_REFUND_PENDING = "REFUND_PENDING" as orders_payment_status;
 const ORDER_PAYMENT_REFUND_FAILED = "REFUND_FAILED" as orders_payment_status;
+const FREE_SHIPPING = 5000000;
 
 const getAvailableQuantity = (variant: any) => {
     return Number(variant.quantity_in_stock) - Number(variant.reserved_quantity ?? 0);
@@ -171,9 +173,14 @@ export const checkoutOrderService = async(
             }
         }
 
-        const totalPrice = cart.carts_items.reduce((sum, item) => {
+        const subtotalPrice = cart.carts_items.reduce((sum, item) => {
             return sum + Number(item.price_at_add) * item.quantity;
         }, 0);
+
+        const freeShipping = subtotalPrice >= FREE_SHIPPING; //làm cho freeship nếu đơn từ 5tr trở lên
+        const shippingFee = freeShipping ? 0 : 40000;
+        const totalPrice = subtotalPrice + shippingFee;
+
 
         const orderId = crypto.randomUUID();
         const paymentStatus = payload.paymentMethod === "COD"
@@ -185,7 +192,12 @@ export const checkoutOrderService = async(
                 order_id: orderId,
                 user_id: userId,
                 address_id: address.address_id,
+
+                subtotal_price: subtotalPrice,
+                shipping_fee: shippingFee,
+                free_shipping: freeShipping,
                 total_price: totalPrice,
+
                 status: orders_status.PENDING,
                 payment_method: payload.paymentMethod,
                 payment_status: paymentStatus,
@@ -458,9 +470,24 @@ export const getOrderDetailForStaffService = async(orderId: string) => {
 
     return { order };
 }
-
 export const confirmOrderService = async(orderId: string, employeeId: string) => {
-    const order = await findOrderById(orderId);
+    const order = await prisma.orders.findUnique({
+        where: {
+            order_id: orderId,
+        },
+        include: {
+            addresses: true,
+            orders_details: {
+                include: {
+                    product_variants: {
+                        include: {
+                            products: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
 
     if(!order) throw new AppError("Không tìm thấy đơn hàng.", 404);
 
@@ -472,127 +499,62 @@ export const confirmOrderService = async(orderId: string, employeeId: string) =>
         throw new AppError("Đơn hàng thanh toán online chưa thanh toán thành công.", 400);
     }
 
+    if(order.ghn_order_code) {
+        throw new AppError("Đơn hàng đã có mã vận đơn GHN.", 400);
+    }
+
+    const address = order.addresses;
+
+    if(!address) {
+        throw new AppError("Đơn hàng chưa có địa chỉ giao hàng.", 400);
+    }
+
+    if(!address.district || !address.ghn_ward_code || !address.ghn_legacy_district_id) {
+        throw new AppError("Địa chỉ giao hàng chưa có mã GHN, vui lòng cập nhật địa chỉ.", 400);
+    }
+
+    const ghnItems = order.orders_details.map((detail) => {
+        const variant = detail.product_variants;
+        const product = variant.products;
+
+        return {
+            name: variant.variant_name || product.product_name,
+            quantity: detail.quantity,
+            price: Number(detail.price),
+        };
+    });
+
+    const toAddress = `${address.street}, ${address.ward}, ${address.district}, ${address.province}`;
+    const codAmount = order.payment_method === "COD" ? Number(order.total_price) : 0;
+
+    const ghnOrder = await createGhnOrderService({
+        clientOrderCode: order.order_id,
+        toName: order.receiver_name || address.receiver_name,
+        toPhone: order.receiver_phone || address.phone_number,
+        toAddress,
+        toWardCode: address.ghn_ward_code,
+        toDistrictId: address.ghn_legacy_district_id,
+        codAmount,
+        content: `Don hang ${order.order_id.slice(0, 8)}`,
+        weight: 1000,
+        length: 30,
+        width: 20,
+        height: 10,
+        items: ghnItems,
+    });
+
     const updateOrder = await update(orderId, {
         status: orders_status.CONFIRMED,
         employee_id: employeeId,
+        ghn_order_code: ghnOrder.order_code,
+        ghn_status: ghnOrder.status || "ready_to_pick",
+        ghn_expected_delivery: ghnOrder.expected_delivery_time
+            ? new Date(ghnOrder.expected_delivery_time)
+            : null,
+        ghn_raw_response: ghnOrder as any,
     });
 
     return {order: updateOrder};
-};
-
-export const shipOrderService  = async(orderId: string, employeeId: string) => {
-    const order = await findOrderById(orderId);
-
-    if(!order) throw new AppError("Không tìm thấy đơn hàng.", 404);
-
-    if(order.status !== orders_status.CONFIRMED) {
-        throw new AppError("Chỉ có thể giao đơn hàng đã xác nhận.", 400);
-    }
-
-    const updateOrder = await update(orderId, {
-        status: orders_status.SHIPPED,
-        employee_id: employeeId,
-    });
-
-    return {order: updateOrder};
-};
-
-//Tạo hàm tính tháng cho warranty_end_date
-const addMonth = (date: Date, months: number) => {
-    const result = new Date(date);
-    result.setMonth(result.getMonth() + months);
-    return result;
-};
-
-export const completeOrderService = async(orderId: string, employeeId: string) => {
-    return prisma.$transaction(async(tx) => {
-        const order = await tx.orders.findUnique({
-            where: {
-                order_id: orderId,
-            },
-            include: {
-                orders_details: {
-                    include: {
-                        product_variants: {
-                            include: {
-                                products: true,
-                            },
-                        },
-                    },
-                },
-            },
-        });
-
-        if(!order) {
-            throw new AppError("Không tìm thấy đơn hàng.", 404);
-        }
-
-        if(order.status !== orders_status.SHIPPED) {
-            throw new AppError("Chỉ có thể hoàn tất đơn hàng đang giao.", 400);
-        }
-
-        const soldDate = new Date();
-
-        for(const detail of order.orders_details) {
-            const warrantyPeriod = detail.product_variants.products.warranty_period;
-            const warrantyEndDate = warrantyPeriod > 0
-                ? addMonth(soldDate, warrantyPeriod)
-                : null;
-            
-            const updated = await tx.devices.updateMany({
-                where: {
-                    order_detail_id: detail.order_detail_id,
-                    status: devices_status.RESERVED,
-                },
-                data: {
-                    status: devices_status.SOLD,
-                    sold_date: soldDate,
-                    warranty_end_date: warrantyEndDate,
-                },
-            });
-
-            if(updated.count !== detail.quantity) {
-                throw new AppError("Số lượng thiết bị giữ cho đơn hàng không khớp.", 409);
-            }
-        }
-
-        const shouldMarkCodPaid = order.payment_method === "COD";
-
-        if(shouldMarkCodPaid) {
-            await tx.payment_transactions.updateMany({
-                where: {
-                    order_id: orderId,
-                    payment_method: "COD",
-                    status: payment_transactions_status.PENDING,
-                },
-                data: {
-                    status: payment_transactions_status.SUCCESS,
-                    paid_at: soldDate,
-                    updated_at: soldDate,
-                },
-            });
-        }
-
-        const updateOrder = await tx.orders.update({
-            where: {
-                order_id: orderId,
-            },
-            data: {
-                status: orders_status.COMPLETED,
-                employee_id: employeeId,
-                completed_at: soldDate,
-                ...(shouldMarkCodPaid
-                    ? {
-                        payment_status: orders_payment_status.PAID,
-                    }
-                    : {}
-                ),
-            },
-        });
-        return {
-            order: updateOrder,
-        };
-    });
 };
 
 export const cancelOrderForStaffService = async(orderId: string, employeeId: string, ipAddr: string) => {
@@ -608,6 +570,10 @@ export const cancelOrderForStaffService = async(orderId: string, employeeId: str
 
     if(cannotCancelStatuses.has(order.status)) {
         throw new AppError("Không thể hủy đơn hàng ở trạng thái hiện tại.", 400);
+    }
+
+    if(order.ghn_order_code) {
+        throw new AppError("Đơn hàng đã có GHN, cần hủy vận đơn trên GHN trước khi hủy đơn.", 400);
     }
 
     if(order.payment_status === orders_payment_status.PAID) {
@@ -655,67 +621,6 @@ export const cancelOrderForStaffService = async(orderId: string, employeeId: str
         status: orders_status.CANCELLED,
         employee_id: employeeId,
         cancelled_at: new Date(),
-    });
-
-    return {order: updateOrder};
-}
-
-export const markDeliveryFailedService = async(orderId: string, employeeId: string, ipAddr: string) => {
-    const order = await findOrderById(orderId);
-
-    if(!order) {
-        throw new AppError("Không tìm thấy đơn hàng.", 404);
-    }
-
-    if(order.status !== orders_status.SHIPPED) {
-        throw new AppError("Chỉ có thể đánh dấu giao hàng thất bại với đơn đang giao.", 400);
-    }
-
-    if(order.payment_status === orders_payment_status.PAID) {
-        if(order.payment_method !== "VNPAY") {
-            throw new AppError("Đơn hàng đã được thanh toán, tuy nhiên hiện tại hệ thống chưa hỗ trợ hoàn tiền đối với phương thức thanh toán này.", 400);
-        }
-
-        const { paymentTransaction, refundResult } = await refundPaidVnpayOrder({
-            orderId,
-            amount: Number(order.total_price),
-            userId: employeeId,
-            ipAddr,
-        });
-        const refundState = getVnpayRefundState(refundResult);
-
-        const updatedOrder = await prisma.$transaction(async(tx) => {
-            await tx.payment_transactions.update({
-                where: {
-                    transaction_id: paymentTransaction.transaction_id,
-                },
-                data: {
-                    status: refundState.transactionStatus,
-                    provider_response: JSON.stringify(refundResult),
-                    updated_at: new Date(),
-                },
-            });
-
-            return tx.orders.update({
-                where: {
-                    order_id: orderId,
-                },
-                data: {
-                    status: orders_status.DELIVERY_FAILED,
-                    payment_status: refundState.orderPaymentStatus,
-                    employee_id: employeeId,
-                    delivery_failed_at: new Date(),
-                },
-            });
-        });
-
-        return {order: updatedOrder};
-    }
-
-    const updateOrder = await update(orderId, {
-        status: orders_status.DELIVERY_FAILED,
-        employee_id: employeeId,
-        delivery_failed_at: new Date(),
     });
 
     return {order: updateOrder};
@@ -1069,7 +974,7 @@ export const handleVnpayIpnService = async(query: Record<string, any>, ipAddr = 
                     Message: "Invalid amount",
                 };
             }
-            
+
             const isPaymentSuccess = responseCode === "00" && transactionStatus === "00";
 
             if(isPaymentSuccess) {
@@ -1263,7 +1168,11 @@ export const checkoutBuyNowRequest = async(userId: string, request: BuyNowReques
         }
 
         const itemPrice = calculatePrice(variant);
-        const totalPrice = itemPrice * request.quantity;
+        const subtotalPrice = itemPrice * request.quantity;
+        const freeShipping = subtotalPrice >= FREE_SHIPPING;
+        const shippingFee = freeShipping ? 0 : 40000;
+        const totalPrice = subtotalPrice + shippingFee;
+
         const orderId = crypto.randomUUID();
         const orderDetailId = crypto.randomUUID();
         const paymentStatus = request.paymentMethod === "COD"
@@ -1275,7 +1184,12 @@ export const checkoutBuyNowRequest = async(userId: string, request: BuyNowReques
                 order_id: orderId,
                 user_id: userId,
                 address_id: address.address_id,
+
+                subtotal_price: subtotalPrice,
+                shipping_fee: shippingFee,
+                free_shipping: freeShipping,
                 total_price: totalPrice,
+
                 status: orders_status.PENDING,
                 payment_method: request.paymentMethod,
                 payment_status: paymentStatus,

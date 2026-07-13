@@ -69,6 +69,7 @@ export function initSocket(server: HttpServer) {
         const roles: string[] = socket.data.user?.roles || [];
 
         if(currentUserId) {
+            socket.join(`user:${currentUserId}`);
             socket.join(`warranty_user:${currentUserId}`);
         }
 

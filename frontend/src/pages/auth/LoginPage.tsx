@@ -2,6 +2,7 @@ import FormError from "@/components/common/FormError";
 import SpinnerButton from "@/components/common/SpinnerButton";
 import AuthLayout from "@/components/layout/AuthLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { getSafeRedirectPath } from "@/utils/authRedirect";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -19,7 +20,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
 
     const location = useLocation();
-    const redirectTo = (location.state as { from?: string } | null)?.from;
+    const redirectTo = getSafeRedirectPath((location.state as { from?: unknown } | null)?.from);
 
     function updateField(name: keyof typeof form, value: string) {
         setForm((prev) => ({

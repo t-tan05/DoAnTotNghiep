@@ -17,6 +17,9 @@ export type BuyNowPayload = CheckoutPayload & {
 export type CheckoutResponse = {
     order: {
         order_id: string;
+        subtotal_price: number | string;
+        shipping_fee: number | string;
+        free_shipping: boolean;
         total_price: number | string;
         status: string;
         payment_method: PaymentMethod;
@@ -74,6 +77,12 @@ export type OrderDetail = {
 export type MyOrder = {
     order_id: string;
     order_date: string;
+    subtotal_price?: number | string;
+    shipping_fee?: number | string;
+    free_shipping?: boolean;
+    ghn_order_code?: string | null;
+    ghn_status?: string | null;
+    ghn_expected_delivery?: string | null;
     total_price: number | string;
     status: OrderStatus;
     payment_method: PaymentMethod;

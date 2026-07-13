@@ -26,6 +26,14 @@ export const createAddressSchema = Joi.object({
         "string.empty": "Tỉnh / Thành phố không được để trống.",
         "any.required": "Tỉnh / Thành phố là bắt buộc.",
     }),
+    district: Joi.string()
+        .trim()
+        .max(100)
+        .required()
+        .messages({
+        "string.empty": "Quận / Huyện không được để trống.",
+        "any.required": "Quận / Huyện là bắt buộc.",
+    }),
     ward: Joi.string()
         .trim()
         .max(100)
@@ -45,4 +53,14 @@ export const createAddressSchema = Joi.object({
     }),
     setDefault: Joi.boolean()
         .default(false),
+    ghnProvinceId: Joi.number()
+        .integer()
+        .required(),
+    ghnWardCode: Joi.string()
+        .trim()
+        .max(20)
+        .required(),
+    ghnLegacyDistrictId: Joi.number()
+        .integer()
+        .required(),
 });

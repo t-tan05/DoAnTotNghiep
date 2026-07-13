@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { cartService } from "@/services/cart.service";
 import { wishlistService } from "@/services/wishlist.service";
 import type { PublicProductCardItem } from "@/types/product.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
@@ -33,6 +34,7 @@ export default function ProductCard({
     const isOutOfStock = Number(variant.quantity_in_stock) <= 0;
     const [isWishlisted, setIsWishlisted] = useState(initialIsWishlisted);
     const [wishlistLoading, setWishlistLoading] = useState(false);
+    const [adding, setAdding] = useState(false);
 
     useEffect(() => {
         setIsWishlisted(initialIsWishlisted);
@@ -67,6 +69,34 @@ export default function ProductCard({
             toast.error(getErrorMessage(error));
         } finally {
             setWishlistLoading(false);
+        }
+    }
+
+    async function handleAddToCart() {
+        if(isOutOfStock) return;
+
+        if(!isAuthenticated) {
+            navigate("/login", {
+                state: {
+                    from: `${location.pathname}${location.search}`,
+                },
+            });
+            return;
+        }
+
+        try {
+            setAdding(true);
+
+            await cartService.addItem({
+                variantId: variant.variant_id,
+                quantity: 1,
+            });
+
+            toast.success("Đã thêm sản phẩm vào giỏ hàng.");
+        } catch(error) {
+            toast.error(getErrorMessage(error));
+        } finally {
+            setAdding(false);
         }
     }
 
@@ -179,10 +209,11 @@ export default function ProductCard({
                 <Button
                     type="button"
                     variant="outline"
-                    disabled={isOutOfStock}
-                    className="w-full cursor-pointer border-blue-700 text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed"
+                    disabled={isOutOfStock || adding}
+                    onClick={handleAddToCart}
+                    className="w-full cursor-pointer border-blue-700 text-blue-700 hover:bg-blue-50 disabled:pointer-events-auto disabled:cursor-not-allowed"
                 >
-                    Thêm vào giỏ
+                    {isOutOfStock ? "Hết hàng" : adding ? "Đang thêm..." : "Thêm vào giỏ"}
                 </Button>
             </div>
         </div>

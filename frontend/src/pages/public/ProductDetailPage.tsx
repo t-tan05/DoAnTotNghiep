@@ -255,6 +255,7 @@ export default function ProductDetailPage() {
         0,
         Number(selectedVariant?.quantity_in_stock ?? 0) - Number(selectedVariant?.reserved_quantity ?? 0),
     );
+    const isOutOfStock = !selectedVariant || availableQuantity <= 0;
 
     const displayName = selectedVariant?.variant_name || product?.product_name || "";
     const detailContent =
@@ -419,6 +420,7 @@ export default function ProductDetailPage() {
 
     async function handleAddToCart() {
         if (!selectedVariant) return;
+        if (isOutOfStock) return;
 
         if (!isAuthenticated) {
             navigate("/login", {
@@ -445,6 +447,7 @@ export default function ProductDetailPage() {
 
     function handleBuyNow() {
         if (!selectedVariant) return;
+        if (isOutOfStock) return;
 
         if (!isAuthenticated) {
             navigate("/login", {
@@ -727,24 +730,36 @@ export default function ProductDetailPage() {
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <Button
-                                    type="button"
-                                    disabled={!selectedVariant || availableQuantity <= 0 || adding || buyingNow}
-                                    onClick={handleAddToCart}
-                                    className="h-12 w-full cursor-pointer bg-blue-700 text-base hover:bg-blue-800 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
-                                >
-                                    <ShoppingCart className="mr-2 h-5 w-5" />
-                                    {adding ? "Đang thêm..." : "Thêm vào giỏ"}
-                                </Button>
+                                {isOutOfStock ? (
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="h-12 font-bold w-full cursor-not-allowed bg-muted text-base text-muted-foreground sm:col-span-2"
+                                    >
+                                        Hết hàng
+                                    </button>
+                                ) : (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            disabled={adding || buyingNow}
+                                            onClick={handleAddToCart}
+                                            className="h-12 w-full cursor-pointer bg-blue-700 text-base hover:bg-blue-800 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
+                                        >
+                                            <ShoppingCart className="mr-2 h-5 w-5" />
+                                            {adding ? "Đang thêm..." : "Thêm vào giỏ"}
+                                        </Button>
 
-                                <Button
-                                    type="button"
-                                    disabled={!selectedVariant || availableQuantity <= 0 || adding || buyingNow}
-                                    onClick={handleBuyNow}
-                                    className="h-12 w-full cursor-pointer bg-red-600 text-base hover:bg-red-700 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
-                                >
-                                    {buyingNow ? "Đang xử lý..." : "Mua ngay"}
-                                </Button>
+                                        <Button
+                                            type="button"
+                                            disabled={adding || buyingNow}
+                                            onClick={handleBuyNow}
+                                            className="h-12 w-full cursor-pointer bg-red-600 text-base hover:bg-red-700 disabled:!pointer-events-auto disabled:!cursor-not-allowed"
+                                        >
+                                            {buyingNow ? "Đang xử lý..." : "Mua ngay"}
+                                        </Button>
+                                    </>
+                                )}
 
                                 <Button
                                     type="button"

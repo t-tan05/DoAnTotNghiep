@@ -265,7 +265,7 @@ export default function WishlistPage() {
                                         variant="outline"
                                         disabled={isOutOfStock || isCartUpdating}
                                         onClick={() => handleAddToCart(item)}
-                                        className="mt-4 h-11 w-full cursor-pointer border-blue-700 text-blue-700 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed"
+                                        className="mt-4 h-11 w-full cursor-pointer border-blue-700 text-blue-700 hover:bg-blue-50 hover:text-blue-700 disabled:pointer-events-auto disabled:cursor-not-allowed"
                                     >
                                         <ShoppingCart className="mr-2 size-4" />
                                         {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ"}

@@ -1,26 +1,19 @@
 import type { CreateAddressPayload, UpdateAddressPayload } from "@/types/address.type";
 import { api } from "./api";
-import axios from "axios";
 
 export type ProvinceOption = {
     code: number;
     name: string;
 };
 
+export type DistrictOption = {
+    code: number;
+    name: string;
+};
+
 export type WardOption = {
-    code: number;
+    code: string;
     name: string;
-};
-
-type ProvinceResponse = {
-    code: number;
-    name: string;
-};
-
-type ProvinceDetailResponse = {
-    code: number;
-    name: string;
-    wards: WardOption[];
 };
 
 export const addressService = {
@@ -44,16 +37,27 @@ export const addressService = {
         return api.delete(`/addresses/${addressId}`);
     },
 
-    getProvinces: async() => {
-        const res = await axios.get<ProvinceResponse[]>("https://provinces.open-api.vn/api/v2/p/");
-        return res.data;
+    getGhnProvinces: async() => {
+        const res = await api.get("/ghn/provinces");
+        return res.data.data.provinces.map((item: { provinceId: number; provinceName: string }) => ({
+            code: item.provinceId,
+            name: item.provinceName,
+        })) as ProvinceOption[];
     },
 
-    getWardsByProvince: async (provinceCode: number | string) => {
-        const res = await axios.get<ProvinceDetailResponse>(
-            `https://provinces.open-api.vn/api/v2/p/${provinceCode}?depth=2`
-        );
+    getGhnDistricts: async(provinceId: number) => {
+        const res = await api.get(`/ghn/districts?provinceId=${provinceId}`);
+        return res.data.data.districts.map((item: { districtId: number; districtName: string }) => ({
+            code: item.districtId,
+            name: item.districtName,
+        })) as DistrictOption[];
+    },
 
-        return res.data.wards ?? [];
+    getGhnWards: async(districtId: number) => {
+        const res = await api.get(`/ghn/wards?districtId=${districtId}`);
+        return res.data.data.wards.map((item: { wardCode: string; wardName: string }) => ({
+            code: item.wardCode,
+            name: item.wardName,
+        })) as WardOption[];
     },
 }

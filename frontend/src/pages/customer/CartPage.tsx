@@ -65,6 +65,14 @@ export default function CartPage() {
         }, 0);
     }, [items]);
 
+    const shippingFee = useMemo(() => {
+        return totalPrice >= 5000000 ? 0 : 40000;
+    }, [totalPrice]);
+
+    const grandTotal = useMemo(() => {
+        return totalPrice + shippingFee;
+    }, [totalPrice, shippingFee]);
+
     async function updateQuantity(item: CartItem, nextQuantity: number) {
         if (nextQuantity < 1) return;
 
@@ -280,12 +288,12 @@ export default function CartPage() {
 
                         <div className="flex justify-between">
                             <span>Phí vận chuyển</span>
-                            <span>Miễn phí </span>
+                            <span>{shippingFee === 0 ? "Miễn phí" : formatPrice(shippingFee)}</span>
                         </div>
 
                         <div className="border-t pt-3 flex justify-between text-base font-semibold">
                             <span>Tổng cộng</span>
-                            <span>{formatPrice(totalPrice)}</span>
+                            <span>{formatPrice(grandTotal)}</span>
                         </div>
                     </div>
 

@@ -106,22 +106,28 @@ model cms_collection_rules {
 }
 
 model addresses {
-  address_id    String    @id @db.VarChar(50)
-  user_id       String    @db.VarChar(50)
-  province      String    @db.VarChar(100)
-  street        String    @db.VarChar(255)
-  ward          String    @db.VarChar(100)
-  receiver_name String    @db.VarChar(100)
-  phone_number  String    @db.VarChar(20)
-  is_default    Boolean?  @default(false)
-  created_at    DateTime? @default(now()) @db.Timestamp(0)
-  updated_at    DateTime? @default(now()) @db.Timestamp(0)
-  users         users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_address_user")
-  orders        orders[]
+  address_id             String    @id @db.VarChar(50)
+  user_id                String    @db.VarChar(50)
+  province               String    @db.VarChar(100)
+  district               String?   @db.VarChar(100)
+  ghn_province_id        Int?
+  street                 String    @db.VarChar(255)
+  ward                   String    @db.VarChar(100)
+  ghn_ward_code          String?   @db.VarChar(20)
+  ghn_legacy_district_id Int?
+  receiver_name          String    @db.VarChar(100)
+  phone_number           String    @db.VarChar(20)
+  is_default             Boolean?  @default(false)
+  created_at             DateTime? @default(now()) @db.Timestamp(0)
+  updated_at             DateTime? @default(now()) @db.Timestamp(0)
+  users                  users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_address_user")
+  orders                 orders[]
 
   @@index([user_id], map: "fk_address_user")
   @@index([user_id, is_default], map: "idx_user_addess_default")
   @@index([user_id, address_id], map: "idx_user_addess_id")
+  @@index([ghn_legacy_district_id], map: "idx_addresses_ghn_legacy_district")
+  @@index([ghn_ward_code], map: "idx_addresses_ghn_ward")
 }
 
 model attribute_values {
@@ -236,6 +242,13 @@ model orders {
   user_id                         String?                  @db.VarChar(50)
   employee_id                     String?                  @db.VarChar(50)
   order_date                      DateTime                 @default(now()) @db.DateTime(0)
+  subtotal_price                  Decimal                  @default(0.00) @db.Decimal(12, 2)
+  shipping_fee                    Decimal                  @default(0.00) @db.Decimal(12, 2)
+  free_shipping                   Boolean                  @default(false)
+  ghn_order_code                  String?                  @db.VarChar(50)
+  ghn_status                      String?                  @db.VarChar(50)
+  ghn_expected_delivery           DateTime?                @db.DateTime(0)
+  ghn_raw_response                Json?
   total_price                     Decimal                  @db.Decimal(12, 2)
   address_id                      String?                  @db.VarChar(50)
   status                          orders_status            @default(PENDING)
@@ -268,6 +281,8 @@ model orders {
   @@index([completed_at], map: "idx_orders_completed_at")
   @@index([delivery_failed_at], map: "idx_orders_delivery_failed_at")
   @@index([updated_at], map: "idx_orders_updated_at")
+  @@index([ghn_order_code], map: "idx_orders_ghn_order_code")
+  @@index([ghn_status], map: "idx_orders_ghn_status")
 }
 
 model orders_details {

@@ -76,33 +76,9 @@ export const orderService = {
         return res.data.data;
     },
 
-    ship: async(orderId: string) => {
-        const res = await api.patch<BackendSuccess<{order: StaffOrder}>> (
-            `/orders/${orderId}/ship`
-        );
-
-        return res.data.data;
-    },
-
-    complete: async(orderId: string) => {
-        const res = await api.patch<BackendSuccess<{order: StaffOrder}>> (
-            `/orders/${orderId}/complete`
-        );
-
-        return res.data.data;
-    },
-
     cancelForStaff: async(orderId: string) => {
         const res = await api.patch<BackendSuccess<{order: StaffOrder}>> (
             `/orders/${orderId}/cancel`
-        );
-
-        return res.data.data;
-    },
-
-    markDeliveryFailed: async(orderId: string) => {
-        const res = await api.patch<BackendSuccess<{order: StaffOrder}>> (
-            `/orders/${orderId}/delivery-failed`
         );
 
         return res.data.data;
