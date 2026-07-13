@@ -147,7 +147,7 @@ export default function AiChatBox() {
                         <button
                             type="button"
                             onClick={() => setOpen(false)}
-                            className="rounded-full p-1 transition hover:bg-white/15"
+                            className="rounded-full p-1 cursor-pointer transition hover:bg-white/15"
                             aria-label="Đóng chat"
                         >
                             <X className="h-5 w-5" />
@@ -239,7 +239,7 @@ export default function AiChatBox() {
                         type="button"
                         onClick={scrollToTop}
                         className={[
-                            "flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-700 shadow-xl ring-1 ring-blue-100 transition-all duration-300 hover:-translate-y-1 hover:bg-blue-50",
+                            "flex h-12 cursor-pointer w-12 items-center justify-center rounded-full bg-white text-blue-700 shadow-xl ring-1 ring-blue-100 transition-all duration-300 hover:-translate-y-1 hover:bg-blue-50",
                             showScrollTop
                                 ? "pointer-events-auto translate-y-0 opacity-100"
                                 : "pointer-events-none translate-y-3 opacity-0",
@@ -252,7 +252,7 @@ export default function AiChatBox() {
                     <button
                         type="button"
                         onClick={() => setOpen(true)}
-                        className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-700 text-white shadow-xl transition hover:-translate-y-1 hover:bg-blue-800"
+                        className="flex h-14 cursor-pointer w-14 items-center justify-center rounded-full bg-blue-700 text-white shadow-xl transition hover:-translate-y-1 hover:bg-blue-800"
                         aria-label="Mở chat tư vấn"
                     >
                         <Bot className="h-7 w-7" />

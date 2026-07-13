@@ -240,3 +240,15 @@ export async function findProductsForAi(keyword) {
         .slice(0, 8)
         .map((item) => item.variant);
 }
+export function attachGuestConversationsToUser(guestId, userId) {
+    return prisma.ai_conversations.updateMany({
+        where: {
+            guest_id: guestId,
+            user_id: null,
+        },
+        data: {
+            user_id: userId,
+            guest_id: null,
+        },
+    });
+}

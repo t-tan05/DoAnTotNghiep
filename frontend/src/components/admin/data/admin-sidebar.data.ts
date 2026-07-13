@@ -8,6 +8,7 @@
   LayoutTemplate,
   Package,
   PanelsTopLeft,
+  Star,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -70,6 +71,11 @@ export const adminSidebarItems = [
     title: "Người dùng",
     url: "/admin/users",
     icon: Users,
+  },
+  {
+    title: "Đánh giá",
+    url: "/admin/reviews",
+    icon: Star,
   },
   {
     title: "Bài viết",

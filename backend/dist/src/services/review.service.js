@@ -1,5 +1,5 @@
 import { findOrderByReview } from "#models/order.model";
-import { create, findReviewByOrderIdAndProductId, getProductReviewByProductId } from "#models/review.model";
+import { create, findReviewByOrderIdAndProductId, getAdminReviewsWithQuery, getProductReviewByProductId } from "#models/review.model";
 import AppError from "#utils/AppError";
 import { orders_status } from "@prisma/client";
 export const createReviewService = async (userId, data) => {
@@ -50,6 +50,32 @@ export const getProductReviewsService = async (productId, page = 1, limit = 5, r
             limit,
             totalItems: fillteredTotal,
             totalPages: Math.ceil(fillteredTotal / limit),
+        },
+    };
+};
+export const getAdminReviewsService = async (params) => {
+    const { reviews, totalItems } = await getAdminReviewsWithQuery(params);
+    return {
+        reviews,
+        meta: {
+            pagination: {
+                page: params.page,
+                limit: params.limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / params.limit),
+            },
+            sort: {
+                sortBy: params.sortBy,
+                sortOrder: params.sortOrder,
+            },
+            search: params.search,
+            filters: {
+                rating: params.rating,
+                productId: params.productId,
+                userId: params.userId,
+                fromDate: params.fromDate,
+                toDate: params.toDate,
+            },
         },
     };
 };
