@@ -862,29 +862,7 @@ CREATE TABLE `warranty_issue_categories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `warranty_policies`;
-CREATE TABLE `warranty_policies` (
-  `policy_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `policy_name` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `brand_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `product_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `from_day` int NOT NULL DEFAULT '0',
-  `to_day` int DEFAULT NULL,
-  `policy_type` enum('REPLACE_NEW','CONDITIONAL_REPLACE','REPAIR','SEND_TO_BRAND','PAID_REPAIR','REFUSE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'REPAIR',
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`policy_id`),
-  KEY `idx_warranty_policy_category` (`category_id`),
-  KEY `idx_warranty_policy_brand` (`brand_id`),
-  KEY `idx_warranty_policy_product` (`product_id`),
-  KEY `idx_warranty_policy_type` (`policy_type`),
-  KEY `idx_warranty_policy_active` (`is_active`),
-  CONSTRAINT `fk_warranty_policy_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`category_id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_warranty_policy_brand` FOREIGN KEY (`brand_id`) REFERENCES `brands` (`brand_id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_warranty_policy_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 DROP TABLE IF EXISTS `warranties`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

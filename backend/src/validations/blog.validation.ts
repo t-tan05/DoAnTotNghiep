@@ -12,8 +12,6 @@ export const createBlogSchema = Joi.object({
         "any.required": "Nội dung là bắt buộc.",
     }),
 
-    categoryId: Joi.string().trim().allow("", null).optional(),
-
     status: Joi.string()
         .valid("DRAFT", "PUBLISHED", "ARCHIVED")
         .default("DRAFT"),
@@ -30,8 +28,6 @@ export const updateBlogSchema = Joi.object({
     content: Joi.string().trim().optional().messages({
         "string.empty": "Nội dung không được để trống.",
     }),
-    
-    categoryId: Joi.string().trim().allow("", null).optional(),
 
     status: Joi.string().valid("DRAFT", "PUBLISHED", "ARCHIVED").optional(),
 

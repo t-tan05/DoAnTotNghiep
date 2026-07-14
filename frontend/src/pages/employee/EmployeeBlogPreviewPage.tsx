@@ -49,7 +49,6 @@ export default function EmployeeBlogPreviewPage() {
                 title: blog.title,
                 content: blog.content,
                 thumbnailUrl: blog.thumbnail_url ?? null,
-                categoryId: blog.category_id ?? null,
                 status: "PUBLISHED",
             });
 

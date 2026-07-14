@@ -143,33 +143,21 @@ model attribute_values {
   @@index([attribute_id], map: "fk_attr_val_attr")
 }
 
-model blog_categories {
-  category_id   String       @id @db.VarChar(50)
-  category_name String       @unique(map: "category_name") @db.VarChar(100)
-  description   String?      @db.Text
-  created_at    DateTime?    @default(now()) @db.DateTime(0)
-  updated_at    DateTime?    @default(now()) @db.DateTime(0)
-  blog_posts    blog_posts[]
-}
-
 model blog_posts {
   post_id           String              @id @db.VarChar(50)
   title             String              @db.VarChar(255)
   slug              String              @unique(map: "slug") @db.VarChar(255)
   content           String              @db.LongText
   author_id         String              @db.VarChar(50)
-  category_id       String?             @db.VarChar(50)
   status            blog_posts_status?  @default(DRAFT)
   published_at      DateTime?           @db.DateTime(0)
   created_at        DateTime?           @default(now()) @db.DateTime(0)
   updated_at        DateTime?           @default(now()) @db.DateTime(0)
   thumbnail_url     String?             @db.VarChar(255)
   users             users               @relation(fields: [author_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_post_author")
-  blog_categories   blog_categories?    @relation(fields: [category_id], references: [category_id], onUpdate: NoAction, map: "fk_post_category")
   cms_section_items cms_section_items[]
 
   @@index([author_id], map: "fk_post_author")
-  @@index([category_id], map: "fk_post_category")
 }
 
 model brands {
@@ -181,7 +169,6 @@ model brands {
   cms_collections      cms_collections[]
   product_lines        product_lines[]
   products             products[]
-  warranty_policies    warranty_policies[]
 }
 
 model carts {
@@ -218,7 +205,6 @@ model categories {
   cms_collections      cms_collections[]
   product_lines        product_lines[]
   products             products[]
-  warranty_policies    warranty_policies[]
 }
 
 model devices {
@@ -383,7 +369,6 @@ model products {
   products_promotions    products_promotions[]
   reviews                reviews[]
   statistics_products    statistics_products[]
-  warranty_policies      warranty_policies[]
 
   @@index([brand_id], map: "fk_product_brand")
   @@index([category_id], map: "fk_product_category")
@@ -525,102 +510,57 @@ model variant_attribute_values {
   @@index([attribute_value_id], map: "fk_vav_value")
 }
 
-model warranty_issue_categories {
-  issue_category_id    String       @id @db.VarChar(50)
-  issue_name           String       @unique(map: "uq_warranty_issue_name") @db.VarChar(100)
-  description          String?      @db.Text
-  is_warranty_eligible Boolean      @default(true)
-  is_active            Boolean      @default(true)
-  created_at           DateTime?    @default(now()) @db.DateTime(0)
-  updated_at           DateTime?    @default(now()) @db.DateTime(0)
-  warranties           warranties[]
-
-  @@index([is_active], map: "idx_warranty_issue_active")
-  @@index([is_warranty_eligible], map: "idx_warranty_issue_eligible")
-}
-
-model warranty_policies {
-  policy_id   String               @id @db.VarChar(50)
-  policy_name String               @db.VarChar(150)
-  category_id String?              @db.VarChar(50)
-  brand_id    String?              @db.VarChar(50)
-  product_id  String?              @db.VarChar(50)
-  from_day    Int                  @default(0)
-  to_day      Int?
-  policy_type warranty_policy_type @default(REPAIR)
-  description String?              @db.Text
-  is_active   Boolean              @default(true)
-  created_at  DateTime?            @default(now()) @db.DateTime(0)
-  updated_at  DateTime?            @default(now()) @db.DateTime(0)
-  warranties  warranties[]
-  brands      brands?              @relation(fields: [brand_id], references: [brand_id], onUpdate: NoAction, map: "fk_warranty_policy_brand")
-  categories  categories?          @relation(fields: [category_id], references: [category_id], onUpdate: NoAction, map: "fk_warranty_policy_category")
-  products    products?            @relation(fields: [product_id], references: [product_id], onUpdate: NoAction, map: "fk_warranty_policy_product")
-
-  @@index([category_id], map: "idx_warranty_policy_category")
-  @@index([brand_id], map: "idx_warranty_policy_brand")
-  @@index([product_id], map: "idx_warranty_policy_product")
-  @@index([policy_type], map: "idx_warranty_policy_type")
-  @@index([is_active], map: "idx_warranty_policy_active")
-}
-
 model warranties {
-  warranty_id                                    String                     @id @db.VarChar(50)
-  warranty_code                                  String                     @unique(map: "uq_warranty_code") @db.VarChar(30)
-  device_id                                      String                     @db.VarChar(50)
-  customer_id                                    String                     @db.VarChar(50)
-  order_id                                       String?                    @db.VarChar(50)
-  issue_category_id                              String?                    @db.VarChar(50)
-  policy_id                                      String?                    @db.VarChar(50)
-  received_date                                  DateTime?                  @db.Date
-  expected_return_date                           DateTime?                  @db.Date
-  return_date                                    DateTime?                  @db.Date
-  issue_description                              String                     @db.Text
-  inspection_note                                String?                    @db.Text
-  inspection_result                              String?                    @db.Text
+  warranty_id                                    String                   @id @db.VarChar(50)
+  warranty_code                                  String                   @unique(map: "uq_warranty_code") @db.VarChar(30)
+  device_id                                      String                   @db.VarChar(50)
+  customer_id                                    String                   @db.VarChar(50)
+  order_id                                       String?                  @db.VarChar(50)
+  received_date                                  DateTime?                @db.Date
+  expected_return_date                           DateTime?                @db.Date
+  return_date                                    DateTime?                @db.Date
+  issue_description                              String                   @db.Text
+  inspection_note                                String?                  @db.Text
+  inspection_result                              String?                  @db.Text
   is_warranty_eligible                           Boolean?
-  estimated_cost                                 Decimal?                   @db.Decimal(12, 2)
-  customer_confirmed_paid_repair                 Boolean                    @default(false)
-  repair_actions                                 String?                    @db.Text
-  accessory_changed                              String?                    @db.VarChar(255)
-  status                                         warranties_status          @default(REQUESTED)
-  pickup_receiver_name                           String?                    @db.VarChar(100)
-  pickup_phone                                   String?                    @db.VarChar(20)
-  pickup_address                                 String?                    @db.VarChar(500)
-  pickup_scheduled_at                            DateTime?                  @db.DateTime(0)
-  picked_up_at                                   DateTime?                  @db.DateTime(0)
-  sent_to_brand_at                               DateTime?                  @db.DateTime(0)
-  brand_name                                     String?                    @db.VarChar(100)
-  brand_ticket_code                              String?                    @db.VarChar(100)
-  brand_returned_at                              DateTime?                  @db.DateTime(0)
-  completed_at                                   DateTime?                  @db.DateTime(0)
+  estimated_cost                                 Decimal?                 @db.Decimal(12, 2)
+  customer_confirmed_paid_repair                 Boolean                  @default(false)
+  repair_actions                                 String?                  @db.Text
+  accessory_changed                              String?                  @db.VarChar(255)
+  status                                         warranties_status        @default(REQUESTED)
+  pickup_receiver_name                           String?                  @db.VarChar(100)
+  pickup_phone                                   String?                  @db.VarChar(20)
+  pickup_address                                 String?                  @db.VarChar(500)
+  pickup_scheduled_at                            DateTime?                @db.DateTime(0)
+  picked_up_at                                   DateTime?                @db.DateTime(0)
+  sent_to_brand_at                               DateTime?                @db.DateTime(0)
+  brand_name                                     String?                  @db.VarChar(100)
+  brand_ticket_code                              String?                  @db.VarChar(100)
+  brand_returned_at                              DateTime?                @db.DateTime(0)
+  completed_at                                   DateTime?                @db.DateTime(0)
   return_method                                  warranty_service_method?
-  return_receiver_name                           String?                    @db.VarChar(100)
-  return_phone                                   String?                    @db.VarChar(20)
-  return_address                                 String?                    @db.VarChar(500)
-  return_scheduled_at                            DateTime?                  @db.DateTime(0)
-  returned_at                                    DateTime?                  @db.DateTime(0)
-  note                                           String?                    @db.Text
-  created_at                                     DateTime?                  @default(now()) @db.DateTime(0)
-  updated_at                                     DateTime?                  @default(now()) @db.DateTime(0)
-  created_by_employee_id                         String?                    @db.VarChar(50)
-  assigned_employee_id                           String?                    @db.VarChar(50)
-  request_channel                                warranty_request_channel   @default(ONLINE)
-  service_method                                 warranty_service_method    @default(PICKUP)
-  users_warranties_assigned_employee_idTousers   users?                     @relation("warranties_assigned_employee_idTousers", fields: [assigned_employee_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warranty_assigned_employee")
-  users_warranties_created_by_employee_idTousers users?                     @relation("warranties_created_by_employee_idTousers", fields: [created_by_employee_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warranty_created_by_employee")
-  users                                          users                      @relation(fields: [customer_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_warranty_customer")
-  devices                                        devices                    @relation(fields: [device_id], references: [device_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_warranty_device")
-  warranty_issue_categories                      warranty_issue_categories? @relation(fields: [issue_category_id], references: [issue_category_id], onUpdate: NoAction, map: "fk_warranty_issue_category")
-  orders                                         orders?                    @relation(fields: [order_id], references: [order_id], onUpdate: NoAction, map: "fk_warranty_order")
-  warranty_policies                              warranty_policies?         @relation(fields: [policy_id], references: [policy_id], onUpdate: NoAction, map: "fk_warranty_policy")
+  return_receiver_name                           String?                  @db.VarChar(100)
+  return_phone                                   String?                  @db.VarChar(20)
+  return_address                                 String?                  @db.VarChar(500)
+  return_scheduled_at                            DateTime?                @db.DateTime(0)
+  returned_at                                    DateTime?                @db.DateTime(0)
+  note                                           String?                  @db.Text
+  created_at                                     DateTime?                @default(now()) @db.DateTime(0)
+  updated_at                                     DateTime?                @default(now()) @db.DateTime(0)
+  created_by_employee_id                         String?                  @db.VarChar(50)
+  assigned_employee_id                           String?                  @db.VarChar(50)
+  request_channel                                warranty_request_channel @default(ONLINE)
+  service_method                                 warranty_service_method  @default(PICKUP)
+  users_warranties_assigned_employee_idTousers   users?                   @relation("warranties_assigned_employee_idTousers", fields: [assigned_employee_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warranty_assigned_employee")
+  users_warranties_created_by_employee_idTousers users?                   @relation("warranties_created_by_employee_idTousers", fields: [created_by_employee_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warranty_created_by_employee")
+  users                                          users                    @relation(fields: [customer_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_warranty_customer")
+  devices                                        devices                  @relation(fields: [device_id], references: [device_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_warranty_device")
+  orders                                         orders?                  @relation(fields: [order_id], references: [order_id], onUpdate: NoAction, map: "fk_warranty_order")
   warranty_attachments                           warranty_attachments[]
   warranty_processes                             warranty_processes[]
 
   @@index([device_id], map: "fk_warranty_device")
   @@index([order_id], map: "idx_warranty_order")
-  @@index([issue_category_id], map: "idx_warranty_issue_category")
-  @@index([policy_id], map: "idx_warranty_policy")
   @@index([customer_id], map: "idx_warranty_customer")
   @@index([status], map: "idx_warranty_status")
   @@index([request_channel], map: "idx_warranty_request_channel")
@@ -880,15 +820,6 @@ enum warranty_service_method {
   DROP_OFF
   PICKUP
   SHIPPING
-}
-
-enum warranty_policy_type {
-  REPLACE_NEW
-  CONDITIONAL_REPLACE
-  REPAIR
-  SEND_TO_BRAND
-  PAID_REPAIR
-  REFUSE
 }
 
 enum warranty_attachment_type {

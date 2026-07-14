@@ -80,8 +80,6 @@ export type Warranty = {
     device_id: string;
     customer_id: string;
     order_id?: string | null;
-    issue_category_id?: string | null;
-    policy_id?: string | null;
     assigned_employee_id?: string | null;
     created_by_employee_id?: string | null;
     status: WarrantyStatus;
@@ -169,7 +167,6 @@ export type CreateWarrantyPayload = {
     serialNumber?: string;
     deviceId?: string;
     issueDescription: string;
-    issueCategoryId?: string;
     serviceMethod?: WarrantyServiceMethod;
     pickupReceiverName?: string;
     pickupPhone?: string;
@@ -224,7 +221,6 @@ export type InspectWarrantyPayload = {
     inspectionResult: string;
     isWarrantyEligible: boolean;
     estimatedCost?: number | null;
-    policyId?: string;
     note?: string;
 };
 

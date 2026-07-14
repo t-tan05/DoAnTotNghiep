@@ -9,31 +9,22 @@ export type BlogAuthor = {
     email: string;
 };
 
-export type BlogCategory = {
-    category_id: string;
-    category_name: string;
-    description?: string | null;
-};
-
 export type Blog = {
     post_id: string;
     title: string;
     slug: string;
     content: string;
     author_id: string;
-    category_id?: string | null;
     status: BlogStatus;
     published_at?: string | null;
     created_at?: string;
     updated_at?: string;
     thumbnail_url?: string | null;
     users?: BlogAuthor;
-    blog_categories?: BlogCategory | null;
 };
 
 export type BlogListQuery = ListQuery<BlogSortBy> & {
     status?: BlogStatus;
-    categoryId?: string;
 };
 
 export type BlogListData = {
@@ -48,7 +39,6 @@ export type BlogDetailData = {
 export type BlogPayload = {
     title: string;
     content: string;
-    categoryId?: string | null;
     status?: BlogStatus;
     thumbnailUrl?: string | null;
 };
