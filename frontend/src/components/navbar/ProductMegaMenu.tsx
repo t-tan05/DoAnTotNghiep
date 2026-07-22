@@ -1,18 +1,30 @@
 import { Link } from "react-router-dom";
-import { productCategories } from "./navbar.data";
+import type { DropdownMenuGroup } from "./navbar.data";
 
-export default function ProductMegaMenu(){
+type ProductMegaMenuProps = {
+    groups: DropdownMenuGroup[];
+};
+
+export default function ProductMegaMenu({ groups }: ProductMegaMenuProps) {
+    const isSingleColumn = groups.length === 1;
+
     return (
-        <div 
+        <div
             className={[
-                "absolute left-0 top-full z-50 w-full border-t bg-white shadow-sm",
+                "absolute left-1/2 top-full z-50 -translate-x-1/2 border bg-white shadow-lg",
+                isSingleColumn ? "min-w-[240px]" : "min-w-[520px]",
                 "invisible translate-y-3 opacity-0 pointer-events-none",
                 "transition-all duration-300 ease-out",
-                "group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-hover:pointer-events-auto",
+                "group-hover/nav:visible group-hover/nav:translate-y-0 group-hover/nav:opacity-100 group-hover/nav:pointer-events-auto",
             ].join(" ")}
         >
-            <div className="mx-auto grid max-w-7xl grid-cols-3 gap-12 px-8 py-12">
-                {productCategories.map((group) => (
+            <div
+                className={[
+                    "grid gap-10 px-8 py-7",
+                    isSingleColumn ? "grid-cols-1" : "grid-cols-2",
+                ].join(" ")}
+            >
+                {groups.map((group) => (
                     <div className="space-y-3" key={group.title}>
                         <h3 className="text-lg font-bold text-foreground">
                             {group.title}
@@ -20,12 +32,12 @@ export default function ProductMegaMenu(){
 
                         <ul className="space-y-3">
                             {group.items.map((item) => (
-                                <li key={item}>
-                                    <Link 
-                                        to={`/products?search=${encodeURIComponent(item)}`}
+                                <li key={item.href}>
+                                    <Link
+                                        to={item.href}
                                         className="text-base text-muted-foreground transition hover:text-blue-700"
                                     >
-                                        {item}
+                                        {item.label}
                                     </Link>
                                 </li>
                             ))}

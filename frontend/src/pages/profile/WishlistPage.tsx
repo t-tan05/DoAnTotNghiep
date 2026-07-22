@@ -167,7 +167,7 @@ export default function WishlistPage() {
                     <HeartOff className="size-14 text-muted-foreground" />
                     <p className="mt-4 font-medium">Bạn chưa có sản phẩm yêu thích nào</p>
                     <Button asChild className="mt-5 h-12 cursor-pointer">
-                        <Link to="/products">Xem sản phẩm</Link>
+                        <Link to="/c/laptop">Xem sản phẩm</Link>
                     </Button>
                 </div>
             ) : (

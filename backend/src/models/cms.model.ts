@@ -258,6 +258,34 @@ export const getAdminCmsCollections = async({
     return { collections, total };
 };
 
+export const findPublicCmsCollectionSuggestions = async(search: string, limit: number) => {
+    const keyword = search.trim();
+
+    return prisma.cms_collections.findMany({
+        where: {
+            is_active: true,
+            OR: [
+                { title: { contains: keyword } },
+                { slug: { contains: keyword } },
+                { description: { contains: keyword } },
+                { categories: { category_name: { contains: keyword } } },
+                { brands: { brand_name: { contains: keyword } } },
+            ],
+        },
+        select: {
+            collection_id: true,
+            title: true,
+            slug: true,
+            page_type: true,
+        },
+        orderBy: [
+            { sort_order: "asc" },
+            { created_at: "desc" },
+        ],
+        take: limit,
+    });
+};
+
 export const createCmsCollection = async(data: Prisma.cms_collectionsUncheckedCreateInput) => {
     return prisma.cms_collections.create({
         data,

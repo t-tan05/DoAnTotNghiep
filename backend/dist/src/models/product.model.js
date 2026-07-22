@@ -11,7 +11,6 @@ export const findProductByNormalizeName = async (normalizedName) => {
             product_images: true,
             product_variants: true,
             products_promotions: true,
-            statistics_products: true,
             reviews: true,
             product_lines: true,
         }

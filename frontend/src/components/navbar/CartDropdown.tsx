@@ -145,7 +145,7 @@ export default function CartDropdown() {
                             Chưa có sản phẩm nào trong giỏ hàng.
                         </p>
                         <Button asChild className="mt-3 w-full cursor-pointer">
-                            <Link to="/products">Mua sắm ngay</Link>
+                            <Link to="/c/laptop">Mua sắm ngay</Link>
                         </Button>
                     </div>
                 ) : (

@@ -12,6 +12,7 @@ import {
     findCmsCollectionById,
     findCmsCollectionBySlug,
     findCmsFilterVariants,
+    findPublicCmsCollectionSuggestions,
     findCmsRuleById,
     findCmsSectionById,
     findCmsSectionItemById,
@@ -455,6 +456,24 @@ export const getAdminCmsCollectionsService = async(query: AdminCmsCollectionQuer
             },
             search: query.search,
         },
+    };
+};
+
+export const getPublicCmsCollectionSuggestionsService = async(query: {
+    search?: string;
+    limit?: number;
+}) => {
+    const search = query.search?.trim() ?? "";
+    const limit = Math.min(Math.max(Number(query.limit) || 6, 1), 10);
+
+    if(!search) {
+        return { collections: [] };
+    }
+
+    const collections = await findPublicCmsCollectionSuggestions(search, limit);
+
+    return {
+        collections,
     };
 };
 

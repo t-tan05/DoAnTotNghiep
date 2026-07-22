@@ -28,23 +28,23 @@ CREATE TABLE `addresses` (
   `address_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `user_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `province` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `ghn_province_id` INT NULL,
+  `ghn_province_id` int NOT NULL,
   `district` VARCHAR(100) NULL,
-  `ghn_legacy_district_id` INT NULL,
+  `ghn_legacy_district_id` int NOT NULL,
   `street` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `ward` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `ghn_ward_code` VARCHAR(20) NULL,
+  `ghn_ward_code` varchar(20) NOT NULL,
   `receiver_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone_number` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `is_default` tinyint(1) DEFAULT '0',
-  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`address_id`),
   KEY `fk_address_user` (`user_id`),
   KEY `idx_user_addess_default` (`user_id`, `is_default`),
   KEY `idx_user_addess_id` (`user_id`, `address_id`),
-  KEY  `idx_addresses_ghn_ward` (`ghn_ward_code`),
-  KEY  `idx_addresses_ghn_legacy_district` (`ghn_legacy_district_id`),
+  KEY `idx_addresses_ghn_ward` (`ghn_ward_code`),
+  KEY `idx_addresses_ghn_legacy_district` (`ghn_legacy_district_id`),
   CONSTRAINT `fk_address_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- Table structure for table `brands`
@@ -55,12 +55,11 @@ DROP TABLE IF EXISTS `brands`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `brands` (
   `brand_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `brand_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `normalized_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `brand_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`brand_id`),
-  UNIQUE KEY `brand_name` (`brand_name`),
-  UNIQUE KEY `normalized_name` (`normalized_name`)
+  UNIQUE KEY `uq_brands_normalized_name` (`normalized_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -122,11 +121,10 @@ DROP TABLE IF EXISTS `categories`;
 CREATE TABLE `categories` (
   `category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `category_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `normalized_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`category_id`),
-  UNIQUE KEY `category_name` (`category_name`),
-  UNIQUE KEY `normalized_name` (`normalized_name`)
+  UNIQUE KEY `uq_categories_normalized_name` (`normalized_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -446,6 +444,7 @@ CREATE TABLE `product_variants` (
   `product_id` varchar(50) NOT NULL,
   `sku` varchar(100) DEFAULT NULL,
   `variant_name` varchar(255) NULL,
+  `detail_description` longtext DEFAULT NULL,
   `price` decimal(15,2) NOT NULL,
   `quantity_in_stock` int NOT NULL DEFAULT '0',
   `reserved_quantity` int NOT NULL DEFAULT '0',
@@ -457,6 +456,7 @@ CREATE TABLE `product_variants` (
   PRIMARY KEY (`variant_id`),
   UNIQUE KEY `sku` (`sku`),
   KEY `fk_variant_product` (`product_id`),
+  KEY `idx_product_variants_variant_name` (`variant_name`),
   CONSTRAINT `fk_variant_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -491,21 +491,6 @@ CREATE TABLE `product_variant_specs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Table structure for table `blog_categories`
---
-
-DROP TABLE IF EXISTS `blog_categories`;
-CREATE TABLE `blog_categories` (
-  `category_id` varchar(50) NOT NULL,
-  `category_name` varchar(100) NOT NULL,
-  `description` text,
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`category_id`),
-  UNIQUE KEY `category_name` (`category_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
 -- Table structure for table `blog_posts`
 --
 
@@ -516,7 +501,6 @@ CREATE TABLE `blog_posts` (
   `slug` varchar(255) NOT NULL,
   `content` longtext NOT NULL,
   `author_id` varchar(50) NOT NULL,
-  `category_id` varchar(50) DEFAULT NULL,
   `status` enum('DRAFT','PUBLISHED','ARCHIVED') DEFAULT 'DRAFT',
   `published_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -525,9 +509,7 @@ CREATE TABLE `blog_posts` (
   PRIMARY KEY (`post_id`),
   UNIQUE KEY `slug` (`slug`),
   KEY `fk_post_author` (`author_id`),
-  KEY `fk_post_category` (`category_id`),
   CONSTRAINT `fk_post_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`user_id`),
-  CONSTRAINT `fk_post_category` FOREIGN KEY (`category_id`) REFERENCES `blog_categories` (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -727,52 +709,6 @@ CREATE TABLE `roles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-
---
--- Table structure for table `statistics`
---
-
-DROP TABLE IF EXISTS `statistics`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `statistics` (
-  `stat_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `stat_date` date NOT NULL,
-  `total_orders` int DEFAULT '0',
-  `total_revenue` decimal(15,2) DEFAULT '0.00',
-  `total_profit` decimal(15,2) DEFAULT '0.00',
-  `total_products_sold` int DEFAULT '0',
-  `total_inventory` int DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`stat_id`),
-  UNIQUE KEY `unique_stat_date` (`stat_date`),
-  KEY `idx_statistics_stat_date` (`stat_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-
---
--- Table structure for table `statistics_products`
---
-
-DROP TABLE IF EXISTS `statistics_products`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `statistics_products` (
-  `stat_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `product_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `quantity_sold` int DEFAULT '0',
-  `revenue` decimal(15,2) DEFAULT '0.00',
-  `profit` decimal(15,2) DEFAULT '0.00',
-  PRIMARY KEY (`stat_id`,`product_id`),
-  KEY `idx_statistics_products_product` (`product_id`),
-  KEY `idx_statistics_products_stat` (`stat_id`),
-  CONSTRAINT `fk_statistics_products_products` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_statistics_products_statistics` FOREIGN KEY (`stat_id`) REFERENCES `statistics` (`stat_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
 --
 -- Table structure for table `users`
 --
@@ -846,23 +782,6 @@ CREATE TABLE `wishlists` (
 -- Table structure for table `warranties`
 --
 
-DROP TABLE IF EXISTS `warranty_issue_categories`;
-CREATE TABLE `warranty_issue_categories` (
-  `issue_category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `issue_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `is_warranty_eligible` tinyint(1) NOT NULL DEFAULT '1',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`issue_category_id`),
-  UNIQUE KEY `uq_warranty_issue_name` (`issue_name`),
-  KEY `idx_warranty_issue_active` (`is_active`),
-  KEY `idx_warranty_issue_eligible` (`is_warranty_eligible`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-DROP TABLE IF EXISTS `warranty_policies`;
-
 
 DROP TABLE IF EXISTS `warranties`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -873,8 +792,6 @@ CREATE TABLE `warranties` (
   `device_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `customer_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `order_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `issue_category_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `policy_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_by_employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `assigned_employee_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `request_channel` enum('ONLINE','STORE','HOTLINE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ONLINE',
@@ -914,8 +831,6 @@ CREATE TABLE `warranties` (
   UNIQUE KEY `uq_warranty_code` (`warranty_code`),
   KEY `fk_warranty_device` (`device_id`),
   KEY `idx_warranty_order` (`order_id`),
-  KEY `idx_warranty_issue_category` (`issue_category_id`),
-  KEY `idx_warranty_policy` (`policy_id`),
   KEY `idx_warranty_status` (`status`),
   KEY `idx_warranty_customer` (`customer_id`),
   KEY `idx_warranty_request_channel` (`request_channel`),
@@ -924,8 +839,6 @@ CREATE TABLE `warranties` (
   KEY `idx_warranty_assigned_employee` (`assigned_employee_id`),
   CONSTRAINT `fk_warranty_customer` FOREIGN KEY (`customer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   CONSTRAINT `fk_warranty_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_warranty_issue_category` FOREIGN KEY (`issue_category_id`) REFERENCES `warranty_issue_categories` (`issue_category_id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_warranty_policy` FOREIGN KEY (`policy_id`) REFERENCES `warranty_policies` (`policy_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_warranty_created_by_employee` FOREIGN KEY (`created_by_employee_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_warranty_assigned_employee` FOREIGN KEY (`assigned_employee_id`) REFERENCES `users` (`user_id`),
   CONSTRAINT `fk_warranty_device` FOREIGN KEY (`device_id`) REFERENCES `devices` (`device_id`) ON DELETE CASCADE

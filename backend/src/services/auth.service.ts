@@ -230,6 +230,8 @@ export const forgotPasswordService = async(email: string) => {
 
     if(!user) throw new AppError("Email không tồn tại", 404);
 
+    if(user.status === "LOCKED") throw new AppError("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ admin để được hỗ trợ", 403);
+
     const resetCode = generateVerifyCode();
 
     const resetCodeExpire = new Date(Date.now() + 10 * 60 * 1000);

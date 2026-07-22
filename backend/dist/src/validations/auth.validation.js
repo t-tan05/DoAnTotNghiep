@@ -6,9 +6,9 @@ export const registerSchema = Joi.object({
         .max(100)
         .required()
         .messages({
-        "string.min": "Tên người dùng phải có ít nhất 2 ký tự",
-        "string.max": "Tên người dùng không được vượt quá 100 ký tự",
-        "any.required": "Tên người dùng là bắt buộc"
+        "string.min": "Tên người dùng phải có ít nhất 2 ký tự.",
+        "string.max": "Tên người dùng không được vượt quá 100 ký tự.",
+        "any.required": "Tên người dùng không được để trống."
     }),
     email: Joi.string()
         .email()
@@ -16,9 +16,9 @@ export const registerSchema = Joi.object({
         .lowercase()
         .required()
         .messages({
-        "string.email": "Email không hợp lệ",
-        "any.required": "Email là bắt buộc",
-        "string.empty": "Email không được để trống",
+        "string.email": "Email không hợp lệ.",
+        "any.required": "Email không được để trống.",
+        "string.empty": "Email không được để trống.",
     }),
     password: Joi.string()
         .trim()
@@ -27,16 +27,16 @@ export const registerSchema = Joi.object({
         .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
         .required()
         .messages({
-        "string.min": "Mật khẩu phải có ít nhất 8 ký tự",
-        "string.pattern.base": "Mật khẩu phải có chữ hoa, chữ thường và số",
-        "any.required": "Mật khẩu là bắt buộc",
+        "string.min": "Mật khẩu phải có ít nhất 8 ký tự.",
+        "string.pattern.base": "Mật khẩu phải có chữ hoa, chữ thường và số.",
+        "any.required": "Mật khẩu không được để trống.",
     }),
     confirmPassword: Joi.string()
         .valid(Joi.ref("password"))
         .required()
         .messages({
-        "any.only": "Xác nhận mật khẩu không khớp",
-        "any.required": "Xác nhận mật khẩu là bắt buộc",
+        "any.only": "Xác nhận mật khẩu không khớp.",
+        "any.required": "Xác nhận mật khẩu không được để trống.",
     })
 });
 export const loginSchema = Joi.object({
@@ -46,15 +46,15 @@ export const loginSchema = Joi.object({
         .lowercase()
         .required()
         .messages({
-        "string.email": "Email không hợp lệ",
-        "any.required": "Email là bắt buộc",
-        "string.empty": "Email không được để trống",
+        "string.email": "Email không hợp lệ.",
+        "any.required": "Email không được để trống.",
+        "string.empty": "Email không được để trống.",
     }),
     password: Joi.string()
         .required()
         .messages({
-        "string.empty": "Mật khẩu không được để trống",
-        "any.required": "Mật khẩu là bắt buộc",
+        "string.empty": "Mật khẩu không được để trống.",
+        "any.required": "Mật khẩu không được để trống.",
     }),
 });
 export const verifyEmailSchema = Joi.object({
@@ -64,9 +64,9 @@ export const verifyEmailSchema = Joi.object({
         .lowercase()
         .required()
         .messages({
-        "string.email": "Email không hợp lệ",
-        "any.required": "Email là bắt buộc",
-        "string.empty": "Email không được để trống",
+        "string.email": "Email không hợp lệ.",
+        "any.required": "Email không được để trống.",
+        "string.empty": "Email không được để trống.",
     }),
     verifyToken: Joi.string()
         .trim()
@@ -74,9 +74,9 @@ export const verifyEmailSchema = Joi.object({
         .alphanum()
         .required()
         .messages({
-        "string.length": "Mã xác thực phải có đúng 6 ký tự",
-        "string.alphanum": "Mã xác thực chỉ được gồm chữ và số",
-        "any.required": "Mã xác thực là bắt buộc",
+        "string.length": "Mã xác thực phải có đúng 6 ký tự.",
+        "string.alphanum": "Mã xác thực chỉ được gồm chữ và số.",
+        "any.required": "Mã xác thực không được để trống.",
     }),
 });
 export const forgotPasswordSchema = Joi.object({
@@ -86,9 +86,9 @@ export const forgotPasswordSchema = Joi.object({
         .lowercase()
         .required()
         .messages({
-        "string.email": "Email không hợp lệ",
-        "any.required": "Email là bắt buộc",
-        "string.empty": "Email không được để trống",
+        "string.email": "Email không hợp lệ.",
+        "any.required": "Email không được để trống.",
+        "string.empty": "Email không được để trống.",
     }),
 });
 export const resetPasswordSchema = Joi.object({
@@ -98,9 +98,9 @@ export const resetPasswordSchema = Joi.object({
         .lowercase()
         .required()
         .messages({
-        "string.email": "Email không hợp lệ",
-        "any.required": "Email là bắt buộc",
-        "string.empty": "Email không được để trống",
+        "string.email": "Email không hợp lệ.",
+        "any.required": "Email không được để trống.",
+        "string.empty": "Email không được để trống.",
     }),
     resetCode: Joi.string()
         .trim()
@@ -108,9 +108,9 @@ export const resetPasswordSchema = Joi.object({
         .alphanum()
         .required()
         .messages({
-        "string.length": "Mã xác thực phải có đúng 6 ký tự",
-        "string.alphanum": "Mã xác thực chỉ được gồm chữ và số",
-        "any.required": "Mã xác thực là bắt buộc",
+        "string.length": "Mã xác thực phải có đúng 6 ký tự.",
+        "string.alphanum": "Mã xác thực chỉ được gồm chữ và số.",
+        "any.required": "Mã xác thực không được để trống",
     }),
     newPassword: Joi.string()
         .trim()
@@ -119,15 +119,15 @@ export const resetPasswordSchema = Joi.object({
         .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/)
         .required()
         .messages({
-        "string.min": "Mật khẩu phải có ít nhất 8 ký tự",
-        "string.pattern.base": "Mật khẩu phải có chữ hoa, chữ thường và số",
-        "any.required": "Mật khẩu là bắt buộc",
+        "string.min": "Mật khẩu phải có ít nhất 8 ký tự.",
+        "string.pattern.base": "Mật khẩu phải có chữ hoa, chữ thường và số.",
+        "any.required": "Mật khẩu là không được để trống.",
     }),
     confirmPassword: Joi.string()
         .valid(Joi.ref("newPassword"))
         .required()
         .messages({
-        "any.only": "Xác nhận mật khẩu không khớp",
-        "any.required": "Xác nhận mật khẩu là bắt buộc",
+        "any.only": "Xác nhận mật khẩu không khớp.",
+        "any.required": "Xác nhận mật khẩu không được để trống.",
     })
 });

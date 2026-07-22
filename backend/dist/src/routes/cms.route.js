@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { createCmsCollectionController, createCmsRuleController, createCmsSectionController, createCmsSectionItemController, bulkCreateCmsSectionItemsController, deleteCmsCollectionController, deleteCmsRuleController, deleteCmsSectionController, deleteCmsSectionItemController, getAdminCmsCollectionDetailController, getAdminCmsCollectionsController, getPublicCmsCollectionController, getPublicCmsCollectionFiltersController, getPublicCmsCollectionProductsController, updateCmsCollectionController, updateCmsRuleController, updateCmsSectionController, updateCmsSectionItemController, } from "#controllers/cms.controller";
+import { createCmsCollectionController, createCmsRuleController, createCmsSectionController, createCmsSectionItemController, bulkCreateCmsSectionItemsController, deleteCmsCollectionController, deleteCmsRuleController, deleteCmsSectionController, deleteCmsSectionItemController, getAdminCmsCollectionDetailController, getAdminCmsCollectionsController, getPublicCmsCollectionController, getPublicCmsCollectionFiltersController, getPublicCmsCollectionProductsController, getPublicCmsCollectionSuggestionsController, updateCmsCollectionController, updateCmsRuleController, updateCmsSectionController, updateCmsSectionItemController, } from "#controllers/cms.controller";
 import { VerifyToken } from "#middlewares/Auth";
 import { CheckRole } from "#middlewares/CheckRole";
 import { createCmsCollectionSchema, createCmsRuleSchema, createCmsSectionItemSchema, bulkCreateCmsSectionItemsSchema, createCmsSectionSchema, updateCmsCollectionSchema, updateCmsRuleSchema, updateCmsSectionItemSchema, updateCmsSectionSchema, } from "#validations/cms.validation";
 import { Validate } from "#middlewares/Validate";
 const router = Router();
+router.get("/collections/suggestions", getPublicCmsCollectionSuggestionsController);
 router.get("/collections/public/:slug", getPublicCmsCollectionController);
 router.get("/collections/public/:slug/products", getPublicCmsCollectionProductsController);
 router.get("/collections/public/:slug/filters", getPublicCmsCollectionFiltersController);

@@ -154,6 +154,28 @@ function variantMatchesSelection(variant: AdminProductVariant, selection: Record
     });
 }
 
+function slugify(value: string) {
+    return value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\u0111/g, "d")
+        .replace(/\u0110/g, "d")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+function cmsHref(...parts: Array<string | null | undefined>) {
+    const slug = parts
+        .filter((part): part is string => Boolean(part))
+        .map(slugify)
+        .filter(Boolean)
+        .join("-");
+
+    return slug ? `/c/${slug}` : "/";
+}
+
 export default function ProductDetailPage() {
     const { productId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -514,21 +536,65 @@ export default function ProductDetailPage() {
     const visibleSpecRows = specExpanded ? specRows : specRows.slice(0, 4);
     const canToggleSpecs = specRows.length > 4;
     const canToggleDetail = detailContent.length > 900;
+    const categoryName = product.categories?.category_name ?? "";
+    const brandName = product.brands?.brand_name ?? "";
+    const lineName = product.product_lines?.line_name ?? "";
+    const lineSlug = product.product_lines?.slug ?? lineName;
+    const breadcrumbItems = [
+        categoryName
+            ? {
+                label: categoryName,
+                href: cmsHref(categoryName),
+            }
+            : null,
+        brandName
+            ? {
+                label: brandName,
+                href: cmsHref(categoryName, brandName),
+            }
+            : null,
+        lineName
+            ? {
+                label: lineName,
+                href: cmsHref(categoryName, brandName, lineSlug),
+            }
+            : null,
+        {
+            label: displayName,
+            href: "",
+        },
+    ].filter((item): item is { label: string; href: string } => Boolean(item));
 
     return (
         <section className="bg-[#f5f6fb]">
             <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-                <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <Link to="/" className="flex items-center gap-1 text-blue-700">
-                        <Home className="h-4 w-4" />
+                <nav className="-mx-4 mb-4 flex min-h-11 items-center gap-2 overflow-x-auto bg-[#eef1f8] px-4 text-sm text-[#747c96] md:-mx-6 md:px-6">
+                    <Link to="/" className="flex shrink-0 items-center gap-2 text-blue-600 transition hover:text-blue-800">
+                        <Home className="h-4 w-4 opacity-50" />
                         Trang chủ
                     </Link>
-                    <ChevronRight className="h-4 w-4" />
-                    <span>{product.brands?.brand_name}</span>
-                    <ChevronRight className="h-4 w-4" />
-                    <span>{product.categories?.category_name}</span>
-                    <ChevronRight className="h-4 w-4" />
-                    <span className="line-clamp-1 text-foreground">{displayName}</span>
+
+                    {breadcrumbItems.map((item, index) => {
+                        const isLast = index === breadcrumbItems.length - 1;
+
+                        return (
+                            <span key={`${item.label}-${index}`} className="flex min-w-0 shrink-0 items-center gap-2">
+                                <ChevronRight className="h-4 w-4 shrink-0 text-[#a5abc0]" />
+                                {isLast || !item.href ? (
+                                    <span className="max-w-[520px] truncate text-[#68708c]">
+                                        {item.label}
+                                    </span>
+                                ) : (
+                                    <Link
+                                        to={item.href}
+                                        className="whitespace-nowrap text-blue-600 transition hover:text-blue-800"
+                                    >
+                                        {item.label}
+                                    </Link>
+                                )}
+                            </span>
+                        );
+                    })}
                 </nav>
 
                 <div className="rounded-lg bg-white p-4 shadow-sm">
@@ -660,13 +726,6 @@ export default function ProductDetailPage() {
                                                         selected && "border-blue-700 text-blue-700 ring-1 ring-blue-700",
                                                     )}
                                                 >
-                                                    {/* {option.imageUrl && option.value!=="Dung lượng" &&(
-                                                        <img
-                                                            src={option.imageUrl}
-                                                            alt={option.value}
-                                                            className="h-9 w-9 rounded object-contain"
-                                                        />
-                                                    )} */}
                                                     <span>{option.value}</span>
                                                     {selected && (
                                                         <span className="absolute bottom-0 right-0 h-0 w-0 border-b-[18px] border-l-[18px] border-b-blue-700 border-l-transparent" />

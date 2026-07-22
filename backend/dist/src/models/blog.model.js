@@ -8,7 +8,6 @@ const blogInclude = {
             email: true,
         },
     },
-    blog_categories: true,
 };
 export const findBlogById = async (postId) => {
     return await prisma.blog_posts.findUnique({
@@ -27,11 +26,10 @@ export const findBlogBySlug = async (slug) => {
     });
 };
 export const findPublicBlogsWithQuery = async (params) => {
-    const { page, limit, search, sortBy, sortOrder, categoryId } = params;
+    const { page, limit, search, sortBy, sortOrder } = params;
     const skip = (page - 1) * limit;
     const where = {
         status: "PUBLISHED",
-        ...(categoryId ? { category_id: categoryId } : {}),
         ...(search
             ? {
                 OR: [
@@ -57,11 +55,10 @@ export const findPublicBlogsWithQuery = async (params) => {
     return { blogs, totalItems };
 };
 export const findAdminBlogsWithQuery = async (params) => {
-    const { page, limit, search, sortBy, sortOrder, status, categoryId } = params;
+    const { page, limit, search, sortBy, sortOrder, status } = params;
     const skip = (page - 1) * limit;
     const where = {
         ...(status ? { status } : {}),
-        ...(categoryId ? { category_id: categoryId } : {}),
         ...(search
             ? {
                 OR: [
@@ -119,13 +116,6 @@ export const deleteBlog = async (postId) => {
     return await prisma.blog_posts.delete({
         where: {
             post_id: postId,
-        },
-    });
-};
-export const findBlogCategoryById = async (categoryId) => {
-    return await prisma.blog_categories.findUnique({
-        where: {
-            category_id: categoryId,
         },
     });
 };

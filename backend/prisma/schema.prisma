@@ -106,21 +106,21 @@ model cms_collection_rules {
 }
 
 model addresses {
-  address_id             String    @id @db.VarChar(50)
-  user_id                String    @db.VarChar(50)
-  province               String    @db.VarChar(100)
-  district               String?   @db.VarChar(100)
-  ghn_province_id        Int?
-  street                 String    @db.VarChar(255)
-  ward                   String    @db.VarChar(100)
-  ghn_ward_code          String?   @db.VarChar(20)
-  ghn_legacy_district_id Int?
-  receiver_name          String    @db.VarChar(100)
-  phone_number           String    @db.VarChar(20)
-  is_default             Boolean?  @default(false)
-  created_at             DateTime? @default(now()) @db.Timestamp(0)
-  updated_at             DateTime? @default(now()) @db.Timestamp(0)
-  users                  users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_address_user")
+  address_id             String   @id @db.VarChar(50)
+  user_id                String   @db.VarChar(50)
+  province               String   @db.VarChar(100)
+  district               String?  @db.VarChar(100)
+  ghn_province_id        Int
+  street                 String   @db.VarChar(255)
+  ward                   String   @db.VarChar(100)
+  ghn_ward_code          String   @db.VarChar(20)
+  ghn_legacy_district_id Int
+  receiver_name          String   @db.VarChar(100)
+  phone_number           String   @db.VarChar(20)
+  is_default             Boolean  @default(false)
+  created_at             DateTime @default(now()) @db.Timestamp(0)
+  updated_at             DateTime @default(now()) @db.Timestamp(0)
+  users                  users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_address_user")
   orders                 orders[]
 
   @@index([user_id], map: "fk_address_user")
@@ -162,8 +162,8 @@ model blog_posts {
 
 model brands {
   brand_id             String                 @id @db.VarChar(50)
-  brand_name           String                 @unique(map: "brand_name") @db.VarChar(50)
-  normalized_name      String                 @unique(map: "normalized_name") @db.VarChar(50)
+  brand_name           String                 @db.VarChar(100)
+  normalized_name      String                 @unique(map: "uq_brands_normalized_name") @db.VarChar(100)
   description          String?                @db.Text
   cms_collection_rules cms_collection_rules[]
   cms_collections      cms_collections[]
@@ -198,8 +198,8 @@ model carts_items {
 
 model categories {
   category_id          String                 @id @db.VarChar(50)
-  category_name        String                 @unique(map: "category_name") @db.VarChar(100)
-  normalized_name      String                 @unique(map: "normalized_name") @db.VarChar(50)
+  category_name        String                 @db.VarChar(100)
+  normalized_name      String                 @unique(map: "uq_categories_normalized_name") @db.VarChar(100)
   description          String?                @db.Text
   cms_collection_rules cms_collection_rules[]
   cms_collections      cms_collections[]
@@ -368,7 +368,6 @@ model products {
   product_lines          product_lines?           @relation(fields: [line_id], references: [line_id], onUpdate: NoAction, map: "fk_products_line")
   products_promotions    products_promotions[]
   reviews                reviews[]
-  statistics_products    statistics_products[]
 
   @@index([brand_id], map: "fk_product_brand")
   @@index([category_id], map: "fk_product_category")
@@ -421,35 +420,6 @@ model roles {
   role_name   String        @id @db.VarChar(50)
   description String?       @db.VarChar(100)
   users_roles users_roles[]
-}
-
-model statistics {
-  stat_id             String                @id @db.VarChar(50)
-  stat_date           DateTime              @unique(map: "unique_stat_date") @db.Date
-  total_orders        Int?                  @default(0)
-  total_revenue       Decimal?              @default(0.00) @db.Decimal(15, 2)
-  total_profit        Decimal?              @default(0.00) @db.Decimal(15, 2)
-  total_products_sold Int?                  @default(0)
-  total_inventory     Int?                  @default(0)
-  created_at          DateTime?             @default(now()) @db.Timestamp(0)
-  updated_at          DateTime?             @default(now()) @db.Timestamp(0)
-  statistics_products statistics_products[]
-
-  @@index([stat_date], map: "idx_statistics_stat_date")
-}
-
-model statistics_products {
-  stat_id       String     @db.VarChar(50)
-  product_id    String     @db.VarChar(50)
-  quantity_sold Int?       @default(0)
-  revenue       Decimal?   @default(0.00) @db.Decimal(15, 2)
-  profit        Decimal?   @default(0.00) @db.Decimal(15, 2)
-  products      products   @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_statistics_products_products")
-  statistics    statistics @relation(fields: [stat_id], references: [stat_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_statistics_products_statistics")
-
-  @@id([stat_id, product_id])
-  @@index([product_id], map: "idx_statistics_products_product")
-  @@index([stat_id], map: "idx_statistics_products_stat")
 }
 
 model users {

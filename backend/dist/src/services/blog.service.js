@@ -1,4 +1,4 @@
-import { createBlog, deleteBlog, findAdminBlogsWithQuery, findBlogById, findBlogBySlug, findBlogCategoryById, findPublicBlogsWithQuery, updateBlog, } from "#models/blog.model";
+import { createBlog, deleteBlog, findAdminBlogsWithQuery, findBlogById, findBlogBySlug, findPublicBlogsWithQuery, updateBlog, } from "#models/blog.model";
 import AppError from "#utils/AppError";
 import { createSlug } from "#utils/createSlug";
 import crypto from "crypto";
@@ -15,15 +15,6 @@ const buildUniqueSlug = async (title, excludeProstId) => {
         }
         slug = `${baseSlug}-${index}`;
         index++;
-    }
-};
-//Hàm kiểm tra category-blog có tồn tại không
-const ensureBlogCategoryExists = async (categoryId) => {
-    if (!categoryId)
-        return;
-    const category = await findBlogCategoryById(categoryId);
-    if (!category) {
-        throw new AppError("Danh mục blog không tồn tại.", 404);
     }
 };
 //Hàm kiểm tra ai đang muốn sửa blog
@@ -48,7 +39,6 @@ export const getPublicBlogsService = async (params) => {
             search: params.search,
             filters: {
                 status: "PUBLISHED",
-                categoryId: params.categoryId,
             },
         },
     };
@@ -78,7 +68,6 @@ export const getAdminBlogsService = async (params) => {
             search: params.search,
             filters: {
                 status: params.status,
-                categoryId: params.categoryId,
             },
         },
     };
@@ -90,7 +79,6 @@ export const getAdminBlogDetailService = async (postId) => {
     return { blog };
 };
 export const createBlogService = async (authorId, payload) => {
-    await ensureBlogCategoryExists(payload.categoryId);
     const slug = await buildUniqueSlug(payload.title);
     const status = payload.status ?? "DRAFT";
     const blog = await createBlog({
@@ -99,7 +87,6 @@ export const createBlogService = async (authorId, payload) => {
         slug,
         content: payload.content,
         author_id: authorId,
-        category_id: payload.categoryId || null,
         status,
         published_at: status === "PUBLISHED" ? new Date() : null,
         thumbnail_url: payload.thumbnailUrl || null,
@@ -113,13 +100,11 @@ export const updateBlogService = async (postId, userId, payload) => {
     if (!canEmployeeModifyBlog(blog, userId)) {
         throw new AppError("Bạn chỉ được cập nhật bài viết do chính mình tạo.", 403);
     }
-    await ensureBlogCategoryExists(payload.categoryId);
     const nextStatus = payload.status ?? blog.status;
     const shouldSetPublishedAt = blog.status !== "PUBLISHED" && nextStatus === "PUBLISHED";
     const updateData = {
         ...(payload.title !== undefined ? { title: payload.title.trim() } : {}),
         ...(payload.content !== undefined ? { content: payload.content } : {}),
-        ...(payload.categoryId !== undefined ? { category_id: payload.categoryId || null } : {}),
         ...(payload.status !== undefined ? { status: payload.status } : {}),
         ...(payload.thumbnailUrl !== undefined ? { thumbnail_url: payload.thumbnailUrl || null } : {}),
         ...(shouldSetPublishedAt ? { published_at: new Date() } : {}),

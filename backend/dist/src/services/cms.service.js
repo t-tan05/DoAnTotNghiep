@@ -1,4 +1,4 @@
-import { createCmsCollection, createCmsRule, createCmsSection, createCmsSectionItem, createCmsSectionItems, deleteCmsCollection, deleteCmsRule, deleteCmsSection, deleteCmsSectionItem, findActiveCmsCollectionBySlug, findCmsCollectionById, findCmsCollectionBySlug, findCmsFilterVariants, findCmsRuleById, findCmsSectionById, findCmsSectionItemById, findPublicVariantsByCmsCollection, getAdminCmsCollections, updateCmsCollection, updateCmsRule, updateCmsSection, updateCmsSectionItem, } from "#models/cms.model";
+import { createCmsCollection, createCmsRule, createCmsSection, createCmsSectionItem, createCmsSectionItems, deleteCmsCollection, deleteCmsRule, deleteCmsSection, deleteCmsSectionItem, findActiveCmsCollectionBySlug, findCmsCollectionById, findCmsCollectionBySlug, findCmsFilterVariants, findPublicCmsCollectionSuggestions, findCmsRuleById, findCmsSectionById, findCmsSectionItemById, findPublicVariantsByCmsCollection, getAdminCmsCollections, updateCmsCollection, updateCmsRule, updateCmsSection, updateCmsSectionItem, } from "#models/cms.model";
 import AppError from "#utils/AppError";
 import crypto from "crypto";
 import { groupPublicVariants, sortPublicProductCards } from "#services/product.service";
@@ -332,6 +332,17 @@ export const getAdminCmsCollectionsService = async (query) => {
             },
             search: query.search,
         },
+    };
+};
+export const getPublicCmsCollectionSuggestionsService = async (query) => {
+    const search = query.search?.trim() ?? "";
+    const limit = Math.min(Math.max(Number(query.limit) || 6, 1), 10);
+    if (!search) {
+        return { collections: [] };
+    }
+    const collections = await findPublicCmsCollectionSuggestions(search, limit);
+    return {
+        collections,
     };
 };
 export const getAdminCmsCollectionDetailService = async (collectionId) => {

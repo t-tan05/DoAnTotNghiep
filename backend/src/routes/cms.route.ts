@@ -14,6 +14,7 @@ import {
     getPublicCmsCollectionController,
     getPublicCmsCollectionFiltersController,
     getPublicCmsCollectionProductsController,
+    getPublicCmsCollectionSuggestionsController,
     updateCmsCollectionController,
     updateCmsRuleController,
     updateCmsSectionController,
@@ -36,6 +37,7 @@ import { Validate } from "#middlewares/Validate";
 
 const router = Router();
 
+router.get("/collections/suggestions", getPublicCmsCollectionSuggestionsController);
 router.get("/collections/public/:slug", getPublicCmsCollectionController);
 router.get("/collections/public/:slug/products", getPublicCmsCollectionProductsController);
 router.get("/collections/public/:slug/filters", getPublicCmsCollectionFiltersController);

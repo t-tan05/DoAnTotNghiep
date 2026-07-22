@@ -20,7 +20,7 @@ export default function Footer() {
           <h3 className="font-semibold">Danh mục</h3>
 
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link to="/products">Sản phẩm</Link></li>
+            <li><Link to="/c/laptop">Sản phẩm</Link></li>
             <li><Link to="/tin-tuc">Tin tức</Link></li>
             <li><Link to="/gioi-thieu">Giới thiệu</Link></li>
             <li><Link to="/lien-he">Liên hệ</Link></li>

@@ -8,6 +8,7 @@ import type {
     PublicCmsCollectionData,
     PublicCmsCollectionFiltersData,
     PublicCmsCollectionProductsData,
+    PublicCmsCollectionSuggestionsData,
     BulkCmsSectionItemsPayload,
     CmsSectionItemPayload,
     CmsSectionPayload,
@@ -49,6 +50,24 @@ export const cmsService = {
 
         if(!res.data.data) {
             throw new Error("Không lấy được bộ lọc CMS.");
+        }
+
+        return res.data.data;
+    },
+
+    getPublicCollectionSuggestions: async (search: string, limit = 6) => {
+        const res = await api.get<BackendSuccess<PublicCmsCollectionSuggestionsData>>(
+            "/cms/collections/suggestions",
+            {
+                params: {
+                    search,
+                    limit,
+                },
+            },
+        );
+
+        if(!res.data.data) {
+            throw new Error("Không lấy được gợi ý CMS.");
         }
 
         return res.data.data;

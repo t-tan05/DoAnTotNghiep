@@ -73,7 +73,6 @@ export default function AppRoute() {
                 <Route path="/gioi-thieu" element={<div>Gioi thieu</div>} />
                 <Route path="/tin-tuc" element={<BlogListPage />} />
                 <Route path="/tin-tuc/:postId" element={<BlogDetailPage />} />
-                <Route path="/products" element={<ProductListPage />} />
                 <Route path="/c/:cmsSlug" element={<ProductListPage />} />
                 <Route path="/products/:productId" element={<ProductDetailPage />} />
                 <Route path="/chinh-sach/bao-hanh" element={<WarrantyPolicyPage />} />

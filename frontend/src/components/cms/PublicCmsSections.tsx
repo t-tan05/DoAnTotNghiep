@@ -301,26 +301,13 @@ export default function PublicCmsSections({ collection, afterBanner, productPage
         ) : null;
     }
 
-    let insertedAfterBanner = false;
-
     return (
         <div className="space-y-5">
+            {afterBanner}
+
             {sections.map((section) => {
                 if(section.section_type === "BANNER") {
-                    const banner = <BannerSection key={section.section_id} section={section} />;
-
-                    if(!insertedAfterBanner) {
-                        insertedAfterBanner = true;
-
-                        return (
-                            <div key={section.section_id} className="space-y-5">
-                                {banner}
-                                {afterBanner}
-                            </div>
-                        );
-                    }
-
-                    return banner;
+                    return <BannerSection key={section.section_id} section={section} />;
                 }
 
                 if(section.section_type === "SHORTCUT_BUTTONS") {
@@ -351,8 +338,6 @@ export default function PublicCmsSections({ collection, afterBanner, productPage
 
                 return null;
             })}
-
-            {!insertedAfterBanner ? afterBanner : null}
         </div>
     );
 }

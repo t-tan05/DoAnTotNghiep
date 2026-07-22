@@ -249,3 +249,14 @@ export type PublicCmsCollectionFiltersData = {
     }>;
     maxPrice: number;
 };
+
+export type PublicCmsCollectionSuggestion = {
+    collection_id: string;
+    title: string;
+    slug: string;
+    page_type: CmsPageType;
+};
+
+export type PublicCmsCollectionSuggestionsData = {
+    collections: PublicCmsCollectionSuggestion[];
+};

@@ -1,19 +1,16 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { navItems, productCategories } from "./navbar.data";
+import { dropdownMenus, navItems } from "./navbar.data";
+import type { DropdownMenuGroup, DropdownMenuKey } from "./navbar.data";
 import { Link } from "react-router-dom";
-
-type ProductCategory = {
-    title: string;
-    items: string[];
-}
 
 type MobileMenuProps = {
     open: boolean;
     activePanel: "main" | "products" | "category";
-    selectedCategory: ProductCategory | null;
+    selectedCategory: DropdownMenuGroup | null;
+    activeMenuKey: DropdownMenuKey | null;
     onClose: () => void;
-    onOpenProducts: () => void;
-    onOpenCategory: (category: ProductCategory) => void;
+    onOpenProducts: (menuKey: DropdownMenuKey) => void;
+    onOpenCategory: (category: DropdownMenuGroup) => void;
     onBackMain: () => void;
     onBackProducts: () => void;
 };
@@ -22,15 +19,18 @@ export default function MobileMenu({
     open,
     activePanel,
     selectedCategory,
+    activeMenuKey,
     onClose,
     onOpenProducts,
     onOpenCategory,
     onBackMain,
     onBackProducts,
 } : MobileMenuProps) {
+    const activeGroups = activeMenuKey ? dropdownMenus[activeMenuKey] : [];
+    const activeMenuLabel = navItems.find((item) => item.menuKey === activeMenuKey)?.label ?? "";
 
     return (
-        <div 
+        <div
             className={[
                 "fixed inset-0 z-[100] lg:hidden",
                 "transition-colors duration-300 ease-out",
@@ -40,7 +40,7 @@ export default function MobileMenu({
             ].join(" ")}
             onClick={onClose}
         >
-            <aside 
+            <aside
                 onClick={(e) => e.stopPropagation()}
                 className={[
                     "h-full w-[86vw] max-w-[610px] bg-white shadow-xl",
@@ -62,12 +62,12 @@ export default function MobileMenu({
                 {activePanel === "main" && (
                     <nav className="animate-in fade-in slide-in-from-left-3 duration-200 px-7 py-5">
                         {navItems.map((item) => {
-                            if(item.hasMegaMenu){
+                            if(item.menuKey){
                                 return (
                                     <button
                                         key={item.label}
                                         type="button"
-                                        onClick={onOpenProducts}
+                                        onClick={() => onOpenProducts(item.menuKey!)}
                                         className="flex h-14 w-full items-center justify-between border-b text-left text-base font-medium uppercase"
                                     >
                                         {item.label}
@@ -98,10 +98,10 @@ export default function MobileMenu({
                             className="flex h-14 w-full items-center gap-2 border-b text-left text-base font-medium uppercase"
                         >
                             <ChevronLeft className="size-5" />
-                            Sản phẩm
+                            {activeMenuLabel}
                         </button>
 
-                        {productCategories.map((group) => (
+                        {activeGroups.map((group) => (
                             <button
                                 key={group.title}
                                 type="button"
@@ -128,12 +128,12 @@ export default function MobileMenu({
 
                         {selectedCategory.items.map((item) => (
                             <Link
-                                key={item}
-                                to={`/products?category=${encodeURIComponent(selectedCategory.title)}&type=${encodeURIComponent(item)}`}
+                                key={item.href}
+                                to={item.href}
                                 onClick={onClose}
                                 className="flex h-14 items-center border-b text-base text-muted-foreground"
                             >
-                                {item}
+                                {item.label}
                             </Link>
                         ))}
                     </nav>

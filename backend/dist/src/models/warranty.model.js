@@ -40,8 +40,6 @@ const warrantyInclude = {
             },
         },
     },
-    warranty_issue_categories: true,
-    warranty_policies: true,
     warranty_attachments: {
         orderBy: {
             created_at: "asc",

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { cmsService } from "@/services/cms.service";
-import { productService } from "@/services/product.service";
 import { wishlistService } from "@/services/wishlist.service";
 import type { CmsCollection } from "@/types/cms.type";
 import type {
@@ -171,14 +170,16 @@ function getCmsBreadcrumbs(
     if(category) {
         items.push({
             label: category.name,
-            href: `/products?categoryId=${encodeURIComponent(category.id)}`,
+            href: `/c/${slugify(category.name)}`,
         });
     }
 
     if(brand) {
         items.push({
             label: brand.name,
-            href: `/products?brandId=${encodeURIComponent(brand.id)}`,
+            href: category
+                ? `/c/${slugify(category.name)}-${slugify(brand.name)}`
+                : `/c/${slugify(brand.name)}`,
         });
     }
 
@@ -211,7 +212,6 @@ export default function ProductListPage() {
     const minPrice = searchParams.get("minPrice") || "";
     const maxPrice = searchParams.get("maxPrice") || "";
     const sortBy = searchParams.get("sortBy") || "newest";
-    const cmsParam = searchParams.get("cms") || "";
 
     const [draftSearch, setDraftSearch] = useState(search);
     const [draftMinPrice, setDraftMinPrice] = useState(minPrice);
@@ -220,8 +220,9 @@ export default function ProductListPage() {
     const [maxAvailablePrice, setMaxAvailablePrice] = useState(0);
     const [cmsCollection, setCmsCollection] = useState<CmsCollection | null>(null);
     const [cmsLoading, setCmsLoading] = useState(false);
+    const [cmsNotFound, setCmsNotFound] = useState(false);
 
-    const cmsSlug = normalizeCmsSlug(routeCmsSlug || cmsParam);
+    const cmsSlug = normalizeCmsSlug(routeCmsSlug || "");
     const isCmsPage = Boolean(cmsSlug);
 
     useEffect(() => {
@@ -248,10 +249,6 @@ export default function ProductListPage() {
 
     function clearFilters() {
         const next = new URLSearchParams();
-
-        if(cmsParam && !routeCmsSlug) {
-            next.set("cms", cmsParam);
-        }
 
         setSearchParams(next);
     }
@@ -311,15 +308,18 @@ export default function ProductListPage() {
     async function loadCmsCollection() {
         if(!cmsSlug) {
             setCmsCollection(null);
+            setCmsNotFound(true);
             return;
         }
 
         try {
             setCmsLoading(true);
+            setCmsNotFound(false);
             const data = await cmsService.getPublicCollection(cmsSlug);
             setCmsCollection(data);
         }catch{
             setCmsCollection(null);
+            setCmsNotFound(true);
         }finally{
             setCmsLoading(false);
         }
@@ -328,6 +328,16 @@ export default function ProductListPage() {
     async function loadProducts() {
         try {
             setLoading(true);
+
+            if(!isCmsPage || cmsLoading || cmsNotFound || !cmsCollection) {
+                setProducts([]);
+                setBrands([]);
+                setCategories([]);
+                setTotalItems(0);
+                setTotalPages(1);
+                setWishlistMap({});
+                return;
+            }
 
             if(isCmsPage) {
                 const cmsGridProducts = getCmsProductGridProducts(cmsCollection);
@@ -426,46 +436,6 @@ export default function ProductListPage() {
 
                 return;
             }
-
-            const data = await productService.getAllPublic({
-                page,
-                limit: 20,
-                search: search || undefined,
-                brandId: brandId || undefined,
-                categoryId: categoryId || undefined,
-                minPrice: minPrice ? Number(minPrice) : undefined,
-                maxPrice: maxPrice ? Number(maxPrice) : undefined,
-                sortBy: sortBy as any,
-            });
-
-            setMaxAvailablePrice(Number(data.filters.maxPrice ?? 0));
-
-            if(!searchParams.has("minPrice")) {
-                setDraftMinPrice("0");
-            }
-
-            if(!searchParams.has("maxPrice")) {
-                setDraftMaxPrice(String(Number(data.filters.maxPrice ?? 0)));
-            }
-
-            setProducts(data.products);
-            setBrands(data.filters.brands);
-            setCategories(data.filters.categories);
-            setTotalItems(data.meta.pagination.totalItems);
-            setTotalPages(data.meta.pagination.totalPages);
-
-            if(isAuthenticated && data.products.length > 0) {
-                try {
-                    const variantIds = data.products.map((product) => product.variant.variant_id);
-                    const wishlistData = await wishlistService.checkMany(variantIds);
-
-                    setWishlistMap(wishlistData?.items ?? {});
-                } catch {
-                    setWishlistMap({});
-                }
-            }else {
-                setWishlistMap({});
-            }
         }catch(error) {
             toast.error(getErrorMessage(error));
         }finally{
@@ -479,7 +449,7 @@ export default function ProductListPage() {
         }, 300);
 
         return () => window.clearTimeout(timer);
-    }, [searchParams, isAuthenticated, cmsSlug, isCmsPage, cmsCollection]);
+    }, [searchParams, isAuthenticated, cmsSlug, isCmsPage, cmsCollection, cmsLoading, cmsNotFound]);
 
     useEffect(() => {
         loadCmsCollection();
@@ -553,6 +523,13 @@ export default function ProductListPage() {
                         {cmsLoading ? (
                             <div className="rounded-md border bg-white p-8 text-center text-muted-foreground">
                                 Đang tải nội dung nổi bật...
+                            </div>
+                        ) : cmsNotFound ? (
+                            <div className="rounded-md border bg-white p-8 text-center">
+                                <h1 className="text-xl font-semibold">Không tìm thấy CMS collection</h1>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                    Vui lòng tạo và bật collection có slug /c/{cmsSlug} trong CMS.
+                                </p>
                             </div>
                         ) : (
                             <PublicCmsSections

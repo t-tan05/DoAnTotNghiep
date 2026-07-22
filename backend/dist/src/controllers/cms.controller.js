@@ -1,5 +1,5 @@
 import { CatchAsync } from "#utils/CatchAsync";
-import { createCmsCollectionService, createCmsRuleService, bulkCreateCmsSectionItemsService, createCmsSectionItemService, createCmsSectionService, deleteCmsCollectionService, deleteCmsRuleService, deleteCmsSectionItemService, deleteCmsSectionService, getAdminCmsCollectionDetailService, getAdminCmsCollectionsService, getPublicCmsCollectionFiltersService, getPublicCmsCollectionProductsService, getPublicCmsCollectionService, updateCmsCollectionService, updateCmsRuleService, updateCmsSectionItemService, updateCmsSectionService } from "#services/cms.service";
+import { createCmsCollectionService, createCmsRuleService, bulkCreateCmsSectionItemsService, createCmsSectionItemService, createCmsSectionService, deleteCmsCollectionService, deleteCmsRuleService, deleteCmsSectionItemService, deleteCmsSectionService, getAdminCmsCollectionDetailService, getAdminCmsCollectionsService, getPublicCmsCollectionFiltersService, getPublicCmsCollectionProductsService, getPublicCmsCollectionService, getPublicCmsCollectionSuggestionsService, updateCmsCollectionService, updateCmsRuleService, updateCmsSectionItemService, updateCmsSectionService } from "#services/cms.service";
 export const getPublicCmsCollectionController = CatchAsync(async (req, res) => {
     const slug = req.params.slug;
     const data = await getPublicCmsCollectionService(slug);
@@ -42,6 +42,19 @@ export const getPublicCmsCollectionFiltersController = CatchAsync(async (req, re
         message: "Lấy bộ lọc CMS thành công.",
         data: {
             ...data
+        },
+    });
+});
+export const getPublicCmsCollectionSuggestionsController = CatchAsync(async (req, res) => {
+    const data = await getPublicCmsCollectionSuggestionsService({
+        search: req.query.search,
+        limit: req.query.limit ? Number(req.query.limit) : undefined,
+    });
+    res.status(200).json({
+        success: true,
+        message: "Lấy gợi ý CMS collection thành công.",
+        data: {
+            ...data,
         },
     });
 });

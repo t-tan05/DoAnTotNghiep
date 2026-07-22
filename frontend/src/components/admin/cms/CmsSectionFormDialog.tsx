@@ -154,7 +154,7 @@ export default function CmsSectionFormDialog({
 
                         <div className="space-y-2">
                             <Label>Link xem tất cả</Label>
-                            <Input value={form.href} onChange={(event) => updateField("href", event.target.value)} placeholder="/products?search=laptop" />
+                            <Input value={form.href} onChange={(event) => updateField("href", event.target.value)} placeholder="/c/laptop-gaming" />
                         </div>
 
                         <div className="space-y-2">

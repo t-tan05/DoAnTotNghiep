@@ -147,7 +147,7 @@ export default function CartPage() {
                         Bạn chưa có sản phẩm nào trong giỏ hàng.
                     </p>
                     <Button asChild className="mt-5 cursor-pointer h-14">
-                        <Link to="/products">Tiếp tục mua hàng</Link>
+                        <Link to="/c/laptop">Tiếp tục mua hàng</Link>
                     </Button>
                 </div>
             </section>

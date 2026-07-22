@@ -245,7 +245,7 @@ export default function OrderHistoryPage() {
                         </p>
 
                         <Button asChild className="mt-5 h-12 cursor-pointer">
-                            <Link to="/products">Tiếp tục mua hàng</Link>
+                            <Link to="/c/laptop">Tiếp tục mua hàng</Link>
                         </Button>
                     </div>
                 )}
