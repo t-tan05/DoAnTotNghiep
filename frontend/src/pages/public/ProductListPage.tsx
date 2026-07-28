@@ -42,7 +42,7 @@ function normalizeCmsSlug(value: string) {
 }
 
 function getCmsProductGridProducts(collection: CmsCollection | null) {
-    return (collection?.cms_sections ?? [])
+    const products = (collection?.cms_sections ?? [])
         .filter((section) => section.is_active && section.section_type === "PRODUCT_GRID")
         .sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
         .flatMap((section) =>
@@ -52,6 +52,45 @@ function getCmsProductGridProducts(collection: CmsCollection | null) {
         )
         .map(mapCmsItemToProduct)
         .filter((product): product is PublicProductCardItem => Boolean(product));
+
+    return groupCmsProductsByProductId(products);
+}
+
+function getProductRepresentativePrice(product: PublicProductCardItem) {
+    return Number(product.variant.discount_price ?? product.variant.price ?? 0);
+}
+
+function groupCmsProductsByProductId(products: PublicProductCardItem[]) {
+    const groups = new Map<string, PublicProductCardItem[]>();
+
+    for(const product of products) {
+        if(!groups.has(product.product_id)) {
+            groups.set(product.product_id, []);
+        }
+
+        groups.get(product.product_id)!.push(product);
+    }
+
+    return Array.from(groups.values()).map((groupProducts) => {
+        const representativeProduct = [...groupProducts].sort(
+            (a, b) => getProductRepresentativePrice(a) - getProductRepresentativePrice(b),
+        )[0];
+
+        return {
+            ...representativeProduct,
+            variant_count: groupProducts.length,
+            color_options: groupProducts.map((product) => ({
+                variant_id: product.variant.variant_id,
+                image_url: product.variant.image_url,
+                color: product.variant.attributes.find((attribute) => {
+                    const attributeName = attribute.attribute_name.toLowerCase();
+                    return attributeName.includes("màu")
+                        || attributeName.includes("mau")
+                        || attributeName.includes("color");
+                })?.value ?? null,
+            })),
+        };
+    });
 }
 
 function getUniqueFilterOptions(
@@ -86,6 +125,15 @@ function getProductDiscountValue(product: PublicProductCardItem) {
     const currentPrice = Number(product.variant.discount_price ?? product.variant.price ?? 0);
 
     return Math.max(0, originalPrice - currentPrice);
+}
+
+function clampFilterPrice(value: string, maxAvailablePrice: number) {
+    const maxPriceLimit = Math.max(Number(maxAvailablePrice || 0), 0);
+    const numericValue = Number(value);
+
+    if(!value || Number.isNaN(numericValue) || maxPriceLimit <= 0) return "";
+
+    return String(Math.min(Math.max(numericValue, 0), maxPriceLimit));
 }
 
 function filterCmsGridProducts(
@@ -152,6 +200,85 @@ function getCmsBreadcrumbs(
     brands: PublicProductFilterOption[],
 ) {
     const items = [{ label: "Trang chủ", href: "/" }];
+    const currentSlug = collection?.slug ? slugify(collection.slug) : "";
+    const currentTitle = collection?.title || "Sản phẩm";
+
+    function pushParent(label: string, href: string) {
+        const parentSlug = normalizeCmsSlug(href);
+
+        if(parentSlug && parentSlug === currentSlug) return;
+        if(items.some((item) => item.href === href || item.label === label)) return;
+
+        items.push({ label, href });
+    }
+
+    function pushCurrent() {
+        items.push({
+            label: currentTitle,
+            href: "",
+        });
+    }
+
+    const laptopBrands = [
+        { slug: "hp", label: "HP" },
+        { slug: "lenovo", label: "Lenovo" },
+        { slug: "msi", label: "MSI" },
+        { slug: "asus", label: "ASUS" },
+        { slug: "acer", label: "Acer" },
+    ];
+
+    if(currentSlug.includes("chuot")) {
+        pushParent("Phụ kiện máy tính", "/c/phu-kien-may-tinh");
+        pushParent("Chuột máy tính", "/c/chuot-may-tinh");
+        pushCurrent();
+        return items;
+    }
+
+    if(currentSlug.includes("ban-phim")) {
+        pushParent("Phụ kiện máy tính", "/c/phu-kien-may-tinh");
+
+        if(currentSlug !== "ban-phim-may-tinh") {
+            pushParent("Bàn phím", "/c/ban-phim");
+        }
+
+        pushCurrent();
+        return items;
+    }
+
+    if(currentSlug.includes("tai-nghe")) {
+        pushParent("Thiết bị âm thanh", "/c/thiet-bi-am-thanh");
+        pushParent("Tai nghe", "/c/tai-nghe");
+        pushCurrent();
+        return items;
+    }
+
+    if(currentSlug.includes("loa")) {
+        pushParent("Thiết bị âm thanh", "/c/thiet-bi-am-thanh");
+        pushParent("Loa nghe nhạc", "/c/loa-nghe-nhac");
+        pushCurrent();
+        return items;
+    }
+
+    if(currentSlug.includes("ghe-gaming")) {
+        pushParent("Gaming Gear", "/c/gaming-gear");
+        pushCurrent();
+        return items;
+    }
+
+    if(currentSlug.startsWith("laptop-")) {
+        pushParent("Laptop", "/c/laptop");
+
+        const laptopBrand = laptopBrands.find((brand) =>
+            currentSlug === `laptop-${brand.slug}` || currentSlug.startsWith(`laptop-${brand.slug}-`)
+        );
+
+        if(laptopBrand && currentSlug !== `laptop-${laptopBrand.slug}`) {
+            pushParent(laptopBrand.label, `/c/laptop-${laptopBrand.slug}`);
+        }
+
+        pushCurrent();
+        return items;
+    }
 
     const category = collection?.categories
         ? {
@@ -168,25 +295,14 @@ function getCmsBreadcrumbs(
         : brands.length === 1 ? brands[0] : null;
 
     if(category) {
-        items.push({
-            label: category.name,
-            href: `/c/${slugify(category.name)}`,
-        });
+        pushParent(category.name, `/c/${slugify(category.name)}`);
     }
 
-    if(brand) {
-        items.push({
-            label: brand.name,
-            href: category
-                ? `/c/${slugify(category.name)}-${slugify(brand.name)}`
-                : `/c/${slugify(brand.name)}`,
-        });
+    if(brand && !currentSlug.includes(slugify(brand.name))) {
+        pushParent(brand.name, `/c/${slugify(brand.name)}`);
     }
 
-    items.push({
-        label: collection?.title || "Sản phẩm",
-        href: "",
-    });
+    pushCurrent();
 
     return items;
 }
@@ -255,31 +371,8 @@ export default function ProductListPage() {
 
     function applyFilters() {
         const next = new URLSearchParams(searchParams);
-
-        if(draftSearch.trim()) {
-            next.set("search", draftSearch.trim());
-        }else {
-            next.delete("search");
-        }
-
-        if(draftMinPrice) {
-            next.set("minPrice", draftMinPrice);
-        }else {
-            next.delete("minPrice");
-        }
-
-        if(draftMaxPrice) {
-            next.set("maxPrice", draftMaxPrice);
-        }else {
-            next.delete("maxPrice");
-        }
-
-        next.set("page", "1");
-        setSearchParams(next);
-    }
-
-    function applyPriceRange(nextMinPrice: string, nextMaxPrice: string) {
-        const next = new URLSearchParams(searchParams);
+        const nextMinPrice = clampFilterPrice(draftMinPrice, maxAvailablePrice);
+        const nextMaxPrice = clampFilterPrice(draftMaxPrice, maxAvailablePrice);
 
         if(draftSearch.trim()) {
             next.set("search", draftSearch.trim());
@@ -302,6 +395,35 @@ export default function ProductListPage() {
         next.set("page", "1");
         setDraftMinPrice(nextMinPrice);
         setDraftMaxPrice(nextMaxPrice);
+        setSearchParams(next);
+    }
+
+    function applyPriceRange(nextMinPrice: string, nextMaxPrice: string) {
+        const next = new URLSearchParams(searchParams);
+        const safeMinPrice = clampFilterPrice(nextMinPrice, maxAvailablePrice);
+        const safeMaxPrice = clampFilterPrice(nextMaxPrice, maxAvailablePrice);
+
+        if(draftSearch.trim()) {
+            next.set("search", draftSearch.trim());
+        }else {
+            next.delete("search");
+        }
+
+        if(safeMinPrice) {
+            next.set("minPrice", safeMinPrice);
+        }else {
+            next.delete("minPrice");
+        }
+
+        if(safeMaxPrice) {
+            next.set("maxPrice", safeMaxPrice);
+        }else {
+            next.delete("maxPrice");
+        }
+
+        next.set("page", "1");
+        setDraftMinPrice(safeMinPrice);
+        setDraftMaxPrice(safeMaxPrice);
         setSearchParams(next);
     }
 

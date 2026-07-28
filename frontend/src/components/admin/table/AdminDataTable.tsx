@@ -18,6 +18,8 @@ export type AdminColumn<T> = {
     title: string;
     render?: (item: T) => React.ReactNode;
     sortable?: boolean;
+    headClassName?: string;
+    cellClassName?: string;
 };
 
 type Props<T> = {
@@ -106,7 +108,7 @@ export default function AdminDataTable<T>({
                     <TableHeader>
                         <TableRow>
                             {columns.map((column) => (
-                                <TableHead key={String(column.key)}>
+                                <TableHead key={String(column.key)} className={column.headClassName}>
                                     {column.sortable ? (
                                         <button
                                             type="button"
@@ -151,7 +153,7 @@ export default function AdminDataTable<T>({
                         {!loading && items.map((item) => (
                             <TableRow key={String(item[idKey])}>
                                 {columns.map((column) => (
-                                    <TableCell key={String(column.key)}>
+                                    <TableCell key={String(column.key)} className={column.cellClassName}>
                                         {column.render ? column.render(item) : String(item[column.key as keyof T] ?? "")}
                                     </TableCell>
                                 ))}

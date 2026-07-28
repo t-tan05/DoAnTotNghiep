@@ -52,7 +52,7 @@ export default function HomeLandingPage() {
                 <PageLoading text="Đang tải trang chủ..." />
             ) : homeCollection ? (
                 <div className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-5">
-                    <PublicCmsSections collection={homeCollection} productPageSize={5} />
+                    <PublicCmsSections collection={homeCollection} productPageSize={4} />
                 </div>
             ) : (
                 <p>Nội dung đang trống</p>

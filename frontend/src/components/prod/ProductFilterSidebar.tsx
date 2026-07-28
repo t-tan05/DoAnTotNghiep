@@ -62,16 +62,22 @@ export default function ProductFilterSidebar({
     onPriceRangeSelect,
     onClear,
 }: Props) {
-    const maxPriceLimit = Math.max(Number(maxAvailablePrice || 0), PRICE_STEP);
+    const realMaxPrice = Math.max(Number(maxAvailablePrice || 0), 0);
+    const hasPriceRange = realMaxPrice > 0;
+    const maxPriceLimit = hasPriceRange ? Math.max(realMaxPrice, PRICE_STEP) : 0;
 
     const sliderMinPrice = clampPrice(minPrice, 0, maxPriceLimit);
     const sliderMaxPrice = clampPrice(maxPrice, maxPriceLimit, maxPriceLimit);
 
-    const safeMinPrice = Math.min(sliderMinPrice, sliderMaxPrice - PRICE_STEP);
-    const safeMaxPrice = Math.max(sliderMaxPrice, sliderMinPrice + PRICE_STEP);
+    const safeMinPrice = hasPriceRange
+        ? Math.min(sliderMinPrice, Math.max(sliderMaxPrice - PRICE_STEP, 0))
+        : 0;
+    const safeMaxPrice = hasPriceRange
+        ? Math.max(sliderMaxPrice, Math.min(sliderMinPrice + PRICE_STEP, maxPriceLimit))
+        : 0;
 
-    const rangeLeft = (safeMinPrice / maxPriceLimit) * 100;
-    const rangeRight = 100 - (safeMaxPrice / maxPriceLimit) * 100;
+    const rangeLeft = hasPriceRange ? (safeMinPrice / maxPriceLimit) * 100 : 0;
+    const rangeRight = hasPriceRange ? 100 - (safeMaxPrice / maxPriceLimit) * 100 : 100;
 
     return (
         <aside className="space-y-5 rounded-md border bg-white p-4">
@@ -141,6 +147,7 @@ export default function ProductFilterSidebar({
                             max={maxPriceLimit}
                             step={PRICE_STEP}
                             value={safeMinPrice}
+                            disabled={!hasPriceRange}
                             onChange={(e) => {
                                 const nextValue = Math.min(Number(e.target.value), safeMaxPrice - PRICE_STEP);
                                 onMinPriceChange(String(nextValue));
@@ -157,6 +164,7 @@ export default function ProductFilterSidebar({
                             max={maxPriceLimit}
                             step={PRICE_STEP}
                             value={safeMaxPrice}
+                            disabled={!hasPriceRange}
                             onChange={(e) => {
                                 const nextValue = Math.max(Number(e.target.value), safeMinPrice + PRICE_STEP);
                                 onMaxPriceChange(String(nextValue));
@@ -175,13 +183,14 @@ export default function ProductFilterSidebar({
                             key={range.label}
                             type="button"
                             variant="outline"
+                            disabled={!hasPriceRange}
                             onClick={() => {
                                 onPriceRangeSelect(
                                     range.min || "0",
-                                    range.max || String(maxPriceLimit)
+                                    range.max || String(realMaxPrice)
                                 );
                             }}
-                            className="h-9 w-full cursor-pointer justify-start"
+                            className="h-9 w-full cursor-pointer justify-start disabled:cursor-not-allowed"
                         >
                             {range.label}
                         </Button>

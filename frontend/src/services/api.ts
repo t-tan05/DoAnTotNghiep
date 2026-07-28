@@ -5,7 +5,21 @@ import axios, {
 
 import type { BackendError, BackendSuccess, RetryConfig } from "../types/api.type.ts";
 
-const API_URL = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:3000/api`;
+const getApiUrl = () => {
+    const envApiUrl = import.meta.env.VITE_API_URL;
+    const isLocalEnvApi =
+        envApiUrl?.includes("://localhost") || envApiUrl?.includes("://127.0.0.1");
+    const isLanAccess =
+        window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+
+    if(envApiUrl && !(isLanAccess && isLocalEnvApi)){
+        return envApiUrl;
+    }
+
+    return `${window.location.protocol}//${window.location.hostname}:3000/api`;
+};
+
+const API_URL = getApiUrl();
 
 export const api = axios.create({
     baseURL: API_URL,
@@ -13,7 +27,7 @@ export const api = axios.create({
     headers: {
         "Content-Type":"application/json",
     },
-    timeout: 30000 //10 giây
+    timeout: 30000 //30 giây
 });
 
 //Lưu các api cần bỏ qua việc refreshToken

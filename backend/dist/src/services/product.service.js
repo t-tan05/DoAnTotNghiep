@@ -261,28 +261,8 @@ const isColorAttributeName = (attributeName) => {
     return normalizedName.includes("mau")
         || normalizedName.includes("color");
 };
-const getVariantGroupingAttributes = (variant) => {
-    return variant.variant_attribute_values
-        ?.map((item) => ({
-        name: item.attribute_values.product_attributes.attribute_name,
-        value: item.attribute_values.value,
-    }))
-        .filter((attribute) => !isColorAttributeName(attribute.name))
-        .sort((a, b) => normalizeAttributeText(a.name).localeCompare(normalizeAttributeText(b.name), "vi")) ?? [];
-};
 const getPublicVariantGroupKey = (variant) => {
     const productId = variant.products.product_id;
-    const variantName = variant.variant_name?.trim();
-    if (variantName) {
-        return `${productId}__name:${normalizeAttributeText(variantName)}`;
-    }
-    const groupingAttributes = getVariantGroupingAttributes(variant);
-    if (groupingAttributes.length > 0) {
-        const attributeKey = groupingAttributes
-            .map((attribute) => `${normalizeAttributeText(attribute.name)}:${normalizeAttributeText(attribute.value)}`)
-            .join("|");
-        return `${productId}__attrs:${attributeKey}`;
-    }
     return `${productId}__product`;
 };
 const getVariantImageUrl = (variant) => {

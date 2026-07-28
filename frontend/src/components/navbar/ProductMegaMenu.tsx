@@ -26,9 +26,18 @@ export default function ProductMegaMenu({ groups }: ProductMegaMenuProps) {
             >
                 {groups.map((group) => (
                     <div className="space-y-3" key={group.title}>
-                        <h3 className="text-lg font-bold text-foreground">
-                            {group.title}
-                        </h3>
+                        {group.href ? (
+                            <Link
+                                to={group.href}
+                                className="inline-block text-lg font-bold text-[#005ecb] transition hover:text-blue-700"
+                            >
+                                {group.title}
+                            </Link>
+                        ) : (
+                            <h3 className="text-lg font-bold text-[#005ecb]">
+                                {group.title}
+                            </h3>
+                        )}
 
                         <ul className="space-y-3">
                             {group.items.map((item) => (

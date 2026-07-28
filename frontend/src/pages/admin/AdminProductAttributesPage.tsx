@@ -3,12 +3,15 @@ import AttributeValueManagerDialog from "@/components/admin/catalog/AttributeVal
 import type { AdminColumn } from "@/components/admin/table/AdminDataTable";
 import AdminDataTable from "@/components/admin/table/AdminDataTable";
 import ConfirmDeleteDialog from "@/components/common/ConfirmDeleteDialog";
+import { Badge } from "@/components/ui/badge";
 import { productAttributeService } from "@/services/productAttribute.service";
 import type { ProductAttribute } from "@/types/product-attribute.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Settings2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+const VISIBLE_ATTRIBUTE_VALUES = 8;
 
 const columns: AdminColumn<ProductAttribute>[] = [
     {
@@ -19,9 +22,34 @@ const columns: AdminColumn<ProductAttribute>[] = [
     {
         key: "values",
         title: "Giá trị",
+        headClassName: "min-w-[280px]",
+        cellClassName: "max-w-[720px] whitespace-normal",
         render: (attribute) => {
             const values = attribute.attribute_values?.map((item) => item.value) ?? [];
-            return values.length ? values.join(", ") : "Chưa có giá trị";
+            const visibleValues = values.slice(0, VISIBLE_ATTRIBUTE_VALUES);
+            const hiddenCount = values.length - visibleValues.length;
+
+            if(!values.length) {
+                return <span className="text-muted-foreground">Chưa có giá trị</span>;
+            }
+
+            return (
+                <div className="flex max-w-full flex-wrap gap-1.5 whitespace-normal" title={values.join(", ")}>
+                    {visibleValues.map((value) => (
+                        <Badge
+                            key={value}
+                            variant="outline"
+                            className="max-w-[180px] truncate"
+                        >
+                            {value}
+                        </Badge>
+                    ))}
+
+                    {hiddenCount > 0 ? (
+                        <Badge variant="secondary">+{hiddenCount} giá trị</Badge>
+                    ) : null}
+                </div>
+            );
         },
     },
     {

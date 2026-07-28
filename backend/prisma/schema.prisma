@@ -311,7 +311,7 @@ model product_variant_specs {
   spec_id          BigInt           @id @default(autoincrement())
   variant_id       String           @db.VarChar(50)
   spec_key         String           @db.VarChar(100)
-  spec_value       String           @db.VarChar(255)
+  spec_value       String           @db.Text
   display_order    Int?             @default(0)
   product_variants product_variants @relation(fields: [variant_id], references: [variant_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_specs_variant")
 

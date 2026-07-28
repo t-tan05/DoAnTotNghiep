@@ -23,9 +23,10 @@ function chunkItems<T>(items: T[], size: number) {
 
 export default function FeaturedProductSection({ title, products, href, pageSize = 4 }: Props) {
     const [page, setPage] = useState(0);
-    const productPages = useMemo(() => chunkItems(products, pageSize), [pageSize, products]);
+    const visiblePageSize = Math.min(Math.max(pageSize, 1), 4);
+    const productPages = useMemo(() => chunkItems(products, visiblePageSize), [visiblePageSize, products]);
     const totalPages = productPages.length;
-    const canSlide = products.length > pageSize;
+    const canSlide = products.length > visiblePageSize;
     const viewAllHref = href?.trim();
     const currentPage = Math.min(page, Math.max(totalPages - 1, 0));
     const isFirstPage = currentPage <= 0;
@@ -82,8 +83,7 @@ export default function FeaturedProductSection({ title, products, href, pageSize
                             <div
                                 key={`featured-page-${pageIndex}`}
                                 className={[
-                                    "grid min-w-full grid-cols-2 gap-2 md:grid-cols-3",
-                                    pageSize >= 5 ? "xl:grid-cols-5" : "lg:grid-cols-4",
+                                    "grid min-w-full grid-cols-2 gap-2 lg:grid-cols-4",
                                 ].join(" ")}
                             >
                                 {productPage.map((product) => (

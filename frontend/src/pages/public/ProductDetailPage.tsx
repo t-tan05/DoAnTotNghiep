@@ -176,6 +176,74 @@ function cmsHref(...parts: Array<string | null | undefined>) {
     return slug ? `/c/${slug}` : "/";
 }
 
+type ProductBreadcrumbItem = {
+    label: string;
+    href: string;
+};
+
+function buildProductBreadcrumbItems(product: AdminProduct, displayName: string): ProductBreadcrumbItem[] {
+    const categoryName = product.categories?.category_name ?? "";
+    const brandName = product.brands?.brand_name ?? "";
+    const lineName = product.product_lines?.line_name ?? "";
+    const lineSlug = product.product_lines?.slug ?? lineName;
+    const categorySlug = slugify(categoryName);
+    const brandSlug = slugify(brandName);
+    const lineSlugValue = slugify(lineSlug);
+    const items: ProductBreadcrumbItem[] = [];
+
+    function push(label: string, href: string) {
+        if(!label) return;
+        if(items.some((item) => item.label === label || item.href === href)) return;
+        items.push({ label, href });
+    }
+
+    if(categorySlug.includes("laptop") || categorySlug.includes("may-tinh-laptop")) {
+        push("Laptop", "/c/laptop");
+
+        if(brandName) {
+            push(brandName, `/c/laptop-${brandSlug}`);
+        }
+
+        if(lineName && lineSlugValue && lineSlugValue !== brandSlug) {
+            push(lineName, `/c/laptop-${brandSlug}-${lineSlugValue}`);
+        }
+    }else if(categorySlug.includes("phu-kien") || ["chuot-may-tinh", "ban-phim"].includes(lineSlugValue)) {
+        push("Phụ kiện máy tính", "/c/phu-kien-may-tinh");
+
+        if(lineSlugValue.includes("chuot")) {
+            push("Chuột máy tính", "/c/chuot-may-tinh");
+        }else if(lineSlugValue.includes("ban-phim")) {
+            push("Bàn phím", "/c/ban-phim");
+        }else if(lineName) {
+            push(lineName, `/c/${lineSlugValue}`);
+        }
+    }else if(categorySlug.includes("am-thanh") || ["tai-nghe", "loa-nghe-nhac"].includes(lineSlugValue)) {
+        push("Thiết bị âm thanh", "/c/thiet-bi-am-thanh");
+
+        if(lineSlugValue.includes("tai-nghe")) {
+            push("Tai nghe", "/c/tai-nghe");
+        }else if(lineSlugValue.includes("loa")) {
+            push("Loa nghe nhạc", "/c/loa-nghe-nhac");
+        }else if(lineName) {
+            push(lineName, `/c/${lineSlugValue}`);
+        }
+    }else {
+        push(categoryName, cmsHref(categoryName));
+
+        if(brandName) {
+            push(brandName, cmsHref(brandName));
+        }
+
+        if(lineName) {
+            push(lineName, cmsHref(lineSlug));
+        }
+    }
+
+    items.push({ label: displayName, href: "" });
+
+    return items;
+}
+
 export default function ProductDetailPage() {
     const { productId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -536,39 +604,12 @@ export default function ProductDetailPage() {
     const visibleSpecRows = specExpanded ? specRows : specRows.slice(0, 4);
     const canToggleSpecs = specRows.length > 4;
     const canToggleDetail = detailContent.length > 900;
-    const categoryName = product.categories?.category_name ?? "";
-    const brandName = product.brands?.brand_name ?? "";
-    const lineName = product.product_lines?.line_name ?? "";
-    const lineSlug = product.product_lines?.slug ?? lineName;
-    const breadcrumbItems = [
-        categoryName
-            ? {
-                label: categoryName,
-                href: cmsHref(categoryName),
-            }
-            : null,
-        brandName
-            ? {
-                label: brandName,
-                href: cmsHref(categoryName, brandName),
-            }
-            : null,
-        lineName
-            ? {
-                label: lineName,
-                href: cmsHref(categoryName, brandName, lineSlug),
-            }
-            : null,
-        {
-            label: displayName,
-            href: "",
-        },
-    ].filter((item): item is { label: string; href: string } => Boolean(item));
+    const breadcrumbItems = buildProductBreadcrumbItems(product, displayName);
 
     return (
         <section className="bg-[#f5f6fb]">
-            <div className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-                <nav className="-mx-4 mb-4 flex min-h-11 items-center gap-2 overflow-x-auto bg-[#eef1f8] px-4 text-sm text-[#747c96] md:-mx-6 md:px-6">
+            <div className="mx-auto max-w-7xl px-3 py-4 md:px-6 md:py-6">
+                <nav className="-mx-3 mb-4 flex min-h-11 items-center gap-2 overflow-x-auto bg-[#eef1f8] px-3 text-sm text-[#747c96] md:-mx-6 md:px-6">
                     <Link to="/" className="flex shrink-0 items-center gap-2 text-blue-600 transition hover:text-blue-800">
                         <Home className="h-4 w-4 opacity-50" />
                         Trang chủ
@@ -597,9 +638,9 @@ export default function ProductDetailPage() {
                     })}
                 </nav>
 
-                <div className="rounded-lg bg-white p-4 shadow-sm">
-                    <div className="grid gap-8 lg:grid-cols-[minmax(0,58%)_minmax(360px,1fr)]">
-                        <div>
+                <div className="rounded-lg bg-white p-3 shadow-sm md:p-4">
+                    <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,58%)_minmax(360px,1fr)] lg:gap-8">
+                        <div className="min-w-0">
                             <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md border bg-[#f7f7f7]">
                                 {selectedImageUrl ? (
                                     <img
@@ -613,19 +654,19 @@ export default function ProductDetailPage() {
                             </div>
 
                             {galleryImages.length > 0 && (
-                                <div className="mt-4 flex items-center justify-center gap-3">
+                                <div className="mt-3 flex min-w-0 items-center justify-center gap-2 md:mt-4 md:gap-3">
                                     {galleryImages.length > 1 && (
                                         <button
                                             type="button"
                                             onClick={showPreviousImage}
-                                            className="flex size-9 cursor-pointer shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
+                                            className="flex size-8 cursor-pointer shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700 md:size-9"
                                             aria-label="Ảnh trước"
                                         >
                                             <ChevronLeft className="h-5 w-5" />
                                         </button>
                                     )}
 
-                                    <div className="flex min-w-0 flex-1 justify-center gap-3 overflow-hidden">
+                                    <div className="flex min-w-0 flex-1 justify-start gap-2 overflow-x-auto pb-1 sm:justify-center md:gap-3 md:overflow-hidden md:pb-0">
                                         {visibleThumbnailImages.map((image, offset) => {
                                             const imageIndex = thumbnailStartIndex + offset;
                                             const selected = image.image_url === selectedImageUrl;
@@ -636,7 +677,7 @@ export default function ProductDetailPage() {
                                                     type="button"
                                                     onClick={() => moveToImage(imageIndex)}
                                                     className={cn(
-                                                        "size-20 shrink-0 cursor-pointer overflow-hidden rounded-md border bg-white p-1 transition hover:border-blue-600 sm:size-24",
+                                                        "size-16 shrink-0 cursor-pointer overflow-hidden rounded-md border bg-white p-1 transition hover:border-blue-600 sm:size-20 md:size-24",
                                                         selected && "border-blue-700 ring-1 ring-blue-700",
                                                     )}
                                                 >
@@ -654,7 +695,7 @@ export default function ProductDetailPage() {
                                         <button
                                             type="button"
                                             onClick={showNextImage}
-                                            className="flex size-9 cursor-pointer shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700"
+                                            className="flex size-8 cursor-pointer shrink-0 items-center justify-center rounded-full border bg-white text-muted-foreground shadow-sm transition hover:border-blue-700 hover:text-blue-700 md:size-9"
                                             aria-label="Ảnh tiếp theo"
                                         >
                                             <ChevronRight className="h-5 w-5" />
@@ -663,7 +704,7 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
-                            <div className="mt-6 grid gap-3 rounded-md border p-4 text-sm sm:grid-cols-2">
+                            <div className="mt-4 grid gap-3 rounded-md border p-3 text-xs sm:grid-cols-2 md:mt-6 md:p-4 md:text-sm">
                                 <div className="flex items-start gap-3">
                                     <Truck className="mt-0.5 h-5 w-5 text-blue-700" />
                                     <span>Miễn phí giao hàng cho đơn hàng từ 5 triệu</span>
@@ -675,12 +716,12 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-5">
-                            <div>
+                        <div className="min-w-0 space-y-4 md:space-y-5">
+                            <div className="min-w-0">
                                 <p className="text-sm text-muted-foreground">
                                     Thương hiệu: <span className="font-medium text-blue-700">{product.brands?.brand_name}</span>
                                 </p>
-                                <h1 className="mt-2 text-2xl font-bold leading-tight text-[#1f2430] md:text-3xl">
+                                <h1 className="mt-2 break-words text-xl font-bold leading-tight text-[#1f2430] md:text-3xl">
                                     {displayName}
                                 </h1>
                                 <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -706,7 +747,7 @@ export default function ProductDetailPage() {
                             {attributeGroups.map((group) => (
                                 <div key={group.name}>
                                     <p className="mb-2 font-medium">{group.name}</p>
-                                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                    <div className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                         {group.options.map((option) => {
                                             const selected = selectedAttributes[group.name] === option.value;
                                             const available = isAttributeOptionAvailable(group.name, option.value);
@@ -719,14 +760,14 @@ export default function ProductDetailPage() {
                                                     onClick={() => selectAttribute(group.name, option.value)}
                                                     title={available ? option.value : "Biến thể này không có với lựa chọn hiện tại"}
                                                     className={cn(
-                                                        "relative flex min-h-14 items-center justify-center gap-2 rounded-md border bg-white px-3 py-2 text-sm transition",
+                                                        "relative flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-md border bg-white px-3 py-2 text-sm transition md:min-h-14",
                                                         available
                                                             ? "cursor-pointer hover:border-blue-700 hover:bg-blue-50"
                                                             : "cursor-not-allowed opacity-40 grayscale",
                                                         selected && "border-blue-700 text-blue-700 ring-1 ring-blue-700",
                                                     )}
                                                 >
-                                                    <span>{option.value}</span>
+                                                    <span className="truncate">{option.value}</span>
                                                     {selected && (
                                                         <span className="absolute bottom-0 right-0 h-0 w-0 border-b-[18px] border-l-[18px] border-b-blue-700 border-l-transparent" />
                                                     )}
@@ -748,7 +789,7 @@ export default function ProductDetailPage() {
                                         <span className="text-sm font-medium text-red-600">-{discountPercent}%</span>
                                     )}
                                 </div>
-                                <p className="mt-1 text-4xl font-bold text-blue-700">
+                                <p className="mt-1 text-3xl font-bold text-blue-700 md:text-4xl">
                                     {formatPrice(currentPrice)}
                                 </p>
                                 {selectedVariant?.active_promotion && (
@@ -758,7 +799,7 @@ export default function ProductDetailPage() {
                                 )}
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-3 md:gap-4">
                                 <div className="flex items-center rounded-lg border">
                                     <Button
                                         type="button"
@@ -788,7 +829,7 @@ export default function ProductDetailPage() {
                                 </p>
                             </div>
 
-                            <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                                 {isOutOfStock ? (
                                     <button
                                         type="button"
@@ -840,13 +881,13 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
 
-                <div className="mt-6 w-full rounded-lg bg-white p-4 shadow-sm lg:w-[58%]">
-                    <div className="grid grid-cols-2 border-b text-center text-lg font-semibold">
+                <div className="mt-6 w-full rounded-lg bg-white p-3 shadow-sm md:p-4 lg:w-[58%]">
+                    <div className="grid grid-cols-2 border-b text-center text-sm font-semibold md:text-lg">
                         <button
                             type="button"
                             onClick={() => setActiveInfoTab("specs")}
                             className={cn(
-                                "px-6 py-3 cursor-pointer",
+                                "cursor-pointer px-2 py-3 md:px-6",
                                 activeInfoTab === "specs"
                                     ? "border-b-2 border-blue-700 text-blue-700"
                                     : "text-muted-foreground"
@@ -859,7 +900,7 @@ export default function ProductDetailPage() {
                             type="button"
                             onClick={() => setActiveInfoTab("detail")}
                             className={cn(
-                                "px-6 py-3 cursor-pointer",
+                                "cursor-pointer px-2 py-3 md:px-6",
                                 activeInfoTab === "detail"
                                     ? "border-b-2 border-blue-700 text-blue-700"
                                     : "text-muted-foreground"
@@ -1036,9 +1077,9 @@ function SpecRow({
     shaded?: boolean;
 }) {
     return (
-        <div className={cn("grid grid-cols-[170px_minmax(0,1fr)] gap-4 px-4 py-3", shaded && "bg-muted/60")}>
+        <div className={cn("grid gap-1 px-3 py-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-4 sm:px-4 md:grid-cols-[170px_minmax(0,1fr)]", shaded && "bg-muted/60")}>
             <span className="text-muted-foreground">{label}</span>
-            <span className="whitespace-pre-line font-medium">{value || "-"}</span>
+            <span className="min-w-0 whitespace-pre-line break-words font-medium">{value || "-"}</span>
         </div>
     );
 }

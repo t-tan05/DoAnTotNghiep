@@ -329,37 +329,8 @@ const isColorAttributeName = (attributeName: unknown) => {
         || normalizedName.includes("color");
 };
 
-const getVariantGroupingAttributes = (variant: any) => {
-    return variant.variant_attribute_values
-        ?.map((item: any) => ({
-            name: item.attribute_values.product_attributes.attribute_name,
-            value: item.attribute_values.value,
-        }))
-        .filter((attribute: any) => !isColorAttributeName(attribute.name))
-        .sort((a: any, b: any) =>
-            normalizeAttributeText(a.name).localeCompare(normalizeAttributeText(b.name), "vi")
-        ) ?? [];
-};
-
 const getPublicVariantGroupKey = (variant: any) => {
     const productId = variant.products.product_id;
-    const variantName = variant.variant_name?.trim();
-
-    if(variantName) {
-        return `${productId}__name:${normalizeAttributeText(variantName)}`;
-    }
-
-    const groupingAttributes = getVariantGroupingAttributes(variant);
-
-    if(groupingAttributes.length > 0) {
-        const attributeKey = groupingAttributes
-            .map((attribute: any) =>
-                `${normalizeAttributeText(attribute.name)}:${normalizeAttributeText(attribute.value)}`
-            )
-            .join("|");
-
-        return `${productId}__attrs:${attributeKey}`;
-    }
 
     return `${productId}__product`;
 };
