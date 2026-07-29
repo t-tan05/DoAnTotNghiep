@@ -42,7 +42,6 @@ export const importExternalNewsController = CatchAsync(async (req, res) => {
     const data = await importExternalNewsService(req.user.user_id, {
         url: req.body.url,
         sourceId: req.body.sourceId,
-        categoryId: req.body.categoryId,
         status: req.body.status,
     });
     res.status(201).json({

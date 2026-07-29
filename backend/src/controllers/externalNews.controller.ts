@@ -65,7 +65,6 @@ export const importExternalNewsController = CatchAsync(async (req: AuthRequest, 
     const data = await importExternalNewsService(req.user.user_id, {
         url: req.body.url,
         sourceId: req.body.sourceId as ExternalNewsSourceId | undefined,
-        categoryId: req.body.categoryId,
         status: req.body.status as blog_posts_status | undefined,
     });
 

@@ -217,7 +217,6 @@ export const createWarrantyService = async(customerId: string, data: CreateWarra
             device_id: device.device_id,
             customer_id: customerId,
             order_id: device.orders_details?.order_id || null,
-            issue_category_id: data.issueCategoryId || null,
             service_method: data.serviceMethod || warranty_service_method.PICKUP,
             pickup_receiver_name: data.pickupReceiverName || null,
             pickup_phone: data.pickupPhone || null,
@@ -484,7 +483,6 @@ export const inspectWarrantyService = async(employeeId: string, warrantyId: stri
             inspection_result: data.inspectionResult,
             is_warranty_eligible: data.isWarrantyEligible,
             estimated_cost: data.estimatedCost ?? undefined,
-            policy_id: data.policyId ?? undefined,
         },
     });
 

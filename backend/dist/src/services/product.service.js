@@ -1,10 +1,11 @@
 import { findBrandById } from "#models/brand.model";
 import { findCategoryById } from "#models/category.model";
 import { findProductLineById } from "#models/productLine.model";
-import { createProduct, deleteProduct, findProductById, findProductByNormalizeName, getProductWithQuery, getPublicProductFilterOptions, getPublicProductVariantsWithQuery, getRelatedProductVariants, updateProduct } from "#models/product.model";
+import { createProduct, deleteProduct, findProductById, findProductByNormalizeName, getProductDeleteUsage, getProductWithQuery, getPublicProductFilterOptions, getPublicProductVariantsWithQuery, getRelatedProductVariants, updateProduct } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
+import { buildDeleteBlockedMessage } from "#utils/deleteGuard";
 export const createProductService = async (data) => {
     //tên hiển thị
     const displayName = data.productName.trim();
@@ -78,6 +79,17 @@ export const deleteProductService = async (productId) => {
     const product = await findProductById(productId);
     if (!product)
         throw new AppError("Không tìm thấy sản phẩm", 404);
+    const usage = await getProductDeleteUsage(productId);
+    const message = buildDeleteBlockedMessage("sản phẩm", [
+        { label: "biến thể", count: usage.variantCount },
+        { label: "chi tiết đơn hàng", count: usage.orderDetailCount },
+        { label: "đánh giá", count: usage.reviewCount },
+        { label: "item CMS", count: usage.cmsItemCount },
+        { label: "khuyến mãi", count: usage.promotionCount },
+        { label: "gợi ý AI", count: usage.aiSuggestionCount },
+    ]);
+    if (message)
+        throw new AppError(message, 409);
     const delProduct = await deleteProduct(productId);
     return { delProduct };
 };

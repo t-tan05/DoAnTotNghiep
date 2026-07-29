@@ -141,9 +141,6 @@ export default function SearchBar() {
                                             <span className="block truncate text-base font-medium text-foreground">
                                                 {item.title}
                                             </span>
-                                            <span className="block truncate text-xs text-muted-foreground">
-                                                /c/{item.slug}
-                                            </span>
                                         </span>
                                     </button>
                                 </li>

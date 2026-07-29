@@ -6,6 +6,7 @@ import {
     deleteProduct, 
     findProductById, 
     findProductByNormalizeName, 
+    getProductDeleteUsage, 
     getProductWithQuery, 
     getPublicProductFilterOptions, 
     getPublicProductVariantsWithQuery, 
@@ -18,6 +19,7 @@ import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import type { CreateProductPayload, PublicProductListQuery, UpdateProductPayload } from "#types/product.type";
+import { buildDeleteBlockedMessage } from "#utils/deleteGuard";
 
 
 export const createProductService = async(data: CreateProductPayload) => {
@@ -107,6 +109,19 @@ export const deleteProductService = async(productId: string) => {
     const product = await findProductById(productId);
 
     if(!product) throw new AppError("Không tìm thấy sản phẩm", 404);
+
+    const usage = await getProductDeleteUsage(productId);
+
+    const message = buildDeleteBlockedMessage("sản phẩm", [
+        { label: "biến thể", count: usage.variantCount },
+        { label: "chi tiết đơn hàng", count: usage.orderDetailCount },
+        { label: "đánh giá", count: usage.reviewCount },
+        { label: "item CMS", count: usage.cmsItemCount },
+        { label: "khuyến mãi", count: usage.promotionCount },
+        { label: "gợi ý AI", count: usage.aiSuggestionCount },
+    ]);
+
+    if(message) throw new AppError(message, 409);
 
     const delProduct = await deleteProduct(productId);
      

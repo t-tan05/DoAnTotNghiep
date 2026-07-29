@@ -8,7 +8,6 @@ export const createWarrantySchema = Joi.object({
         "string.empty": "Số seri không được để trống.",
     }),
     deviceId: Joi.string().trim().empty("").allow(null),
-    issueCategoryId: Joi.string().trim().allow("", null),
     issueDescription: Joi.string().trim().min(5).max(2000).required().messages({
         "string.empty": "Mô tả vấn đề không được để trống.",
         "string.min": "Mô tả vấn đề ít nhất 5 ký tự.",
@@ -40,7 +39,6 @@ export const inspectWarrantySchema = Joi.object({
     inspectionResult: Joi.string().trim().min(5).max(3000).required(),
     isWarrantyEligible: Joi.boolean().required(),
     estimatedCost: Joi.number().min(0).allow(null),
-    policyId: Joi.string().trim().allow("", null),
     note: optionalNote,
 });
 

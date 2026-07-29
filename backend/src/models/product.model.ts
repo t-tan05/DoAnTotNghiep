@@ -682,3 +682,37 @@ export const getRelatedProductVariants = async(params: {
 
     return { variants };
 };
+
+export const getProductDeleteUsage = async(productId: string) => {
+    const [
+        variantCount,
+        orderDetailCount,
+        reviewCount,
+        cmsItemCount,
+        promotionCount,
+        aiSuggestionCount,
+    ] = await prisma.$transaction([
+        prisma.product_variants.count({where: {product_id: productId}}),
+        prisma.orders_details.count({
+            where: {
+                product_variants: {
+                    product_id: productId,
+                },
+            },
+        }),
+
+        prisma.reviews.count({where: {product_id: productId}}),
+        prisma.cms_section_items.count({where: {product_id: productId}}),
+        prisma.products_promotions.count({where: {product_id: productId}}),
+        prisma.ai_product_suggestions.count({where: {product_id: productId}}),
+    ]);
+
+    return {
+        variantCount,
+        orderDetailCount,
+        reviewCount,
+        cmsItemCount,
+        promotionCount,
+        aiSuggestionCount,
+    };
+};

@@ -9,6 +9,5 @@ export const importExternalNewsSchema = Joi.object({
     sourceId: Joi.string()
         .valid("vnexpress-so-hoa", "tinhte", "genk", "techcrunch", "the-verge")
         .optional(),
-    categoryId: Joi.string().trim().allow("", null).optional(),
     status: Joi.string().valid("DRAFT", "PUBLISHED", "ARCHIVED").default("DRAFT"),
 });

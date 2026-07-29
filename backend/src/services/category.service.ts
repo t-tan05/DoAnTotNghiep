@@ -5,13 +5,15 @@ import {
     findCategoryByNormalizeName, 
     updateCategory,
     CategorySortBy,
-    getCategoriesWithQuery
+    getCategoriesWithQuery,
+    getCategoryDeleteUsage
 } from "#models/category.model";
 import { findProductByCategoryId } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
 import { ListQuery } from "#types/pagination.type";
+import { buildDeleteBlockedMessage } from "#utils/deleteGuard";
 
 
 export const createCategoryService = async(categoryName: string, description?: string) => {
@@ -88,9 +90,16 @@ export const deleteCategoryService = async(categoryId: string) => {
 
     if(!category) throw new AppError("Không tìm thấy danh mục sản phẩm", 404);
 
-    const existedCategoryInProduct = await findProductByCategoryId(categoryId);
+    const usage = await getCategoryDeleteUsage(categoryId);
 
-    if(existedCategoryInProduct) throw new AppError("Không thể xóa vì danh mục sản phẩm này đang được sử dụng", 409);
+    const message = buildDeleteBlockedMessage("danh mục", [
+        { label: "sản phẩm", count: usage.productCount },
+        { label: "dòng sản phẩm", count: usage.productLineCount },
+        { label: "trang CMS", count: usage.cmsCollectionCount },
+        { label: "rule CMS", count: usage.cmsRuleCount },
+    ]);
+
+    if(message) throw new AppError(message, 409);
 
     const delCategory = await deleteCategoryById(categoryId);
 

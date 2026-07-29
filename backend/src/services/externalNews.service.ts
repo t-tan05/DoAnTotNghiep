@@ -400,7 +400,6 @@ export const importExternalNewsService = async (
     const data = await createBlogService(authorId, {
         title: article.title,
         content: `${article.contentHtml}${sourceNote}`,
-        categoryId: payload.categoryId || null,
         thumbnailUrl: article.thumbnailUrl,
         status: payload.status || "DRAFT",
     });

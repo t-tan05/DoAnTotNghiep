@@ -95,3 +95,14 @@ export const deleteCategoryById = async(categoryId: string) => {
         },
     });
 };
+
+export const getCategoryDeleteUsage = async(categoryId: string) => {
+    const [productCount, productLineCount, cmsCollectionCount, cmsRuleCount] = await prisma.$transaction([
+        prisma.products.count({where: {category_id: categoryId}}),
+        prisma.product_lines.count({where: {category_id: categoryId}}),
+        prisma.cms_collections.count({where: {category_id: categoryId}}),
+        prisma.cms_collection_rules.count({where: {category_id: categoryId}}),
+    ]);
+
+    return {productCount, productLineCount, cmsCollectionCount, cmsRuleCount};
+}

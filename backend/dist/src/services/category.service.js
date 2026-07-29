@@ -1,8 +1,8 @@
-import { createCategory, deleteCategoryById, findCategoryById, findCategoryByNormalizeName, updateCategory, getCategoriesWithQuery } from "#models/category.model";
-import { findProductByCategoryId } from "#models/product.model";
+import { createCategory, deleteCategoryById, findCategoryById, findCategoryByNormalizeName, updateCategory, getCategoriesWithQuery, getCategoryDeleteUsage } from "#models/category.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
+import { buildDeleteBlockedMessage } from "#utils/deleteGuard";
 export const createCategoryService = async (categoryName, description) => {
     //Tên hiển thị
     const displayName = categoryName.trim();
@@ -60,9 +60,15 @@ export const deleteCategoryService = async (categoryId) => {
     const category = await findCategoryById(categoryId);
     if (!category)
         throw new AppError("Không tìm thấy danh mục sản phẩm", 404);
-    const existedCategoryInProduct = await findProductByCategoryId(categoryId);
-    if (existedCategoryInProduct)
-        throw new AppError("Không thể xóa vì danh mục sản phẩm này đang được sử dụng", 409);
+    const usage = await getCategoryDeleteUsage(categoryId);
+    const message = buildDeleteBlockedMessage("danh mục", [
+        { label: "sản phẩm", count: usage.productCount },
+        { label: "dòng sản phẩm", count: usage.productLineCount },
+        { label: "trang CMS", count: usage.cmsCollectionCount },
+        { label: "rule CMS", count: usage.cmsRuleCount },
+    ]);
+    if (message)
+        throw new AppError(message, 409);
     const delCategory = await deleteCategoryById(categoryId);
     return { delCategory };
 };

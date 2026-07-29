@@ -18,7 +18,6 @@ export type CreateWarrantyPayload = {
     serialNumber?: string;
     deviceId?: string;
     issueDescription: string;
-    issueCategoryId?: string;
     serviceMethod?: warranty_service_method;
     pickupReceiverName?: string;
     pickupPhone?: string;
@@ -51,7 +50,6 @@ export type InspectWarrantyPayload = {
     inspectionResult: string;
     isWarrantyEligible: boolean;
     estimatedCost?: number;
-    policyId?: string;
     note?: string;
 };
 

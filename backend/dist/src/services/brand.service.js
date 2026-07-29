@@ -1,8 +1,8 @@
-import { createBrand, deleteBrandById, findBrandById, findBrandByNormalizeName, updateBrand, getBrandsWithQuery } from "#models/brand.model";
-import { findProductByBrandId } from "#models/product.model";
+import { createBrand, deleteBrandById, findBrandById, findBrandByNormalizeName, updateBrand, getBrandsWithQuery, getBrandDeleteUsage } from "#models/brand.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
+import { buildDeleteBlockedMessage } from "#utils/deleteGuard";
 export const createBrandService = async (brandName, description) => {
     const displayName = brandName.trim();
     //Tên chuẩn hóa để kiểm tra sự duplicate
@@ -59,9 +59,15 @@ export const deleteBrandService = async (brandId) => {
     const brand = await findBrandById(brandId);
     if (!brand)
         throw new AppError("Không tìm thấy thương hiệu sản phẩm", 404);
-    const existedBrandInProduct = await findProductByBrandId(brandId);
-    if (existedBrandInProduct)
-        throw new AppError("Không thể xóa vì thương hiệu sản phẩm đang được sử dụng", 409);
+    const usage = await getBrandDeleteUsage(brandId);
+    const message = buildDeleteBlockedMessage("thương hiệu", [
+        { label: "sản phẩm", count: usage.productCount },
+        { label: "dòng sản phẩm", count: usage.productLineCount },
+        { label: "trang CMS", count: usage.cmsCollectionCount },
+        { label: "rule CMS", count: usage.cmsRuleCount },
+    ]);
+    if (message)
+        throw new AppError(message, 409);
     const delBrand = await deleteBrandById(brandId);
     return { delBrand };
 };

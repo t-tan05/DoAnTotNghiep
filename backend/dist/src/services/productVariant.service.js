@@ -196,19 +196,37 @@ export const updateProductVariantService = async (variantId, data, updatedBy) =>
     if (data.price !== undefined)
         productVariantData.price = data.price;
     let inventoryTransactionData;
+    const deviceData = [];
+    let deviceDecreaseQuantity = 0;
     if (data.quantityInStock !== undefined) {
+        const stockDifference = data.quantityInStock - productVariant.quantity_in_stock;
+        const nextSku = data.sku ?? productVariant.sku ?? variantId;
         productVariantData.quantity_in_stock = data.quantityInStock;
         inventoryTransactionData = {
             transaction_id: crypto.randomUUID(),
             variant_id: variantId,
             type: inventory_transactions_type.ADJUST,
-            quantity: data.quantityInStock - productVariant.quantity_in_stock,
+            quantity: stockDifference,
             before_quantity: productVariant.quantity_in_stock,
             after_quantity: data.quantityInStock,
             note: data.stockNote || "Điều chỉnh tồn kho biến thể",
             created_by: updatedBy,
             created_at: new Date(),
         };
+        if (stockDifference > 0) {
+            const createdAt = Date.now();
+            for (let i = 0; i < stockDifference; i++) {
+                deviceData.push({
+                    device_id: crypto.randomUUID(),
+                    variant_id: variantId,
+                    serial_number: `${nextSku}-${createdAt}-${productVariant.quantity_in_stock + i + 1}`,
+                    status: devices_status.AVAILABLE,
+                });
+            }
+        }
+        if (stockDifference < 0) {
+            deviceDecreaseQuantity = Math.abs(stockDifference);
+        }
     }
     const variantAttributeValueData = [];
     if (data?.attributeValueIds) {
@@ -230,7 +248,7 @@ export const updateProductVariantService = async (variantId, data, updatedBy) =>
             });
         }
     }
-    const updProductVariant = await updateProductVariant(variantId, productVariantData, data?.attributeValueIds !== undefined, variantAttributeValueData, data?.specs !== undefined, productVariantSpecData, inventoryTransactionData);
+    const updProductVariant = await updateProductVariant(variantId, productVariantData, data?.attributeValueIds !== undefined, variantAttributeValueData, data?.specs !== undefined, productVariantSpecData, inventoryTransactionData, deviceData, deviceDecreaseQuantity);
     return { updProductVariant };
 };
 export const getProductVariantService = async (variantId) => {

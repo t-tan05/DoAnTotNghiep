@@ -96,3 +96,14 @@ export const deleteBrandById = async(brandId: string) => {
         },
     });
 };
+
+export const getBrandDeleteUsage = async(brandId: string) => {
+    const [productCount, productLineCount, cmsCollectionCount, cmsRuleCount] = await prisma.$transaction([
+        prisma.products.count({where: {brand_id: brandId}}),
+        prisma.product_lines.count({where: {brand_id: brandId}}),
+        prisma.cms_collections.count({where: {brand_id: brandId}}),
+        prisma.cms_collection_rules.count({where: {brand_id: brandId}}),
+    ]);
+
+    return {productCount, productLineCount, cmsCollectionCount, cmsRuleCount};
+}

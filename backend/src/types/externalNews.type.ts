@@ -33,6 +33,5 @@ export type ExternalNewsDetail = ExternalNewsArticle & {
 export type ImportExternalNewsPayload = {
     url: string;
     sourceId?: ExternalNewsSourceId;
-    categoryId?: string | null;
     status?: blog_posts_status;
 };

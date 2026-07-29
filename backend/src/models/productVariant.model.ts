@@ -1,4 +1,5 @@
 import prisma from "#config/prisma"
+import AppError from "#utils/AppError";
 import { Prisma } from "@prisma/client";
 import { createVariantAttributeTransaction, deleteVariantAttributeTransaction } from "./variantAttributeValue.model.js";
 import { createProductVariantSpecTransaction, deleteProductVariantSpecTransaction } from "./productVariantSpec.model.js";
@@ -138,6 +139,8 @@ export const updateProductVariant = async(
     shouldUpdateSpecs: boolean,
     productVariantSpecData: Prisma.product_variant_specsUncheckedCreateInput[],
     inventoryTransactionData?: Prisma.inventory_transactionsUncheckedCreateInput,
+    deviceData: Prisma.devicesUncheckedCreateInput[] = [],
+    deviceDecreaseQuantity = 0,
 ) => {
     return await prisma.$transaction(async(tx) => {
         const updateVariant = await tx.product_variants.update({
@@ -165,6 +168,43 @@ export const updateProductVariant = async(
 
         if(inventoryTransactionData){
             await createInventoryTransaction(tx, [inventoryTransactionData]);
+        }
+
+        if(deviceData.length > 0){
+            await createDevicesTransaction(tx, deviceData);
+        }
+
+        if(deviceDecreaseQuantity > 0){
+            const devices = await tx.devices.findMany({
+                where: {
+                    variant_id: variantId,
+                    status: "AVAILABLE",
+                },
+                take: deviceDecreaseQuantity,
+                orderBy: {
+                    device_id: "asc",
+                },
+                select: {
+                    device_id: true,
+                },
+            });
+
+            if(devices.length < deviceDecreaseQuantity) {
+                throw new AppError("Không đủ thiết bị khả dụng để giảm tồn kho.", 400);
+            }
+
+            const deleted = await tx.devices.deleteMany({
+                where: {
+                    device_id: {
+                        in: devices.map((device) => device.device_id),
+                    },
+                    status: "AVAILABLE",
+                },
+            });
+
+            if(deleted.count !== deviceDecreaseQuantity) {
+                throw new AppError("Thiết bị vừa được cập nhật bởi thao tác khác, vui lòng thử lại.", 409);
+            }
         }
 
         return updateVariant;
