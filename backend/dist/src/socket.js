@@ -5,6 +5,7 @@ import { ACCESS_TOKEN } from "#config/jwt";
 import { findUserById } from "#models/user.model";
 import { removeOnlineStaff, removeOnlineVisitor, setOnlineStaff, setOnlineVisitor, } from "#utils/dashboardMetrics";
 import { getDashboardSummaryAnalyticsService } from "#services/dashboardAnalytics.service";
+import logger from "#config/logger";
 let io;
 export function initSocket(server) {
     io = new Server(server, {
@@ -47,9 +48,13 @@ export function initSocket(server) {
         }
     });
     io.on("connection", (socket) => {
-        console.log("Socket connected: ", socket.id);
         const currentUserId = socket.data.user?.user_id;
         const roles = socket.data.user?.roles || [];
+        logger.info({
+            socketId: socket.id,
+            userId: currentUserId ?? null,
+            roles,
+        }, "Socket connected");
         if (currentUserId) {
             socket.join(`user:${currentUserId}`);
             socket.join(`warranty_user:${currentUserId}`);
@@ -107,7 +112,10 @@ export function initSocket(server) {
             removeOnlineVisitor(socket.id);
             removeOnlineStaff(socket.id);
             emitDashboardUpdate();
-            console.log("Socket disconnected:", socket.id);
+            logger.info({
+                socketId: socket.id,
+                userId: currentUserId ?? null,
+            }, "Socket disconnected");
         });
     });
     return io;
@@ -128,6 +136,6 @@ export async function emitDashboardUpdate() {
         io.to("dashboard_admin").emit("dashboard:updated", await getDashboardSummaryAnalyticsService());
     }
     catch (error) {
-        console.error("Emit dashboard update failed:", error);
+        logger.error({ err: error }, "Emit dashboard update failed");
     }
 }

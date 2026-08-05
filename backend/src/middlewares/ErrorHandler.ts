@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '#config/logger';
 
 export const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
     //Token hết hạn
@@ -32,6 +33,16 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
     }
 
     const statusCode = err.statusCode || 500;
+
+    logger[statusCode >= 500 ? "error" : "warn"]({
+        err,
+        requestId: (req as any).id,
+        method: req.method,
+        url: req.originalUrl,
+        userId: (req as any).user?.user_id ?? null,
+        statusCode,
+    }, err.message || "Request failed");
+
     res.status(statusCode).json({
         status: err.status || "error",
         message: err.message || "Internal Server Error",

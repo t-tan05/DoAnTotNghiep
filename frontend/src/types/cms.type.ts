@@ -116,6 +116,17 @@ export type CmsSectionItem = {
                 category_id: string;
                 category_name: string;
             };
+            products_promotions?: Array<{
+                promotions?: {
+                    promotion_id: string;
+                    promotion_name: string;
+                    discount_type: "PERCENT" | "FIXED";
+                    discount_value: number | string;
+                    start_date: string;
+                    end_date: string;
+                    is_active?: boolean | null;
+                } | null;
+            }>;
         };
         variant_attribute_values?: Array<{
             attribute_values: {

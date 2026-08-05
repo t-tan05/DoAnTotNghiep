@@ -12,7 +12,6 @@ import { CheckRole } from "#middlewares/CheckRole";
 import { Validate } from "#middlewares/Validate";
 import { createProductSchema, updateProductSchema } from "#validations/product.validation";
 import { Router } from "express";
-import { excelUpload } from "#config/excelMulter";
 
 const router = Router();
 

@@ -7,6 +7,8 @@ import {
     UserRound,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { isStaffUser } from "@/utils/authRole";
 
 
 type ProfileSidebarProps = {
@@ -52,6 +54,10 @@ export default function ProfileSidebar({
     userName,
     email,
 }: ProfileSidebarProps) {
+    const { user } = useAuth();
+    const visibleMenuItems = isStaffUser(user)
+        ? menuItems.filter((item) => item.to === "/account" || item.to === "/account/password")
+        : menuItems;
 
     return (
     <aside className="min-w-0 overflow-hidden rounded-xl border bg-white p-4 lg:p-5">
@@ -67,7 +73,7 @@ export default function ProfileSidebar({
       </div>
 
       <nav className="-mx-1 flex max-w-full gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0 lg:pb-0">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const Icon = item.icon;
 
           return (

@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { VerifyToken } from "#middlewares/Auth";
+import { CheckRole } from "#middlewares/CheckRole";
 import { addWishlistController, checkManyWishlistsController, checkWishlistController, getMyWishlistsController, removeWishlistController, } from "#controllers/wishlist.controller";
 const router = Router();
 router.use(VerifyToken);
+router.use(CheckRole("CUSTOMER"));
 router.get("/me", getMyWishlistsController);
 router.post("/check-many", checkManyWishlistsController);
 router.get("/check/:variantId", checkWishlistController);

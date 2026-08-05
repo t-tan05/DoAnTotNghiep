@@ -5,6 +5,7 @@ import {
     getMyCartController,
     updateCartItemController,
 } from "#controllers/cart.controller";
+import { CheckRole } from "#middlewares/CheckRole";
 import { VerifyToken } from "#middlewares/Auth";
 import { Validate } from "#middlewares/Validate";
 import { addCartItemSchema, updateCartItemSchema } from "#validations/cart.validation";
@@ -13,11 +14,12 @@ import { Router } from "express";
 const router = Router();
 
 router.use(VerifyToken);
+router.use(CheckRole("CUSTOMER"));
 
-router.get("/me",VerifyToken, getMyCartController);
-router.post("/items",VerifyToken, Validate(addCartItemSchema), addCartItemController);
-router.patch("/items/:cartItemId",VerifyToken, Validate(updateCartItemSchema), updateCartItemController);
-router.delete("/items/:cartItemId",VerifyToken, deleteCartItemController);
-router.delete("/me",VerifyToken, clearMyCartController);
+router.get("/me", getMyCartController);
+router.post("/items", Validate(addCartItemSchema), addCartItemController);
+router.patch("/items/:cartItemId", Validate(updateCartItemSchema), updateCartItemController);
+router.delete("/items/:cartItemId", deleteCartItemController);
+router.delete("/me", clearMyCartController);
 
 export default router;

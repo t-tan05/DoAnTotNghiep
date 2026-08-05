@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cmsService } from "@/services/cms.service";
 import { wishlistService } from "@/services/wishlist.service";
 import type { CmsCollection } from "@/types/cms.type";
+import { isStaffUser } from "@/utils/authRole";
 import type {
     PublicProductCardItem,
     PublicProductFilterOption,
@@ -310,7 +311,8 @@ function getCmsBreadcrumbs(
 export default function ProductListPage() {
     const { cmsSlug: routeCmsSlug } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
+    const canUseWishlist = isAuthenticated && !isStaffUser(user);
 
     const [products, setProducts] = useState<PublicProductCardItem[]>([]);
     const [wishlistMap, setWishlistMap] = useState<Record<string, boolean>>({});
@@ -497,7 +499,7 @@ export default function ProductListPage() {
                     setTotalItems(totalGridItems);
                     setTotalPages(Math.ceil(totalGridItems / 20));
 
-                    if(isAuthenticated && paginatedProducts.length > 0) {
+                    if(canUseWishlist && paginatedProducts.length > 0) {
                         try {
                             const variantIds = paginatedProducts.map((product) => product.variant.variant_id);
                             const wishlistData = await wishlistService.checkMany(variantIds);
@@ -543,7 +545,7 @@ export default function ProductListPage() {
                 setTotalItems(productData.total);
                 setTotalPages(productData.totalPages);
 
-                if(isAuthenticated && productData.items.length > 0) {
+                if(canUseWishlist && productData.items.length > 0) {
                     try {
                         const variantIds = productData.items.map((product) => product.variant.variant_id);
                         const wishlistData = await wishlistService.checkMany(variantIds);

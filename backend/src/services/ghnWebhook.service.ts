@@ -2,6 +2,7 @@ import prisma from "#config/prisma";
 import { mapGhnStatusToOrderStatus } from "#utils/ghnStatus";
 import { devices_status, orders_payment_status, payment_transactions_status } from "@prisma/client";
 import { emitDashboardUpdate, getIO } from "../socket.js";
+import logger from "#config/logger";
 
 const addMonth = (date: Date, months: number) => {
     const result = new Date(date);
@@ -30,7 +31,7 @@ async function emitGhnOrderUpdated(order: any) {
 
         await emitDashboardUpdate();
     }catch(error) {
-        console.error("Emit GHN webhook update failed:", error);
+        logger.error({ err: error }, "Emit GHN webhook update failed");
     }
 }
 

@@ -3,6 +3,7 @@ import { AiChatPayload, AiProductSuggestion } from "#types/ai.type";
 import AppError from "#utils/AppError";
 import { ai_messages_role, ai_messages_status } from "@prisma/client";
 import crypto from "crypto";
+import logger from "#config/logger";
 
 function buildSystemPrompt() {
     return [
@@ -237,7 +238,7 @@ export async function chatWithAiService(payload: AiChatPayload, owner: { userId?
             suggestions,
         };
     }catch(error) {
-        console.error("AI connection error:", error);
+        logger.error({ err: error }, "AI connection error");
         if(error instanceof AppError) throw error;
         throw new AppError("Không thể kết nối AI.", 502);
     }

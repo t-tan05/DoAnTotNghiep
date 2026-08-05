@@ -37,7 +37,7 @@ export const navItems: NavItem[] = [
     },
     {
         label: "PHỤ KIỆN MÁY TÍNH",
-        href: "/c/phu-kien-pc",
+        href: "/c/phu-kien-may-tinh",
         menuKey: "phukienmaytinh",
     },
     {

@@ -1,0 +1,34 @@
+import pino from "pino";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const logger = pino({
+    level: process.env.LOG_LEVEL || "info",
+    redact: {
+        paths: [
+            "req.headers.authorization",
+            "req.headers.cookie",
+            "password",
+            "pass_word",
+            "accessToken",
+            "refreshToken",
+            "*.password",
+            "*.pass_word",
+            "*.accessToken",
+            "*.refreshToken",
+        ],
+        censor: "[REDACTED]",
+    },
+    transport: isProduction
+        ? undefined
+        : {
+            target: "pino-pretty",
+            options: {
+                colorize: true,
+                translateTime: "SYS:standard",
+                ignore: "pid,hostname",
+            },
+        },
+});
+
+export default logger;

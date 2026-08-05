@@ -9,7 +9,7 @@ import {
     getProductDeleteUsage, 
     getProductWithQuery, 
     getPublicProductFilterOptions, 
-    getPublicProductVariantsWithQuery, 
+    getPublicProductsPageWithQuery, 
     getRelatedProductVariants, 
     ProductListQuery, 
     updateProduct 
@@ -116,9 +116,7 @@ export const deleteProductService = async(productId: string) => {
         { label: "biến thể", count: usage.variantCount },
         { label: "chi tiết đơn hàng", count: usage.orderDetailCount },
         { label: "đánh giá", count: usage.reviewCount },
-        { label: "item CMS", count: usage.cmsItemCount },
         { label: "khuyến mãi", count: usage.promotionCount },
-        { label: "gợi ý AI", count: usage.aiSuggestionCount },
     ]);
 
     if(message) throw new AppError(message, 409);
@@ -467,19 +465,12 @@ export const sortPublicProductCards = (products: any[], sortBy: PublicProductLis
 };
 
 export const getPublicProductsService = async(params: PublicProductListQuery) => {
-    const { variants } = await getPublicProductVariantsWithQuery({
-        ...params,
-        page: 1,
-        limit: 10000,
-    });
+    const { variants, totalItems } = await getPublicProductsPageWithQuery(params);
     const filterOptions = await getPublicProductFilterOptions();
     const groupedProducts = sortPublicProductCards(groupPublicVariants(variants), params.sortBy);
-    const totalItems = groupedProducts.length;
-    const start = (params.page - 1) * params.limit;
-    const paginatedProducts = groupedProducts.slice(start, start + params.limit);
 
     return {
-        products: paginatedProducts,
+        products: groupedProducts,
 
         filters: {
             brands: filterOptions.brands.map((brand) => ({

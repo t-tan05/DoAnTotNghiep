@@ -8,8 +8,10 @@ import { productService } from "@/services/product.service";
 import { wishlistService } from "@/services/wishlist.service";
 import type { AdminProduct, PublicProductCardItem } from "@/types/product.type";
 import type { AdminProductVariant } from "@/types/productVariant.type";
+import { addCompareItem, COMPARE_CHANGED_EVENT, getCompareItems } from "@/utils/compareStorage";
+import { isStaffUser } from "@/utils/authRole";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { ChevronLeft, ChevronRight, Heart, Home, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Home, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck, Shuffle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -249,7 +251,8 @@ export default function ProductDetailPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
+    const isStaff = isStaffUser(user);
 
     const [product, setProduct] = useState<AdminProduct | null>(null);
     const [selectedVariantId, setSelectedVariantId] = useState("");
@@ -270,6 +273,9 @@ export default function ProductDetailPage() {
     const [relatedProducts, setRelatedProducts] = useState<PublicProductCardItem[]>([]);
     const [relatedLoading, setRelatedLoading] = useState(false);
     const [relatedPage, setRelatedPage] = useState(0);
+    const [comparedVariantIds, setComparedVariantIds] = useState<string[]>(() => (
+        getCompareItems().map((item) => item.variantId)
+    ));
 
     useEffect(() => {
         async function loadProduct() {
@@ -391,8 +397,22 @@ export default function ProductDetailPage() {
     }, [maxThumbnailStartIndex]);
 
     useEffect(() => {
+        function syncComparedItems() {
+            setComparedVariantIds(getCompareItems().map((item) => item.variantId));
+        }
+
+        window.addEventListener(COMPARE_CHANGED_EVENT, syncComparedItems);
+        window.addEventListener("storage", syncComparedItems);
+
+        return () => {
+            window.removeEventListener(COMPARE_CHANGED_EVENT, syncComparedItems);
+            window.removeEventListener("storage", syncComparedItems);
+        };
+    }, []);
+
+    useEffect(() => {
         async function checkWishlist() {
-            if(!selectedVariant?.variant_id || !isAuthenticated) {
+            if(!selectedVariant?.variant_id || !isAuthenticated || isStaff) {
                 setIsWishlisted(false);
                 return;
             }
@@ -406,7 +426,7 @@ export default function ProductDetailPage() {
         }
 
         checkWishlist();
-    }, [selectedVariant?.variant_id, isAuthenticated]);
+    }, [selectedVariant?.variant_id, isAuthenticated, isStaff]);
 
     function selectVariant(variant: AdminProductVariant) {
         setSelectedVariantId(variant.variant_id);
@@ -477,6 +497,7 @@ export default function ProductDetailPage() {
     }
 
     async function handleToggleWishlist() {
+        if(isStaff) return;
         if(!selectedVariant) return;
 
         if(!isAuthenticated) {
@@ -509,6 +530,7 @@ export default function ProductDetailPage() {
     }
 
     async function handleAddToCart() {
+        if(isStaff) return;
         if (!selectedVariant) return;
         if (isOutOfStock) return;
 
@@ -536,6 +558,7 @@ export default function ProductDetailPage() {
     }
 
     function handleBuyNow() {
+        if(isStaff) return;
         if (!selectedVariant) return;
         if (isOutOfStock) return;
 
@@ -575,6 +598,29 @@ export default function ProductDetailPage() {
         }
     }
 
+    function handleAddToCompare() {
+        if(!product || !selectedVariant) return;
+
+        const result = addCompareItem({
+            productId: product.product_id,
+            variantId: selectedVariant.variant_id,
+        });
+
+        if(!result.success && result.reason === "limit") {
+            toast.error("Chỉ có thể so sánh tối đa 3 sản phẩm.");
+            return;
+        }
+
+        if(result.reason === "exists") {
+            setComparedVariantIds(result.items.map((item) => item.variantId));
+            toast.info("Sản phẩm đã có trong danh sách so sánh.");
+            return;
+        }
+
+        setComparedVariantIds(result.items.map((item) => item.variantId));
+        toast.success("Đã thêm vào danh sách so sánh.");
+    }
+
     if (loading) return <PageLoading text="Đang tải sản phẩm..." />;
 
     if (error) {
@@ -605,11 +651,12 @@ export default function ProductDetailPage() {
     const canToggleSpecs = specRows.length > 4;
     const canToggleDetail = detailContent.length > 900;
     const breadcrumbItems = buildProductBreadcrumbItems(product, displayName);
+    const isCompared = Boolean(selectedVariant?.variant_id && comparedVariantIds.includes(selectedVariant.variant_id));
 
     return (
         <section className="bg-[#f5f6fb]">
             <div className="mx-auto max-w-7xl px-3 py-4 md:px-6 md:py-6">
-                <nav className="-mx-3 mb-4 flex min-h-11 items-center gap-2 overflow-x-auto bg-[#eef1f8] px-3 text-sm text-[#747c96] md:-mx-6 md:px-6">
+                <nav className="mb-4 flex min-h-11 items-center gap-2 overflow-x-auto bg-[#eef1f8] px-3 text-sm text-[#747c96] md:px-6">
                     <Link to="/" className="flex shrink-0 items-center gap-2 text-blue-600 transition hover:text-blue-800">
                         <Home className="h-4 w-4 opacity-50" />
                         Trang chủ
@@ -718,13 +765,13 @@ export default function ProductDetailPage() {
 
                         <div className="min-w-0 space-y-4 md:space-y-5">
                             <div className="min-w-0">
-                                <p className="text-sm text-muted-foreground">
-                                    Thương hiệu: <span className="font-medium text-blue-700">{product.brands?.brand_name}</span>
-                                </p>
                                 <h1 className="mt-2 break-words text-xl font-bold leading-tight text-[#1f2430] md:text-3xl">
                                     {displayName}
                                 </h1>
                                 <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                                    <span>
+                                        Thương hiệu: <span className="font-medium text-blue-700">{product.brands?.brand_name}</span>
+                                    </span>
                                     {selectedVariant?.sku && <span>SKU: {selectedVariant.sku}</span>}
                                     <span className="flex items-center gap-1">
                                         <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
@@ -741,6 +788,21 @@ export default function ProductDetailPage() {
                                             </>
                                         )}
                                     </span>
+                                    {isCompared ? (
+                                        <span className="flex items-center gap-1 font-medium text-green-700">
+                                            <Shuffle className="size-4" />
+                                            Đã thêm so sánh
+                                        </span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleAddToCompare}
+                                            className="flex cursor-pointer items-center gap-1 font-medium text-green-700 transition hover:text-green-800"
+                                        >
+                                            <Shuffle className="size-4" />
+                                            So sánh
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -792,13 +854,9 @@ export default function ProductDetailPage() {
                                 <p className="mt-1 text-3xl font-bold text-blue-700 md:text-4xl">
                                     {formatPrice(currentPrice)}
                                 </p>
-                                {selectedVariant?.active_promotion && (
-                                    <p className="mt-2 inline-flex rounded bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-                                        {selectedVariant.active_promotion.promotion_name}
-                                    </p>
-                                )}
                             </div>
 
+                            {!isStaff && (
                             <div className="flex flex-wrap items-center gap-3 md:gap-4">
                                 <div className="flex items-center rounded-lg border">
                                     <Button
@@ -828,7 +886,9 @@ export default function ProductDetailPage() {
                                     Còn {availableQuantity} sản phẩm có thể mua
                                 </p>
                             </div>
+                            )}
 
+                            {!isStaff && (
                             <div className="grid min-w-0 gap-3 sm:grid-cols-2">
                                 {isOutOfStock ? (
                                     <button
@@ -877,6 +937,7 @@ export default function ProductDetailPage() {
                                     {isWishlisted ? "Đã yêu thích" : "Yêu thích"}
                                 </Button>
                             </div>
+                            )}
                         </div>
                     </div>
                 </div>

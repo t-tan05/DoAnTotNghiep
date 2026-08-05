@@ -11,6 +11,7 @@ import {
     setOnlineVisitor,
 } from "#utils/dashboardMetrics";
 import { getDashboardSummaryAnalyticsService } from "#services/dashboardAnalytics.service";
+import logger from "#config/logger";
 
 let io: Server;
 
@@ -64,9 +65,14 @@ export function initSocket(server: HttpServer) {
     });
 
     io.on("connection", (socket) => {
-        console.log("Socket connected: ", socket.id);
         const currentUserId = socket.data.user?.user_id;
         const roles: string[] = socket.data.user?.roles || [];
+
+        logger.info({
+            socketId: socket.id,
+            userId: currentUserId ?? null,
+            roles,
+        }, "Socket connected");
 
         if(currentUserId) {
             socket.join(`user:${currentUserId}`);
@@ -141,7 +147,10 @@ export function initSocket(server: HttpServer) {
             removeOnlineVisitor(socket.id);
             removeOnlineStaff(socket.id);
             emitDashboardUpdate();
-            console.log("Socket disconnected:", socket.id);
+            logger.info({
+                socketId: socket.id,
+                userId: currentUserId ?? null,
+            }, "Socket disconnected");
         });
     });
 
@@ -165,6 +174,6 @@ export async function emitDashboardUpdate() {
     try {
         io.to("dashboard_admin").emit("dashboard:updated", await getDashboardSummaryAnalyticsService());
     }catch(error) {
-        console.error("Emit dashboard update failed:", error);
+        logger.error({ err: error }, "Emit dashboard update failed");
     }
 }

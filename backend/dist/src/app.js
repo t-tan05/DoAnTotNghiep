@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import { limiter } from "#config/rateLimit";
 import { globalErrorHandler } from "#middlewares/ErrorHandler";
 import cookieParser from "cookie-parser";
+import { requestLogger } from "#middlewares/requestLogger";
 //Router
 import authRoute from "#routes/auth.route";
 import roleRoute from "#routes/role.route";
@@ -32,7 +32,7 @@ import aiRoute from "#routes/ai.route";
 import ghnRoute from "#routes/ghn.route";
 import webhookRoute from "#routes/webhook.route";
 const app = express();
-app.use(morgan("dev"));
+app.use(requestLogger);
 app.use(helmet());
 app.use(cors({
     origin: process.env.NODE_ENV === "production" ? process.env.FRONTEND_URL : true,

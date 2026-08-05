@@ -41,12 +41,12 @@ const router = Router();
 
 router.use(VerifyToken);
 
-router.get("/lookup", lookupWarrantyBySerialController);
-router.get("/lookup-phone", lookupWarrantyByPhoneController);
-router.post("/", Validate(createWarrantySchema), createWarrantyController);
+router.get("/lookup", CheckRole("CUSTOMER"), lookupWarrantyBySerialController);
+router.get("/lookup-phone", CheckRole("CUSTOMER"), lookupWarrantyByPhoneController);
+router.post("/", CheckRole("CUSTOMER"), Validate(createWarrantySchema), createWarrantyController);
 
-router.get("/me", getMyWarrantiesController);
-router.get("/me/:warrantyId", getMyWarrantyDetailController);
+router.get("/me", CheckRole("CUSTOMER"), getMyWarrantiesController);
+router.get("/me/:warrantyId", CheckRole("CUSTOMER"), getMyWarrantyDetailController);
 
 router.get("/", CheckRole("ADMIN", "EMPLOYEE"), getAllWarrantiesController);
 router.get("/:warrantyId", CheckRole("ADMIN", "EMPLOYEE"), getWarrantyDetailController);

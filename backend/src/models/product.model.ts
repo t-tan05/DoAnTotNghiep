@@ -330,7 +330,7 @@ export const findProductByBrandId = async(brandId: string) => {
     });
 };
 
-export const getPublicProductVariantsWithQuery = async(params: PublicProductListQuery) => {
+export const getPublicProductsPageWithQuery = async(params: PublicProductListQuery) => {
     const {
         page,
         limit,
@@ -344,199 +344,192 @@ export const getPublicProductVariantsWithQuery = async(params: PublicProductList
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.product_variantsWhereInput = {
-        ...(minPrice !== undefined || maxPrice !== undefined
+    const variantPriceWhere: Prisma.product_variantsWhereInput =
+        minPrice !== undefined || maxPrice !== undefined
             ? {
                 price: {
                     ...(minPrice !== undefined ? { gte: minPrice } : {}),
                     ...(maxPrice !== undefined ? { lte: maxPrice } : {}),
                 },
             }
-            : {}
-        ),
+            : {};
 
-        products: {
-            ...(categoryId ? { category_id: categoryId } : {}),
-            ...(brandId ? { brand_id: brandId } : {}),
-        },
+    const productWhere: Prisma.productsWhereInput = {
+        ...(categoryId ? { category_id: categoryId } : {}),
+        ...(brandId ? { brand_id: brandId } : {}),
+
+        ...(Object.keys(variantPriceWhere).length > 0
+            ? {
+                product_variants: {
+                    some: variantPriceWhere,
+                },
+            }
+            : {}),
 
         ...(search
             ? {
                 OR: [
+                    { product_name: { contains: search } },
+                    { normalized_name: { contains: normalizeText(search) } },
+                    { brands: { brand_name: { contains: search } } },
+                    { categories: { category_name: { contains: search } } },
                     {
-                        products: {
-                            product_name: {
-                                contains: search,
-                            },
-                        },
-                    },
-                    {
-                        products: {
-                            normalized_name: {
-                                contains: normalizeText(search),
-                            },
-                        },
-                    },
-                    {
-                        products: {
-                            brands: {
-                                brand_name: {
-                                    contains: search,
-                                },
-                            },
-                        },
-                    },
-                    {
-                        products: {
-                            categories: {
-                                category_name: {
-                                    contains: search,
-                                },
-                            },
-                        },
-                    },
-                    {
-                        variant_name: {
-                            contains: search,
-                        },
-                    },
-                    {
-                        sku: {
-                            contains: search,
-                        },
-                    },
-                    {
-                        variant_attribute_values: {
+                        product_variants: {
                             some: {
-                                attribute_values: {
-                                    value: {
-                                        contains: search,
+                                OR: [
+                                    { variant_name: { contains: search } },
+                                    { sku: { contains: search } },
+                                    {
+                                        variant_attribute_values: {
+                                            some: {
+                                                attribute_values: {
+                                                    value: {
+                                                        contains: search,
+                                                    },
+                                                },
+                                            },
+                                        },
                                     },
-                                },
-                            },
-                        },
-                    },
-                    {
-                        product_variant_specs: {
-                            some: {
-                                spec_value: {
-                                    contains: search,
-                                },
+                                    {
+                                        product_variant_specs: {
+                                            some: {
+                                                spec_value: {
+                                                    contains: search,
+                                                },
+                                            },
+                                        },
+                                    },
+                                ],
                             },
                         },
                     },
                 ],
             }
-            : {}
-        ),
+            : {}),
     };
 
-    let orderBy: Prisma.product_variantsOrderByWithRelationInput = {
+    let productOrderBy: Prisma.productsOrderByWithRelationInput = {
         created_at: "desc",
     };
 
-    if(sortBy === "price_asc") {
-        orderBy = { price: "asc" };
-    }
-
-    if(sortBy === "price_desc") {
-        orderBy = { price: "desc" };
-    }
-
     if(sortBy === "name_asc") {
-        orderBy = { variant_name: "asc" };
+        productOrderBy = {
+            product_name: "asc",
+        };
     }
 
-    if(sortBy === "best_selling") {
-        orderBy = { sold_quantity: "desc" };
-    }
-
-    const [variants, totalItems] = await prisma.$transaction([
-        prisma.product_variants.findMany({
-            where,
+    const [products, totalItems] = await prisma.$transaction([
+        prisma.products.findMany({
+            where: productWhere,
             skip,
             take: limit,
-            orderBy,
+            orderBy: productOrderBy,
             select: {
-                variant_id: true,
                 product_id: true,
-                sku: true,
-                variant_name: true,
-                price: true,
-                quantity_in_stock: true,
-                image_url: true,
-                created_at: true,
+            },
+        }),
 
-                product_images: {
-                    select: {
-                        image_url: true,
-                        is_default: true,
-                    },
-                    orderBy: {
-                        is_default: "desc",
-                    },
-                    take: 1,
+        prisma.products.count({
+            where: productWhere,
+        }),
+    ]);
+
+    const productIds = products.map((product) => product.product_id);
+
+    if(productIds.length === 0) {
+        return {
+            variants: [],
+            totalItems,
+        };
+    }
+
+    const variants = await prisma.product_variants.findMany({
+        where: {
+            product_id: {
+                in: productIds,
+            },
+            ...variantPriceWhere,
+        },
+        orderBy: {
+            created_at: "desc",
+        },
+        select: {
+            variant_id: true,
+            product_id: true,
+            sku: true,
+            variant_name: true,
+            price: true,
+            quantity_in_stock: true,
+            image_url: true,
+            created_at: true,
+
+            product_images: {
+                select: {
+                    image_url: true,
+                    is_default: true,
                 },
-
-                variant_attribute_values: {
-                    select: {
-                        attribute_values: {
-                            select: {
-                                attribute_value_id: true,
-                                value: true,
-                                product_attributes: {
-                                    select: {
-                                        attribute_id: true,
-                                        attribute_name: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
+                orderBy: {
+                    is_default: "desc",
                 },
+                take: 1,
+            },
 
-                products: {
-                    select: {
-                        product_id: true,
-                        product_name: true,
-                        warranty_period: true,
-
-                        brands: {
-                            select: {
-                                brand_id: true,
-                                brand_name: true,
-                            },
-                        },
-
-                        categories: {
-                            select: {
-                                category_id: true,
-                                category_name: true,
-                            },
-                        },
-
-                        products_promotions: {
-                            select: {
-                                promotions: {
-                                    select: {
-                                        promotion_id: true,
-                                        promotion_name: true,
-                                        discount_type: true,
-                                        discount_value: true,
-                                        start_date: true,
-                                        end_date: true,
-                                        is_active: true,
-                                    },
+            variant_attribute_values: {
+                select: {
+                    attribute_values: {
+                        select: {
+                            attribute_value_id: true,
+                            value: true,
+                            product_attributes: {
+                                select: {
+                                    attribute_id: true,
+                                    attribute_name: true,
                                 },
                             },
                         },
                     },
                 },
             },
-        }),
 
-        prisma.product_variants.count({ where }),
-    ]);
+            products: {
+                select: {
+                    product_id: true,
+                    product_name: true,
+                    warranty_period: true,
+
+                    brands: {
+                        select: {
+                            brand_id: true,
+                            brand_name: true,
+                        },
+                    },
+
+                    categories: {
+                        select: {
+                            category_id: true,
+                            category_name: true,
+                        },
+                    },
+
+                    products_promotions: {
+                        select: {
+                            promotions: {
+                                select: {
+                                    promotion_id: true,
+                                    promotion_name: true,
+                                    discount_type: true,
+                                    discount_value: true,
+                                    start_date: true,
+                                    end_date: true,
+                                    is_active: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    });
 
     return {
         variants,
@@ -688,9 +681,7 @@ export const getProductDeleteUsage = async(productId: string) => {
         variantCount,
         orderDetailCount,
         reviewCount,
-        cmsItemCount,
         promotionCount,
-        aiSuggestionCount,
     ] = await prisma.$transaction([
         prisma.product_variants.count({where: {product_id: productId}}),
         prisma.orders_details.count({
@@ -702,17 +693,13 @@ export const getProductDeleteUsage = async(productId: string) => {
         }),
 
         prisma.reviews.count({where: {product_id: productId}}),
-        prisma.cms_section_items.count({where: {product_id: productId}}),
         prisma.products_promotions.count({where: {product_id: productId}}),
-        prisma.ai_product_suggestions.count({where: {product_id: productId}}),
     ]);
 
     return {
         variantCount,
         orderDetailCount,
         reviewCount,
-        cmsItemCount,
         promotionCount,
-        aiSuggestionCount,
     };
 };

@@ -1,10 +1,12 @@
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { isStaffUser } from "@/utils/authRole";
 import { Heart, LockKeyhole, LogIn, LogOut, MapPinned, Package, ShieldCheck, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function UserDropdown() {
     const { isAuthenticated, user, logout } = useAuth();
+    const isStaff = isStaffUser(user);
 
     async function handleLogout() {
         await logout();
@@ -55,37 +57,41 @@ export default function UserDropdown() {
                             Đổi mật khẩu
                         </Link>
 
-                        <Link
-                            to="/account/orders"
-                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
-                        >
-                            <Package className="size-4" />
-                            Quản lý đơn hàng
-                        </Link>
+                        {!isStaff && (
+                            <>
+                                <Link
+                                    to="/account/orders"
+                                    className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                                >
+                                    <Package className="size-4" />
+                                    Quản lý đơn hàng
+                                </Link>
 
-                        <Link
-                            to="/account/wishlist"
-                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
-                        >
-                            <Heart className="size-4" />
-                            Sản phẩm yêu thích
-                        </Link>
+                                <Link
+                                    to="/account/wishlist"
+                                    className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                                >
+                                    <Heart className="size-4" />
+                                    Sản phẩm yêu thích
+                                </Link>
 
-                        <Link
-                            to="/account/warranties"
-                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
-                        >
-                            <ShieldCheck className="size-4" />
-                            Bảo hành
-                        </Link>
+                                <Link
+                                    to="/account/warranties"
+                                    className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                                >
+                                    <ShieldCheck className="size-4" />
+                                    Bảo hành
+                                </Link>
 
-                        <Link
-                            to="/account/addresses"
-                            className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
-                        >
-                            <MapPinned className="size-4" />
-                            Sổ địa chỉ
-                        </Link>
+                                <Link
+                                    to="/account/addresses"
+                                    className="flex items-center gap-2 px-4 py-3 text-sm transition hover:bg-muted"
+                                >
+                                    <MapPinned className="size-4" />
+                                    Sổ địa chỉ
+                                </Link>
+                            </>
+                        )}
 
                         <button
                             type="button"

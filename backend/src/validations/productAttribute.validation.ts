@@ -10,22 +10,29 @@ export const createProductAttributeSchema = Joi.object({
                     .max(50)
                     .required()
                     .messages({
-                        "string.min":"Tên thuộc tính ít nhất 2 ký tự",
-                        "string.max":"Tên thuộc tính tối đa 50 ký tự",
-                        "any.required":"Tên thuộc tính là bắt buộc",
+                        "string.empty": "Tên thuộc tính không được để trống.",
+                        "string.min":"Tên thuộc tính ít nhất 2 ký tự.",
+                        "string.max":"Tên thuộc tính tối đa 50 ký tự.",
+                        "any.required":"Tên thuộc tính không được để trống.",
                     }),
                 displayOrder: Joi.number()
                     .integer()
                     .min(0)
                     .default(0)
                     .messages({
-                        "number.integer":"Thứ tự hiển thị phải là số nguyên",
-                        "number.min":"Thứ tự hiển thị phải lớn hơn hoặc bằng 0",
+                        "number.base": "Thứ tự hiển thị phải là số.",
+                        "number.integer":"Thứ tự hiển thị phải là số nguyên.",
+                        "number.min":"Thứ tự hiển thị phải lớn hơn hoặc bằng 0.",
                     }),
             })
         )
         .min(1)
         .required()
+        .messages({
+            "number.base": "Thứ tự hiển thị phải là số.",
+            "number.integer": "Thứ tự hiển thị phải là số nguyên.",
+            "number.min": "Thứ tự hiển thị phải lớn hơn hoặc bằng 0.",
+        })
 });
 
 export const updateProductAttributeSchema = Joi.object({
@@ -35,6 +42,7 @@ export const updateProductAttributeSchema = Joi.object({
         .max(50)
         .optional()
         .messages({
+            "string.empty": "Tên thuộc tính không được để trống.",
             "string.min":"Tên thuộc tính ít nhất 2 ký tự",
             "string.max":"Tên thuộc tính tối đa 50 ký tự",
         }),
@@ -43,7 +51,12 @@ export const updateProductAttributeSchema = Joi.object({
         .min(0)
         .optional()
         .messages({
+            "number.base": "Thứ tự hiển thị phải là số.",
             "number.integer":"Thứ tự hiển thị phải là số nguyên",
             "number.min":"Thứ tự hiển thị phải lớn hơn hoặc bằng 0",
         }),
-}).min(1);
+})
+.min(1)
+.messages({
+    "object.min": "Vui lòng cung cấp ít nhất một trường để cập nhật.",
+});;

@@ -11,6 +11,7 @@ import ProductDetailPage from "@/pages/public/ProductDetailPage";
 import { Route, Routes } from "react-router-dom";
 import GuestRoute from "./GuestRoute";
 import ProtectedRoute from "./ProtectedRoute";
+import CustomerRoute from "./CustomerRoute";
 import AdminRoute from "./AdminRoute";
 import PublicLayout from "@/components/layout/PublicLayout";
 import ProfileLayout from "@/components/profile/ProfileLayout";
@@ -63,7 +64,7 @@ import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import EmployeeCmsCollectionsPage from "@/pages/employee/EmployeeCmsCollectionsPage";
 import EmployeeCmsCollectionDetailPage from "@/pages/employee/EmployeeCmsCollectionDetailPage";
 import AdminReviewsPage from "@/pages/admin/AdminReviewsPage";
-
+import ComparePage from "@/pages/public/ComparePage";
 
 export default function AppRoute() {
     return (
@@ -75,6 +76,7 @@ export default function AppRoute() {
                 <Route path="/tin-tuc/:postId" element={<BlogDetailPage />} />
                 <Route path="/c/:cmsSlug" element={<ProductListPage />} />
                 <Route path="/products/:productId" element={<ProductDetailPage />} />
+                <Route path="/so-sanh" element={<ComparePage />} />
                 <Route path="/chinh-sach/bao-hanh" element={<WarrantyPolicyPage />} />
                 <Route path="/chinh-sach/doi-tra" element={<ReturnPolicyPage />} />
                 <Route path="/chinh-sach/giao-hang" element={<DeliveryPolicyPage />} />
@@ -83,16 +85,20 @@ export default function AppRoute() {
                     <Route path="/account" element={<ProfileLayout />}>
                         <Route index element={<AccountProfilePage />} />
                         <Route path="password" element={<ChangePasswordPage />} />
-                        <Route path="orders" element={<OrderHistoryPage />} />
-                        <Route path="wishlist" element={<WishlistPage />} />
-                        <Route path="warranties" element={<WarrantyListPage />} />
-                        <Route path="warranties/new" element={<WarrantyRequestPage />} />
-                        <Route path="warranties/:warrantyId" element={<WarrantyDetailPage />} />
-                        <Route path="addresses" element={<AddressPage />} />
+                        <Route element={<CustomerRoute />}>
+                            <Route path="orders" element={<OrderHistoryPage />} />
+                            <Route path="wishlist" element={<WishlistPage />} />
+                            <Route path="warranties" element={<WarrantyListPage />} />
+                            <Route path="warranties/new" element={<WarrantyRequestPage />} />
+                            <Route path="warranties/:warrantyId" element={<WarrantyDetailPage />} />
+                            <Route path="addresses" element={<AddressPage />} />
+                        </Route>
                     </Route>
 
-                    <Route path="/cart" element={<CartPage />}/>
-                    <Route path="/checkout" element={<CheckoutPage />}/>
+                    <Route element={<CustomerRoute />}>
+                        <Route path="/cart" element={<CartPage />}/>
+                        <Route path="/checkout" element={<CheckoutPage />}/>
+                    </Route>
                 </Route>
             </Route>
 

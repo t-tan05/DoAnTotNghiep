@@ -39,6 +39,8 @@ const customerFilterLabels: Record<NewCustomerFilter, string> = {
     thisMonth: "Tháng này",
 };
 
+const LOW_STOCK_THRESHOLD = 4;
+
 function formatMoney(value: number) {
     return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 }
@@ -89,6 +91,7 @@ export default function AdminDashboardPage() {
         try {
             const data = await dashboardService.getSummary({
                 intervalMinutes: nextInterval,
+                lowStockThreshold: LOW_STOCK_THRESHOLD,
                 lowStockPage: nextLowStockPage,
                 lowStockLimit: 5,
             });
@@ -191,7 +194,7 @@ export default function AdminDashboardPage() {
                 <MetricCard label="Đơn giao thất bại hôm nay" value={formatNumber(summary.cards.deliveryFailedToday ?? 0)} sub="Tính theo thời điểm thất bại" icon={Truck} />
                 <MetricCard label="Đơn đang chờ xử lý" value={formatNumber(summary.cards.pendingOrders ?? 0)} sub="Tất cả đơn PENDING" icon={Clock} />
                 <MetricCard label="Đơn đã hủy" value={formatNumber(summary.cards.cancelledOrders ?? 0)} sub={`${summary.cards.cancelledOrdersToday ?? 0} đơn hủy hôm nay`} icon={XCircle} />
-                <MetricCard label="Sản phẩm sắp hết hàng" value={formatNumber(summary.cards.lowStockCount)} sub="Ngưỡng cảnh báo 5 sản phẩm" icon={PackageSearch} />
+                <MetricCard label="Sản phẩm sắp hết hàng" value={formatNumber(summary.cards.lowStockCount)} sub={`Ngưỡng cảnh báo ${LOW_STOCK_THRESHOLD} sản phẩm`} icon={PackageSearch} />
                 <MetricCard label="Yêu cầu bảo hành hôm nay" value={formatNumber(summary.cards.warrantyRequestsToday ?? 0)} sub="Tính theo ngày tạo phiếu" icon={ShieldCheck} />
             </div>
 

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { socket } from "@/lib/socket";
 import { dashboardService } from "@/services/dashboard.service";
 import AiChatBox from "../ai/AiChatBox";
+import CompareBar from "../compare/CompareBar";
 
 export default function PublicLayout() {
     const location = useLocation();
@@ -41,7 +42,14 @@ export default function PublicLayout() {
                 <Outlet/>
             </main>
             
-            <Footer />
+            <Footer 
+                socialLinks={{
+                    facebook: "https://www.facebook.com/thanhtan987",
+                    instagram: "https://www.instagram.com/t_tan05/",
+                    tiktok: "https://www.tiktok.com/@t_tan05"
+                }}
+            />
+            <CompareBar />
             <AiChatBox />
         </div>
     )

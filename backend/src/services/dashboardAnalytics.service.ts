@@ -359,7 +359,7 @@ export async function getDashboardSummaryAnalyticsService(query?: {
 }) {
     const today = buildDateRange({ preset: "today" });
     const intervalMinutes = Math.min(Math.max(Number(query?.intervalMinutes) || 120, 120), 180);
-    const lowStockThreshold = Math.min(Math.max(Number(query?.lowStockThreshold) || 5, 1), 50);
+    const lowStockThreshold = Math.min(Math.max(Number(query?.lowStockThreshold) || 4, 1), 50);
     const lowStockPage = Math.max(Number(query?.lowStockPage) || 1, 1);
     const lowStockLimit = Math.min(Math.max(Number(query?.lowStockLimit) || 6, 1), 20);
     const last7DaysStart = startOfDay();

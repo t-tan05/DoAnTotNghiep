@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import app from '#app';
 import prisma from '#config/prisma';
+import logger from '#config/logger';
 import bcrypt from "bcrypt";
 import http from "http";
 import { initSocket } from './src/socket.js';
@@ -8,10 +9,10 @@ import { initSocket } from './src/socket.js';
 async function testDB() {
     try {
         await prisma.$connect();
-        console.log("Database connected");
+        logger.info("Database connected");
     }
     catch (err) {
-        console.log(err);
+        logger.error({ err }, "Database connection failed");
     }
 }
 testDB();
@@ -25,7 +26,7 @@ const seedAdmin = async () => {
         const userId = crypto.randomUUID();
         const password = "123456";
         const hashPassword = await bcrypt.hash(password, 10);
-        const user = await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx) => {
             await tx.roles.upsert({
                 where: {
                     role_name: "ADMIN",
@@ -36,7 +37,7 @@ const seedAdmin = async () => {
                     description: "Quản trị viên hệ thống",
                 },
             });
-            const admin = await tx.users.create({
+            await tx.users.create({
                 data: {
                     user_id: userId,
                     email: "admin@gmail.com",
@@ -52,7 +53,7 @@ const seedAdmin = async () => {
                 }
             });
         });
-        console.log("Đã tạo admin với password: 123456 vui lòng đổi mật khẩu");
+        logger.warn("Đã tạo tài khoản admin. Vui lòng đổi mật khẩu.");
     }
 };
 seedAdmin();
@@ -60,5 +61,5 @@ const PORT = Number(process.env.PORT ?? 3000);
 const server = http.createServer(app);
 initSocket(server);
 server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server is running at http://0.0.0.0:${PORT}`);
+    logger.info({ port: PORT }, "Server is running");
 });

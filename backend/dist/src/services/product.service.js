@@ -1,7 +1,7 @@
 import { findBrandById } from "#models/brand.model";
 import { findCategoryById } from "#models/category.model";
 import { findProductLineById } from "#models/productLine.model";
-import { createProduct, deleteProduct, findProductById, findProductByNormalizeName, getProductDeleteUsage, getProductWithQuery, getPublicProductFilterOptions, getPublicProductVariantsWithQuery, getRelatedProductVariants, updateProduct } from "#models/product.model";
+import { createProduct, deleteProduct, findProductById, findProductByNormalizeName, getProductDeleteUsage, getProductWithQuery, getPublicProductFilterOptions, getPublicProductsPageWithQuery, getRelatedProductVariants, updateProduct } from "#models/product.model";
 import AppError from "#utils/AppError";
 import { normalizeText } from "#utils/normalizeText";
 import crypto from "crypto";
@@ -84,9 +84,7 @@ export const deleteProductService = async (productId) => {
         { label: "biến thể", count: usage.variantCount },
         { label: "chi tiết đơn hàng", count: usage.orderDetailCount },
         { label: "đánh giá", count: usage.reviewCount },
-        { label: "item CMS", count: usage.cmsItemCount },
         { label: "khuyến mãi", count: usage.promotionCount },
-        { label: "gợi ý AI", count: usage.aiSuggestionCount },
     ]);
     if (message)
         throw new AppError(message, 409);
@@ -363,18 +361,11 @@ export const sortPublicProductCards = (products, sortBy) => {
     return products;
 };
 export const getPublicProductsService = async (params) => {
-    const { variants } = await getPublicProductVariantsWithQuery({
-        ...params,
-        page: 1,
-        limit: 10000,
-    });
+    const { variants, totalItems } = await getPublicProductsPageWithQuery(params);
     const filterOptions = await getPublicProductFilterOptions();
     const groupedProducts = sortPublicProductCards(groupPublicVariants(variants), params.sortBy);
-    const totalItems = groupedProducts.length;
-    const start = (params.page - 1) * params.limit;
-    const paginatedProducts = groupedProducts.slice(start, start + params.limit);
     return {
-        products: paginatedProducts,
+        products: groupedProducts,
         filters: {
             brands: filterOptions.brands.map((brand) => ({
                 id: brand.brand_id,

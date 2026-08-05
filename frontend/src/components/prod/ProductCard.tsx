@@ -3,18 +3,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { cartService } from "@/services/cart.service";
 import { wishlistService } from "@/services/wishlist.service";
 import type { PublicProductCardItem } from "@/types/product.type";
+import { isStaffUser } from "@/utils/authRole";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { Heart } from "lucide-react";
+import { Heart, Shuffle } from "lucide-react";
 import { useEffect, useState } from "react";
-
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { addCompareItem } from "@/utils/compareStorage";
 
 type Props = {
     product: PublicProductCardItem;
     isWishlisted?: boolean;
     onWishlistChange?: (variantId: string, isWishlisted: boolean) => void;
 };
+
+function formatMoney(value: number | string | null | undefined) {
+    return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+}
 
 export default function ProductCard({
     product,
@@ -23,7 +28,8 @@ export default function ProductCard({
 }: Props) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
+    const isStaff = isStaffUser(user);
 
     const variant = product.variant;
 
@@ -31,6 +37,10 @@ export default function ProductCard({
     const price = Number(variant.discount_price ?? variant.price);
     const originalPrice = Number(variant.original_price ?? variant.price);
     const hasDiscount = originalPrice > price;
+    const discountPercent = hasDiscount
+        ? Math.round(((originalPrice - price) / originalPrice) * 100)
+        : 0;
+    const saving = Math.max(originalPrice - price, 0);
     const isOutOfStock = Number(variant.quantity_in_stock) <= 0;
     const [isWishlisted, setIsWishlisted] = useState(initialIsWishlisted);
     const [wishlistLoading, setWishlistLoading] = useState(false);
@@ -41,6 +51,8 @@ export default function ProductCard({
     }, [initialIsWishlisted, variant.variant_id]);
 
     async function handleToggleWishlist() {
+        if(isStaff) return;
+
         if(!isAuthenticated) {
             navigate("/login", {
                 state: {
@@ -73,6 +85,7 @@ export default function ProductCard({
     }
 
     async function handleAddToCart() {
+        if(isStaff) return;
         if(isOutOfStock) return;
 
         if(!isAuthenticated) {
@@ -99,14 +112,45 @@ export default function ProductCard({
             setAdding(false);
         }
     }
+    
+    function handleAddToCompare() {
+        const result = addCompareItem({
+            productId: product.product_id,
+            variantId: variant.variant_id,
+        });
+
+        if(!result.success && result.reason === "limit") {
+            toast.error("Chỉ có thể so sánh tối đa 3 sản phẩm.");
+            return;
+        }
+
+        if(result.reason === "exists") {
+            toast.info("Sản phẩm đã có trong danh sách so sánh.");
+            return;
+        }
+
+        toast.success("Đã thêm vào danh sách so sánh.");
+    }
 
     return (
         <div className="group relative flex h-full flex-col rounded-md border bg-white p-3 transition hover:border-blue-700 hover:shadow-sm">
             <button
                 type="button"
+                onClick={handleAddToCompare}
+                className="group/compare absolute right-5 top-5 z-20 flex size-9 cursor-pointer items-center justify-center rounded-full border bg-white/95 text-muted-foreground shadow-sm transition hover:border-blue-200 hover:text-blue-700"
+                aria-label="So sánh"
+            >
+                <Shuffle className="size-5" />
+                <span className="pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow transition group-hover/compare:opacity-100">
+                    so sánh
+                </span>
+            </button>
+            {!isStaff && (
+            <button
+                type="button"
                 disabled={wishlistLoading}
                 onClick={handleToggleWishlist}
-                className="absolute right-5 top-5 z-10 flex size-9 cursor-pointer items-center justify-center rounded-full border bg-white/95 text-muted-foreground shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="absolute right-5 top-16 z-10 flex size-9 cursor-pointer items-center justify-center rounded-full border bg-white/95 text-muted-foreground shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label={isWishlisted ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
             >
                 <Heart
@@ -116,12 +160,20 @@ export default function ProductCard({
                     ].join(" ")}
                 />
             </button>
+            )}
 
             <Link
                 to={`/products/${product.product_id}?variantId=${variant.variant_id}`}
                 className="block"
             >
-                <div className="aspect-square overflow-hidden rounded-md bg-muted">
+                <div className="relative aspect-square overflow-hidden rounded-md bg-muted">
+                    {saving > 0 && (
+                        <div className="absolute bottom-3 left-3 z-10 rounded bg-blue-700 px-2 py-1 text-xs font-bold leading-tight text-white shadow">
+                            <span className="block">TIẾT KIỆM</span>
+                            <span>{formatMoney(saving)}</span>
+                        </div>
+                    )}
+
                     {variant.image_url ? (
                         <img
                             src={variant.image_url}
@@ -176,25 +228,17 @@ export default function ProductCard({
                         </p>
                     )}
 
-                    {variant.active_promotion && (
-                        <div className="inline-flex rounded border border-blue-700 px-1.5 py-0.5 text-xs font-medium text-blue-700">
-                            {variant.active_promotion.promotion_name}
-                        </div>
-                    )}
-
                     <div>
                         <div className="text-lg font-bold text-blue-700">
-                            {price.toLocaleString("vi-VN")}đ
+                            {formatMoney(price)}
                         </div>
 
                         {hasDiscount && (
                             <div className="flex items-center gap-2 text-xs">
                                 <span className="text-muted-foreground line-through">
-                                    {originalPrice.toLocaleString("vi-VN")}đ
+                                    {formatMoney(originalPrice)}
                                 </span>
-                                <span className="text-red-600">
-                                    -{Math.round(((originalPrice - price) / originalPrice) * 100)}%
-                                </span>
+                                <span className="text-red-600">-{discountPercent}%</span>
                             </div>
                         )}
                     </div>
@@ -205,6 +249,7 @@ export default function ProductCard({
                 </div>
             </Link>
 
+            {!isStaff && (
             <div className="mt-auto pt-3">
                 <Button
                     type="button"
@@ -216,6 +261,7 @@ export default function ProductCard({
                     {isOutOfStock ? "Hết hàng" : adding ? "Đang thêm..." : "Thêm vào giỏ"}
                 </Button>
             </div>
+            )}
         </div>
     );
 }

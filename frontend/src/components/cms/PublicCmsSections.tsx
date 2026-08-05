@@ -11,6 +11,12 @@ type Props = {
     productPageSize?: number;
 };
 
+type CmsPromotion = NonNullable<
+    NonNullable<
+        NonNullable<CmsSectionItem["product_variants"]>["products"]
+    >["products_promotions"]
+>[number]["promotions"];
+
 function chunkItems<T>(items: T[], size: number) {
     const chunks: T[][] = [];
 
@@ -47,6 +53,52 @@ function mapAttributes(item: CmsSectionItem): PublicProductAttribute[] {
     });
 }
 
+function calculatePromotionPrice(price: number, promotion: CmsPromotion) {
+    if(!promotion) return price;
+
+    if(promotion.discount_type === "PERCENT") {
+        return Math.max(0, price - (price * Number(promotion.discount_value)) / 100);
+    }
+
+    return Math.max(0, price - Number(promotion.discount_value));
+}
+
+function getBestPromotionPrice(item: CmsSectionItem) {
+    const variant = item.product_variants;
+    const originalPrice = Number(variant?.price ?? 0);
+    const now = Date.now();
+    let bestPromotion: CmsPromotion | null = null;
+    let bestPrice = originalPrice;
+
+    for(const productPromotion of variant?.products?.products_promotions ?? []) {
+        const promotion = productPromotion.promotions;
+
+        if(!promotion) continue;
+        if(promotion.is_active === false) continue;
+        if(new Date(promotion.start_date).getTime() > now) continue;
+        if(new Date(promotion.end_date).getTime() < now) continue;
+
+        const nextPrice = calculatePromotionPrice(originalPrice, promotion);
+
+        if(nextPrice < bestPrice) {
+            bestPrice = nextPrice;
+            bestPromotion = promotion;
+        }
+    }
+
+    return {
+        discountPrice: bestPromotion ? bestPrice : null,
+        activePromotion: bestPromotion
+            ? {
+                promotion_id: bestPromotion.promotion_id,
+                promotion_name: bestPromotion.promotion_name,
+                discount_type: bestPromotion.discount_type,
+                discount_value: bestPromotion.discount_value,
+            }
+            : null,
+    };
+}
+
 export function mapCmsItemToProduct(item: CmsSectionItem): PublicProductCardItem | null {
     const variant = item.product_variants;
     const product = variant?.products ?? item.products;
@@ -57,6 +109,8 @@ export function mapCmsItemToProduct(item: CmsSectionItem): PublicProductCardItem
     const category = product.categories;
 
     if(!brand || !category) return null;
+
+    const promotionPrice = getBestPromotionPrice(item);
 
     return {
         product_id: product.product_id,
@@ -75,10 +129,11 @@ export function mapCmsItemToProduct(item: CmsSectionItem): PublicProductCardItem
             variant_name: item.title || variant.variant_name || product.product_name,
             price: variant.price ?? 0,
             original_price: variant.original_price ?? variant.price ?? 0,
-            discount_price: variant.discount_price,
+            discount_price: variant.discount_price ?? promotionPrice.discountPrice,
             quantity_in_stock: variant.quantity_in_stock ?? 0,
             image_url: getVariantImage(item),
             attributes: mapAttributes(item),
+            active_promotion: promotionPrice.activePromotion,
         },
     };
 }

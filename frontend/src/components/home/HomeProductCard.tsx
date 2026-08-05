@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cartService } from "@/services/cart.service";
 import type { PublicProductCardItem } from "@/types/product.type";
+import { addCompareItem } from "@/utils/compareStorage";
+import { isStaffUser } from "@/utils/authRole";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { Heart } from "lucide-react";
+import { Heart, Shuffle } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -20,7 +22,8 @@ function formatMoney(value: number | string | null | undefined) {
 export default function HomeProductCard({ product, disableImageZoom = false }: Props) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
+    const isStaff = isStaffUser(user);
 
     const variant = product.variant;
     const displayName = variant.variant_name || product.product_name;
@@ -36,6 +39,7 @@ export default function HomeProductCard({ product, disableImageZoom = false }: P
     const detailUrl = `/products/${product.product_id}?variantId=${variant.variant_id}`;
 
     async function handleAddToCart() {
+        if(isStaff) return;
         if(isOutOfStock) return;
 
         if(!isAuthenticated) {
@@ -63,8 +67,39 @@ export default function HomeProductCard({ product, disableImageZoom = false }: P
         }
     }
 
+    function handleAddToCompare() {
+        const result = addCompareItem({
+            productId: product.product_id,
+            variantId: variant.variant_id,
+        });
+
+        if(!result.success && result.reason === "limit") {
+            toast.error("Chỉ có thể so sánh tối đa 3 sản phẩm.");
+            return;
+        }
+
+        if(result.reason === "exists") {
+            toast.info("Sản phẩm đã có trong danh sách so sánh.");
+            return;
+        }
+
+        toast.success("Đã thêm vào danh sách so sánh.");
+    }
+
     return (
         <article className="group/card relative flex min-h-[300px] flex-col bg-white p-3 transition hover:shadow-lg sm:min-h-[340px] md:min-h-[390px] md:p-4">
+            <button
+                type="button"
+                onClick={handleAddToCompare}
+                className="group/compare absolute right-4 top-4 z-20 flex size-9 cursor-pointer items-center justify-center rounded-full border bg-white/95 text-muted-foreground shadow-sm transition hover:border-blue-200 hover:text-blue-700"
+                aria-label="So sánh"
+            >
+                <Shuffle className="size-5" />
+                <span className="pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow transition group-hover/compare:opacity-100">
+                    so sánh
+                </span>
+            </button>
+
             <Link to={detailUrl} className="block">
                 <div className="relative aspect-[4/3] overflow-hidden bg-white md:aspect-square">
                     {saving > 0 && (
@@ -104,13 +139,15 @@ export default function HomeProductCard({ product, disableImageZoom = false }: P
                     </Link>
                 </div>
 
-                <button
-                    type="button"
-                    className="mt-1 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-blue-700 transition hover:bg-blue-50 md:size-8"
-                    aria-label="Thêm vào yêu thích"
-                >
-                    <Heart className="size-4 md:size-5" />
-                </button>
+                {!isStaff && (
+                    <button
+                        type="button"
+                        className="mt-1 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-blue-700 transition hover:bg-blue-50 md:size-8"
+                        aria-label="Thêm vào yêu thích"
+                    >
+                        <Heart className="size-4 md:size-5" />
+                    </button>
+                )}
             </div>
 
             <div className="mt-2 md:mt-4">
@@ -141,6 +178,7 @@ export default function HomeProductCard({ product, disableImageZoom = false }: P
                 </div>
             )}
 
+            {!isStaff && (
             <div className="mt-auto pt-3 md:pt-4">
                 <Button
                     type="button"
@@ -152,6 +190,7 @@ export default function HomeProductCard({ product, disableImageZoom = false }: P
                     {isOutOfStock ? "Hết hàng" : adding ? "Đang thêm..." : "Thêm vào giỏ"}
                 </Button>
             </div>
+            )}
         </article>
     );
 }

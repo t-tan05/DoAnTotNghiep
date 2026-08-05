@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import redisClient from "#config/redis";
 import { limiter } from "#config/rateLimit";
 import { globalErrorHandler } from "#middlewares/ErrorHandler";
 import cookieParser from "cookie-parser";
+import { requestLogger } from "#middlewares/requestLogger";
 
 //Router
 import authRoute from "#routes/auth.route";
@@ -36,7 +36,7 @@ import webhookRoute from "#routes/webhook.route";
 
 const app = express();
 
-app.use(morgan("dev"));
+app.use(requestLogger);
 app.use(helmet());
 
 app.use(cors({

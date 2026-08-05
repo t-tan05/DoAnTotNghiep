@@ -1,8 +1,13 @@
 import { SquarePen } from "lucide-react";
 import CartDropdown from "./CartDropdown";
 import UserDropdown from "./UserDropdown";
+import { useAuth } from "@/hooks/useAuth";
+import { isStaffUser } from "@/utils/authRole";
 
 export default function HeaderActions(){
+    const { user } = useAuth();
+    const isStaff = isStaffUser(user);
+
     return (
         <div className="flex items-center gap-3">
             <a href="tel:0909493175"
@@ -18,7 +23,7 @@ export default function HeaderActions(){
 
             <UserDropdown />
 
-            <CartDropdown />
+            {!isStaff && <CartDropdown />}
         </div>
     )
 }
