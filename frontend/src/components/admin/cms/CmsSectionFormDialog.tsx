@@ -88,7 +88,7 @@ export default function CmsSectionFormDialog({
         event.preventDefault();
         setError("");
 
-        if(!form.sectionType) return setError("Vui lòng chọn loại section.");
+        if(!form.sectionType) return setError("Vui lòng chọn loại khu vực.");
 
         try {
             setLoading(true);
@@ -105,10 +105,10 @@ export default function CmsSectionFormDialog({
 
             if(isEdit && section) {
                 await cmsService.updateSection(section.section_id, payload);
-                toast.success("Cập nhật section thành công.");
+                toast.success("Cập nhật khu vực thành công.");
             } else {
                 await cmsService.createSection(collectionId, payload);
-                toast.success("Tạo section thành công.");
+                toast.success("Tạo khu vực thành công.");
             }
 
             onOpenChange(false);
@@ -124,7 +124,7 @@ export default function CmsSectionFormDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{isEdit ? "Cập nhật section" : "Thêm section"}</DialogTitle>
+                    <DialogTitle>{isEdit ? "Cập nhật khu vực" : "Thêm khu vực"}</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -137,7 +137,7 @@ export default function CmsSectionFormDialog({
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Loại section</Label>
+                            <Label>Loại khu vực</Label>
                             <Select value={form.sectionType} onValueChange={(value) => updateField("sectionType", value)}>
                                 <SelectTrigger className="w-full cursor-pointer">
                                     <SelectValue />

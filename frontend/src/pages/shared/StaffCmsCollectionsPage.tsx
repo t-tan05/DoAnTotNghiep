@@ -27,7 +27,7 @@ const pageTypeLabel: Record<CmsPageType, string> = {
 const columns: AdminColumn<CmsCollection>[] = [
     {
         key: "title",
-        title: "Tên collection",
+        title: "Tên bộ sưu tập",
         sortable: true,
         render: (collection) => (
             <div>
@@ -55,9 +55,9 @@ const columns: AdminColumn<CmsCollection>[] = [
         title: "Nội dung",
         render: (collection) => (
             <div className="text-sm">
-                <div>{collection._count?.cms_sections ?? collection.cms_sections?.length ?? 0} section</div>
+                <div>{collection._count?.cms_sections ?? collection.cms_sections?.length ?? 0} khu vực</div>
                 <div className="text-muted-foreground">
-                    {collection._count?.cms_collection_rules ?? collection.cms_collection_rules?.length ?? 0} rule
+                    {collection._count?.cms_collection_rules ?? collection.cms_collection_rules?.length ?? 0} quy tắc
                 </div>
             </div>
         ),
@@ -151,7 +151,7 @@ export default function StaffCmsCollectionsPage({ basePath, canDelete = false }:
             setDeleting(true);
 
             await cmsService.removeCollection(deleteCollection.collection_id);
-            toast.success("Xóa CMS collection thành công.");
+            toast.success("Xóa bộ sưu tập CMS thành công.");
             setDeleteCollection(null);
             fetchCollections();
         } catch(error) {
@@ -165,7 +165,7 @@ export default function StaffCmsCollectionsPage({ basePath, canDelete = false }:
         <>
             <AdminDataTable
                 title="Quản lý CMS"
-                description="Quản lý collection hiển thị ở trang chủ, trang danh mục, landing page và các khu vực nổi bật."
+                description="Quản lý bộ sưu tập hiển thị ở trang chủ, trang danh mục, trang đích và các khu vực nổi bật."
                 items={collections}
                 columns={columns}
                 idKey="collection_id"
@@ -203,8 +203,8 @@ export default function StaffCmsCollectionsPage({ basePath, canDelete = false }:
             <ConfirmDeleteDialog
                 open={Boolean(deleteCollection)}
                 loading={deleting}
-                title="Xóa CMS collection"
-                description={`Bạn có chắc muốn xóa collection "${deleteCollection?.title}" không?`}
+                title="Xóa bộ sưu tập CMS"
+                description={`Bạn có chắc muốn xóa bộ sưu tập "${deleteCollection?.title}" không?`}
                 onOpenChange={(open) => {
                     if(!open) setDeleteCollection(null);
                 }}

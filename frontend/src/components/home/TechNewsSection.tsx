@@ -31,7 +31,7 @@ export default function TechNewsSection({ blogs }: Props) {
                                 />
                             ) : (
                                 <div className="flex aspect-[16/9] items-center justify-center bg-muted text-sm text-muted-foreground">
-                                    No image
+                                    Không có ảnh
                                 </div>
                             )}
                         </Link>

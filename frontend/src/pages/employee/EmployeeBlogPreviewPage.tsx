@@ -52,7 +52,7 @@ export default function EmployeeBlogPreviewPage() {
                 status: "PUBLISHED",
             });
 
-            toast.success("Bài viết đã được public.");
+            toast.success("Bài viết đã được xuất bản.");
             fetchBlog();
         } catch (error) {
             toast.error(getErrorMessage(error));
@@ -102,7 +102,7 @@ export default function EmployeeBlogPreviewPage() {
                         <SpinnerButton
                             type="button"
                             loading={publishing}
-                            loadingText="Đang public..."
+                            loadingText="Đang xuất bản..."
                             onClick={handlePublish}
                             className="cursor-pointer"
                         >

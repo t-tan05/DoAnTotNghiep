@@ -214,7 +214,7 @@ export default function ComparePage() {
                                                 className="h-full w-full object-contain"
                                             />
                                         ) : (
-                                            <div className="text-sm text-muted-foreground">No image</div>
+                                            <div className="text-sm text-muted-foreground">Không có ảnh</div>
                                         )}
                                     </div>
 

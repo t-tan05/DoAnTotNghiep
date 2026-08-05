@@ -7,7 +7,7 @@ type Props = {
 
 export default function BlogStatusBadge({ status }: Props) {
     if (status === "PUBLISHED") {
-        return <Badge>Đã public</Badge>;
+        return <Badge>Đã xuất bản</Badge>;
     }
 
     if (status === "ARCHIVED") {

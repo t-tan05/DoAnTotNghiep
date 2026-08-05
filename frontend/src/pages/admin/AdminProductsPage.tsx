@@ -29,7 +29,7 @@ const columns: AdminColumn<AdminProduct>[] = [
                 <img src={imageUrl} alt={product.product_name} className="h-12 w-12 rounded-md object-cover"/>
             ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
-                    No image
+                    Không có ảnh
                 </div>
             );
         },

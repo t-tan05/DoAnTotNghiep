@@ -325,9 +325,9 @@ export default function CmsSectionItemFormDialog({
                                 <div className="rounded-lg border p-4">
                                     <div className="mb-4 flex items-center justify-between gap-3">
                                         <div>
-                                            <h3 className="font-semibold">Thông tin card/item</h3>
+                                            <h3 className="font-semibold">Thông tin thẻ/mục</h3>
                                             <p className="text-sm text-muted-foreground">
-                                                Đây là nội dung của từng card trong section. Ví dụ: card sản phẩm, card banner hoặc nút shortcut.
+                                                Đây là nội dung của từng thẻ trong khu vực. Ví dụ: thẻ sản phẩm, thẻ banner hoặc nút lối tắt.
                                             </p>
                                         </div>
                                         <Badge variant="secondary" className="shrink-0">
@@ -347,11 +347,9 @@ export default function CmsSectionItemFormDialog({
 
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2 md:col-span-2">
-                                            <Label>Tiêu đề hiển thị trên card</Label>
+                                            <Label>Tiêu đề hiển thị trên thẻ</Label>
                                             <Input value={form.title} onChange={(event) => updateField("title", event.target.value)} />
-                                            <p className="text-xs text-muted-foreground">
-                                                Nếu làm section giống PhongVu, đây là tên từng sản phẩm như “iPhone 17 Pro Max 256GB”.
-                                            </p>
+                                            
                                         </div>
 
                                         <div className="space-y-2 md:col-span-2">
@@ -422,10 +420,7 @@ export default function CmsSectionItemFormDialog({
                             <div className="rounded-lg border p-4">
                                 <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                                     <div>
-                                        <h3 className="font-semibold">Chọn sản phẩm / biến thể cho card</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            Với mục “Sản phẩm nổi bật” giống PhongVu, nên chọn từng biến thể cụ thể để card có đúng ảnh, giá và link chi tiết.
-                                        </p>
+                                        <h3 className="font-semibold">Chọn sản phẩm / biến thể cho thẻ</h3>
                                     </div>
                                     <div className="relative w-full xl:w-80">
                                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

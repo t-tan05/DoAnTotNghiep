@@ -82,7 +82,7 @@ export const cmsService = {
         );
 
         if(!res.data.data) {
-            throw new Error("Không lấy được danh sách collections.");
+            throw new Error("Không lấy được danh sách bộ sưu tập.");
         }
 
         return res.data.data;
@@ -94,7 +94,7 @@ export const cmsService = {
         );
 
         if(!res.data.data) {
-            throw new Error("Không lấy được chi tiết collection.");
+            throw new Error("Không lấy được chi tiết bộ sưu tập.");
         }
 
         return res.data.data;

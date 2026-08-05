@@ -186,7 +186,7 @@ export default function WarrantyDetailPage() {
                                     <img src={imageUrl} alt={productName} className="aspect-square w-full object-cover" />
                                 ) : (
                                     <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">
-                                        No image
+                                        Không có ảnh
                                     </div>
                                 )}
                             </Link>

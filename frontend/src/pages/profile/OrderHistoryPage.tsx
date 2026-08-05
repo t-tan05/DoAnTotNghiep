@@ -319,7 +319,7 @@ export default function OrderHistoryPage() {
                                                         />
                                                     ) : (
                                                         <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">
-                                                            No image
+                                                            Không có ảnh
                                                         </div>
                                                     )}
                                                 </Link>

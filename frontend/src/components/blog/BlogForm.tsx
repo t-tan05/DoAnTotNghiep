@@ -84,7 +84,7 @@ export default function BlogForm({
 
                 <aside className="space-y-5 rounded-lg border bg-muted/20 p-4">
                     <div className="space-y-2">
-                        <Label>Ảnh thumbnail URL</Label>
+                        <Label>URL ảnh đại diện</Label>
                         <Input
                             value={form.thumbnailUrl}
                             onChange={(event) => updateField("thumbnailUrl", event.target.value)}

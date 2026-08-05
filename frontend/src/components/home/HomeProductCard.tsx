@@ -120,7 +120,7 @@ export default function HomeProductCard({ product, disableImageZoom = false }: P
                         />
                     ) : (
                         <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                            No image
+                            Không có ảnh
                         </div>
                     )}
                 </div>

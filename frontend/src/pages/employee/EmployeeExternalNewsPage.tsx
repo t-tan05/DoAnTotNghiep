@@ -115,7 +115,7 @@ export default function EmployeeExternalNewsPage() {
                 status: "DRAFT",
             });
 
-            toast.success("Đã import thành bài nháp. Hãy biên tập lại trước khi public.");
+            toast.success("Đã nhập thành bài nháp. Hãy biên tập lại trước khi xuất bản.");
 
             if (data?.blog?.post_id) {
                 navigate(`/employee/blogs/${data.blog.post_id}/edit`);

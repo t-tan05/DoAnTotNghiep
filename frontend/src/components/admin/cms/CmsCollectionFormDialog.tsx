@@ -286,7 +286,7 @@ export default function CmsCollectionFormDialog({
         event.preventDefault();
         setError("");
 
-        if (!form.title.trim()) return setError("Vui lòng nhập tên collection.");
+        if (!form.title.trim()) return setError("Vui lòng nhập tên bộ sưu tập.");
         if (!form.slug.trim()) return setError("Vui lòng nhập slug.");
 
         try {
@@ -312,10 +312,10 @@ export default function CmsCollectionFormDialog({
 
             if (isEdit && collection) {
                 await cmsService.updateCollection(collection.collection_id, payload);
-                toast.success("Cập nhật CMS collection thành công.");
+                toast.success("Cập nhật bộ sưu tập CMS thành công.");
             } else {
                 await cmsService.createCollection(payload);
-                toast.success("Tạo CMS collection thành công.");
+                toast.success("Tạo bộ sưu tập CMS thành công.");
             }
 
             onOpenChange(false);
@@ -332,7 +332,7 @@ export default function CmsCollectionFormDialog({
             <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] overflow-hidden p-0 sm:!max-w-5xl">
                 <DialogHeader className="border-b px-6 py-4">
                     <DialogTitle>
-                        {isEdit ? "Cập nhật CMS collection" : "Thêm CMS collection"}
+                        {isEdit ? "Cập nhật bộ sưu tập CMS" : "Thêm bộ sưu tập CMS"}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -342,7 +342,7 @@ export default function CmsCollectionFormDialog({
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label>Tên collection</Label>
+                            <Label>Tên bộ sưu tập</Label>
                             <Input
                                 value={form.title}
                                 onChange={(event) => handleTitleChange(event.target.value)}
@@ -455,7 +455,7 @@ export default function CmsCollectionFormDialog({
                         <Textarea
                             value={form.description}
                             onChange={(event) => updateField("description", event.target.value)}
-                            placeholder="Mô tả ngắn cho collection..."
+                            placeholder="Mô tả ngắn cho bộ sưu tập..."
                         />
                     </div>
 
@@ -463,7 +463,7 @@ export default function CmsCollectionFormDialog({
                         <div>
                             <h3 className="font-semibold">Điều kiện lấy sản phẩm</h3>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Chọn nhiều điều kiện để collection tự gom sản phẩm. Bỏ trống nghĩa là không giới hạn theo điều kiện đó.
+                                Chọn nhiều điều kiện để bộ sưu tập tự gom sản phẩm. Bỏ trống nghĩa là không giới hạn theo điều kiện đó.
                             </p>
                         </div>
 

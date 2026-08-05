@@ -171,7 +171,7 @@ export default function CartDropdown() {
                                                 />
                                             ) : (
                                                 <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                                                    No image
+                                                    Không có ảnh
                                                 </div>
                                             )}
                                         </div>

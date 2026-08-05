@@ -94,7 +94,7 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
         try {
             setDeleting(true);
             await cmsService.removeSection(deleteSection.section_id);
-            toast.success("Xóa section thành công.");
+            toast.success("Xóa khu vực thành công.");
             setDeleteSection(null);
             loadCollection({ silent: true });
         } catch(error) {
@@ -126,7 +126,7 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
         try {
             setDeleting(true);
             await cmsService.removeRule(deleteRule.rule_id);
-            toast.success("Xóa rule thành công.");
+            toast.success("Xóa quy tắc thành công.");
             setDeleteRule(null);
             loadCollection({ silent: true });
         } catch(error) {
@@ -136,9 +136,9 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
         }
     }
 
-    if(loading) return <PageLoading text="Đang tải CMS collection..." />;
+    if(loading) return <PageLoading text="Đang tải bộ sưu tập CMS..." />;
     if(error) return <FormError message={error} />;
-    if(!collection || !collectionId) return <p>Không tìm thấy CMS collection.</p>;
+    if(!collection || !collectionId) return <p>Không tìm thấy bộ sưu tập CMS.</p>;
 
     const sections = collection.cms_sections ?? [];
     const rules = collection.cms_collection_rules ?? [];
@@ -161,7 +161,7 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
 
                 <Button className="h-12 cursor-pointer" onClick={() => setOpenCollectionForm(true)}>
                     <Pencil className="mr-2 h-4 w-4" />
-                    Chỉnh sửa collection
+                    Chỉnh sửa bộ sưu tập
                 </Button>
             </div>
 
@@ -218,14 +218,14 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
                         }}
                     >
                         <Plus className="mr-2 h-4 w-4" />
-                        Thêm section
+                        Thêm khu vực
                     </Button>
                 </div>
 
                 <div className="mt-4 space-y-4">
                     {sections.length === 0 ? (
                         <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                            Chưa có section.
+                            Chưa có khu vực.
                         </div>
                     ) : sections.map((section) => (
                         <div key={section.section_id} className="rounded-lg border p-4">
@@ -254,7 +254,7 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
                                         }}
                                     >
                                         <Plus className="mr-2 h-4 w-4" />
-                                        Thêm item
+                                        Thêm mục
                                     </Button>
                                     <Button
                                         type="button"
@@ -288,7 +288,7 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
                                                 <img src={item.image_url} alt={item.title || "CMS item"} className="h-14 w-14 rounded-md object-cover" />
                                             ) : (
                                                 <div className="flex h-14 w-14 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
-                                                    No image
+                                                    Không có ảnh
                                                 </div>
                                             )}
                                             <div className="min-w-0">
@@ -339,20 +339,20 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
                         }}
                     >
                         <Plus className="mr-2 h-4 w-4" />
-                        Thêm rule
+                        Thêm quy tắc
                     </Button>
                 </div>
 
                 <div className="mt-4 space-y-3">
                     {rules.length === 0 ? (
                         <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                            Chưa có rule.
+                            Chưa có quy tắc.
                         </div>
                     ) : rules.map((rule) => (
                         <div key={rule.rule_id} className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <p className="font-medium">{rule.keyword || rule.attribute_value || rule.brands?.brand_name || rule.categories?.category_name || "Rule lọc sản phẩm"}</p>
+                                    <p className="font-medium">{rule.keyword || rule.attribute_value || rule.brands?.brand_name || rule.categories?.category_name || "Quy tắc lọc sản phẩm"}</p>
                                     <StatusBadge active={rule.is_active} />
                                 </div>
                                 <p className="text-sm text-muted-foreground">
@@ -415,8 +415,8 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
             <ConfirmDeleteDialog
                 open={Boolean(deleteSection)}
                 loading={deleting}
-                title="Xóa section"
-                description={`Bạn có chắc muốn xóa section "${deleteSection?.title || deleteSection?.section_type}" không?`}
+                title="Xóa khu vực"
+                description={`Bạn có chắc muốn xóa khu vực "${deleteSection?.title || deleteSection?.section_type}" không?`}
                 onOpenChange={(open) => {
                     if(!open) setDeleteSection(null);
                 }}
@@ -435,8 +435,8 @@ export default function StaffCmsCollectionDetailPage({ basePath, canDelete = fal
             <ConfirmDeleteDialog
                 open={Boolean(deleteRule)}
                 loading={deleting}
-                title="Xóa rule"
-                description="Bạn có chắc muốn xóa rule này không?"
+                title="Xóa quy tắc"
+                description="Bạn có chắc muốn xóa quy tắc này không?"
                 onOpenChange={(open) => {
                     if(!open) setDeleteRule(null);
                 }}

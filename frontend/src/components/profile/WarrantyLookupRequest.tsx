@@ -300,7 +300,7 @@ export default function WarrantyLookupRequest() {
                                             {imageUrl ? (
                                                 <img src={imageUrl} alt={item.variant.variant_name || item.product.product_name} className="aspect-square w-full object-cover" />
                                             ) : (
-                                                <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">No image</div>
+                                                <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">Không có ảnh</div>
                                             )}
                                         </div>
 
@@ -344,7 +344,7 @@ export default function WarrantyLookupRequest() {
                             {activeImage ? (
                                 <img src={activeImage} alt={activeVariant.variant_name || activeProduct.product_name} className="aspect-square w-full object-cover" />
                             ) : (
-                                <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">No image</div>
+                                <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">Không có ảnh</div>
                             )}
                         </div>
 

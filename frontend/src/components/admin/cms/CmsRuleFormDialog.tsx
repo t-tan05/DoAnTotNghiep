@@ -219,10 +219,10 @@ export default function CmsRuleFormDialog({
 
             if(isEdit && rule) {
                 await cmsService.updateRule(rule.rule_id, payload);
-                toast.success("Cập nhật rule thành công.");
+                toast.success("Cập nhật quy tắc thành công.");
             } else {
                 await cmsService.createRule(collectionId, payload);
-                toast.success("Tạo rule thành công.");
+                toast.success("Tạo quy tắc thành công.");
             }
 
             onOpenChange(false);
@@ -238,7 +238,7 @@ export default function CmsRuleFormDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{isEdit ? "Cập nhật rule" : "Thêm rule"}</DialogTitle>
+                    <DialogTitle>{isEdit ? "Cập nhật quy tắc" : "Thêm quy tắc"}</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">

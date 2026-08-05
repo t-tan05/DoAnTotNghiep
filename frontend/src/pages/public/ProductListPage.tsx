@@ -650,9 +650,9 @@ export default function ProductListPage() {
                             </div>
                         ) : cmsNotFound ? (
                             <div className="rounded-md border bg-white p-8 text-center">
-                                <h1 className="text-xl font-semibold">Không tìm thấy CMS collection</h1>
+                                <h1 className="text-xl font-semibold">Không tìm thấy bộ sưu tập CMS</h1>
                                 <p className="mt-2 text-sm text-muted-foreground">
-                                    Vui lòng tạo và bật collection có slug /c/{cmsSlug} trong CMS.
+                                    Vui lòng tạo và bật bộ sưu tập có slug /c/{cmsSlug} trong CMS.
                                 </p>
                             </div>
                         ) : (

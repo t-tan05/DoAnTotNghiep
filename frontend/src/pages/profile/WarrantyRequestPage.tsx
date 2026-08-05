@@ -184,7 +184,7 @@ export default function WarrantyRequestPage() {
                                     {imageUrl ? (
                                         <img src={imageUrl} alt={lookup.variant.variant_name || lookup.product.product_name} className="aspect-square w-full object-cover" />
                                     ) : (
-                                        <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">No image</div>
+                                        <div className="flex aspect-square items-center justify-center text-xs text-muted-foreground">Không có ảnh</div>
                                     )}
                                 </div>
 

@@ -202,7 +202,7 @@ export default function CartPage() {
                                         />
                                     ) : (
                                         <div className="flex aspect-square items-center justify-center text-sm text-muted-foreground">
-                                            No image
+                                            Không có ảnh
                                         </div>
                                     )}
                                 </Link>

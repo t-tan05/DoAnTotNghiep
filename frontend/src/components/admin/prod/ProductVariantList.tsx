@@ -45,7 +45,7 @@ export default function ProductVariantList({
                                 />
                             ) : (
                                 <div className="flex h-14 w-14 items-center justify-center rounded-md bg-muted text-xs text-muted-foreground">
-                                    No image
+                                    Không có ảnh
                                 </div>
                             )}
 

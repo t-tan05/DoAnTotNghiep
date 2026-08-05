@@ -209,7 +209,7 @@ export default function StaffOrderDetailPage({basePath}: Props) {
                                                     />
                                                 ) : (
                                                     <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                                                        No image
+                                                        Không có ảnh
                                                     </div>
                                                 )}
                                             </div>

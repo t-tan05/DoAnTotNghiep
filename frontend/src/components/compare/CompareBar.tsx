@@ -114,7 +114,7 @@ export default function CompareBar() {
                                     {image ? (
                                         <img src={image} alt={displayName} className="h-full w-full object-contain" />
                                     ) : (
-                                        <span className="text-xs text-muted-foreground">No image</span>
+                                        <span className="text-xs text-muted-foreground">Không có ảnh</span>
                                     )}
                                 </Link>
 
