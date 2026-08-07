@@ -96,7 +96,7 @@ export default function HomeProductCard({ product, disableImageZoom = false }: P
             >
                 <Shuffle className="size-5" />
                 <span className="pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow transition group-hover/compare:opacity-100">
-                    so sánh
+                    So sánh
                 </span>
             </button>
 

@@ -11,7 +11,7 @@ import {
     type CompareItem,
 } from "@/utils/compareStorage";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { Trash2, X } from "lucide-react";
+import { ChevronRight, Home, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -163,9 +163,15 @@ export default function ComparePage() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h1 className="text-2xl font-bold">So sánh sản phẩm</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Tối đa 3 sản phẩm trong một lần so sánh.
-                    </p>
+                    <nav className="flex min-h-11 items-center gap-2 overflow-x-auto text-medium text-[#747c96]">
+                        <Link to="/" className="flex shrink-0 items-center gap-2 text-blue-600 transition hover:text-blue-800">
+                            Trang chủ
+                        </Link>
+                        <span className="flex min-w-0 shrink-0 items-center gap-2">
+                            <ChevronRight className="h-4 w-4 shrink-0 text-[#a5abc0]" />
+                            <span className="text-[#68708c]">So sánh sản phẩm</span>
+                        </span>
+                    </nav>
                 </div>
 
                 <Button

@@ -87,9 +87,4 @@ export const adminSidebarItems = [
     url: "/admin/statistics",
     icon: ChartColumn,
   },
-  {
-    title: "Cài đặt",
-    url: "/admin/settings",
-    icon: Settings,
-  },
 ];
