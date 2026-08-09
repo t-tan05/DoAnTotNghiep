@@ -360,6 +360,7 @@ export const sortPublicProductCards = (products, sortBy) => {
     }
     return products;
 };
+//Hàm lấy danh sách sản phẩm công khai
 export const getPublicProductsService = async (params) => {
     const { variants, totalItems } = await getPublicProductsPageWithQuery(params);
     const filterOptions = await getPublicProductFilterOptions();
@@ -397,6 +398,7 @@ export const getPublicProductsService = async (params) => {
         },
     };
 };
+//Hàm lấy sản phẩm liên quan
 export const getRelatedProductsService = async (productId) => {
     const product = await findProductById(productId);
     if (!product)
