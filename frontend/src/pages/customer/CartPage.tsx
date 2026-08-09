@@ -1,7 +1,12 @@
 import PageLoading from "@/components/common/PageLoading";
 import SpinnerButton from "@/components/common/SpinnerButton";
 import { Button } from "@/components/ui/button";
-import { cartService } from "@/services/cart.service";
+import {
+    useClearCartMutation,
+    useMyCartQuery,
+    useRemoveCartItemMutation,
+    useUpdateCartItemMutation,
+} from "@/hooks/queries/useCartQueries";
 import type { CartItem } from "@/types/cart.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Minus, Plus, Trash2 } from "lucide-react";
@@ -34,30 +39,22 @@ function getProductDetailLink(item: CartItem) {
 
 export default function CartPage() {
     const [items, setItems] = useState<CartItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState("");
     const [clearing, setClearing] = useState(false);
-
-    async function fetchCart(options?: { silent?: boolean }) {
-        try {
-            if (!options?.silent) {
-                setLoading(true);
-            }
-
-            const data = await cartService.getMyCart();
-            setItems(data?.cart?.carts_items ?? []);
-        } catch (error) {
-            toast.error(getErrorMessage(error));
-        } finally {
-            if (!options?.silent) {
-                setLoading(false);
-            }
-        }
-    }
+    const { data, isLoading, error } = useMyCartQuery();
+    const updateCartItemMutation = useUpdateCartItemMutation();
+    const removeCartItemMutation = useRemoveCartItemMutation();
+    const clearCartMutation = useClearCartMutation();
 
     useEffect(() => {
-        fetchCart();
-    }, []);
+        setItems(data?.cart?.carts_items ?? []);
+    }, [data?.cart?.carts_items]);
+
+    useEffect(() => {
+        if(error) {
+            toast.error(getErrorMessage(error));
+        }
+    }, [error]);
 
     const totalPrice = useMemo(() => {
         return items.reduce((sum, item) => {
@@ -89,8 +86,9 @@ export default function CartPage() {
         try {
             setUpdatingId(item.cart_item_id);
 
-            await cartService.updateItem(item.cart_item_id, {
-                quantity: nextQuantity,
+            await updateCartItemMutation.mutateAsync({
+                cartItemId: item.cart_item_id,
+                payload: { quantity: nextQuantity },
             });
         } catch (error) {
             setItems(previousItems);
@@ -109,7 +107,7 @@ export default function CartPage() {
 
         try {
             setUpdatingId(item.cart_item_id);
-            await cartService.removeItem(item.cart_item_id);
+            await removeCartItemMutation.mutateAsync(item.cart_item_id);
             toast.success("Đã xóa sản phẩm khỏi giỏ hàng.");
         } catch (error) {
             setItems(previousItems);
@@ -126,7 +124,7 @@ export default function CartPage() {
             setClearing(true);
             setItems([]);
 
-            await cartService.clearCart();
+            await clearCartMutation.mutateAsync();
             toast.success("Đã xóa giỏ hàng.");
         } catch (error) {
             setItems(previousItems);
@@ -136,7 +134,7 @@ export default function CartPage() {
         }
     }
 
-    if (loading) return <PageLoading text="Đang tải giỏ hàng..." />;
+    if (isLoading) return <PageLoading text="Đang tải giỏ hàng..." />;
 
     if (items.length === 0) {
         return (

@@ -2,10 +2,10 @@
 import BlogContent from "@/components/blog/BlogContent";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useAddCartItemMutation } from "@/hooks/queries/useCartQueries";
+import { useProductDetailQuery, useRelatedProductsQuery } from "@/hooks/queries/useProductQueries";
+import { useToggleWishlistMutation, useWishlistCheckQuery } from "@/hooks/queries/useWishlistQueries";
 import { cn } from "@/lib/utils";
-import { cartService } from "@/services/cart.service";
-import { productService } from "@/services/product.service";
-import { wishlistService } from "@/services/wishlist.service";
 import type { AdminProduct, PublicProductCardItem } from "@/types/product.type";
 import type { AdminProductVariant } from "@/types/productVariant.type";
 import { addCompareItem, COMPARE_CHANGED_EVENT, getCompareItems } from "@/utils/compareStorage";
@@ -254,77 +254,46 @@ export default function ProductDetailPage() {
     const { isAuthenticated, user } = useAuth();
     const isStaff = isStaffUser(user);
 
-    const [product, setProduct] = useState<AdminProduct | null>(null);
     const [selectedVariantId, setSelectedVariantId] = useState("");
     const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
     const [selectedImageUrl, setSelectedImageUrl] = useState("");
     const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
-    const [loading, setLoading] = useState(true);
-    const [adding, setAdding] = useState(false);
     const [buyingNow, setBuyingNow] = useState(false);
-    const [wishlistLoading, setWishlistLoading] = useState(false);
-    const [isWishlisted, setIsWishlisted] = useState(false);
     const [specExpanded, setSpecExpanded] = useState(false);
     const [detailExpanded, setDetailExpanded] = useState(false);
-    const [error, setError] = useState("");
     const [activeInfoTab, setActiveInfoTab] = useState<"specs" | "detail">("specs");
     const [reviewSummary, setReviewSummary] = useState<ProductReviewSummary | null> (null);
-    const [relatedProducts, setRelatedProducts] = useState<PublicProductCardItem[]>([]);
-    const [relatedLoading, setRelatedLoading] = useState(false);
     const [relatedPage, setRelatedPage] = useState(0);
     const [comparedVariantIds, setComparedVariantIds] = useState<string[]>(() => (
         getCompareItems().map((item) => item.variantId)
     ));
+    const productQuery = useProductDetailQuery(productId);
+    const relatedProductsQuery = useRelatedProductsQuery(productId);
+    const product = productQuery.data?.product ?? null;
+    const relatedProducts: PublicProductCardItem[] = relatedProductsQuery.data?.products ?? [];
+    const addCartItemMutation = useAddCartItemMutation();
+    const toggleWishlistMutation = useToggleWishlistMutation();
 
     useEffect(() => {
-        async function loadProduct() {
-            if (!productId) return;
+        const variants = product?.product_variants ?? [];
+        const queryVariantId = searchParams.get("variantId");
+        const matchedVariant = variants.find((variant) => variant.variant_id === queryVariantId);
 
-            try {
-                setLoading(true);
-                setError("");
-
-                const data = await productService.getById(productId);
-                const loadedProduct = data?.product ?? null;
-                const variants = loadedProduct?.product_variants ?? [];
-                const queryVariantId = searchParams.get("variantId");
-                const matchedVariant = variants.find((variant) => variant.variant_id === queryVariantId);
-
-                setProduct(loadedProduct);
-                setSelectedVariantId(matchedVariant?.variant_id ?? variants[0]?.variant_id ?? "");
-            } catch (error) {
-                setError(getErrorMessage(error));
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        loadProduct();
-    }, [productId]);
-
-    useEffect(() => {
-        async function loadRelatedProducts() {
-            if(!productId) return;
-
-            try {
-                setRelatedLoading(true);
-                const data = await productService.getRelated(productId);
-
-                setRelatedProducts(data.products ?? []);
-            }catch{
-                setRelatedProducts([]);
-            }finally{
-                setRelatedLoading(false);
-            }
-        }
-
-        loadRelatedProducts();
-    }, [productId]);
+        setSelectedVariantId(matchedVariant?.variant_id ?? variants[0]?.variant_id ?? "");
+        setQuantity(1);
+    }, [product?.product_id]);
 
     const selectedVariant = useMemo(() => {
         return product?.product_variants.find((variant) => variant.variant_id === selectedVariantId) ?? null;
     }, [product?.product_variants, selectedVariantId]);
+    const wishlistQuery = useWishlistCheckQuery(selectedVariant?.variant_id, {
+        enabled: isAuthenticated && !isStaff,
+    });
+    const isWishlisted = Boolean(wishlistQuery.data?.isWishlisted);
+    const wishlistLoading = wishlistQuery.isFetching || toggleWishlistMutation.isPending;
+    const adding = addCartItemMutation.isPending;
+    const relatedLoading = relatedProductsQuery.isLoading;
 
     const attributeGroups = useMemo(() => {
         return buildAttributeGroups(product?.product_variants ?? []);
@@ -410,24 +379,6 @@ export default function ProductDetailPage() {
         };
     }, []);
 
-    useEffect(() => {
-        async function checkWishlist() {
-            if(!selectedVariant?.variant_id || !isAuthenticated || isStaff) {
-                setIsWishlisted(false);
-                return;
-            }
-
-            try {
-                const data = await wishlistService.check(selectedVariant.variant_id);
-                setIsWishlisted(Boolean(data?.isWishlisted));
-            } catch {
-                setIsWishlisted(false);
-            }
-        }
-
-        checkWishlist();
-    }, [selectedVariant?.variant_id, isAuthenticated, isStaff]);
-
     function selectVariant(variant: AdminProductVariant) {
         setSelectedVariantId(variant.variant_id);
         setQuantity(1);
@@ -510,13 +461,10 @@ export default function ProductDetailPage() {
         }
 
         try {
-            setWishlistLoading(true);
-
-            const data = isWishlisted
-                ? await wishlistService.remove(selectedVariant.variant_id)
-                : await wishlistService.add(selectedVariant.variant_id);
-
-            setIsWishlisted(Boolean(data?.isWishlisted));
+            const data = await toggleWishlistMutation.mutateAsync({
+                variantId: selectedVariant.variant_id,
+                isWishlisted,
+            });
             toast.success(
                 data?.isWishlisted
                     ? "Đã thêm vào sản phẩm yêu thích."
@@ -524,8 +472,6 @@ export default function ProductDetailPage() {
             );
         } catch(error) {
             toast.error(getErrorMessage(error));
-        } finally {
-            setWishlistLoading(false);
         }
     }
 
@@ -544,16 +490,13 @@ export default function ProductDetailPage() {
         }
 
         try {
-            setAdding(true);
-            await cartService.addItem({
+            await addCartItemMutation.mutateAsync({
                 variantId: selectedVariant.variant_id,
                 quantity,
             });
             toast.success("Đã thêm sản phẩm vào giỏ hàng.");
         } catch (error) {
             toast.error(getErrorMessage(error));
-        } finally {
-            setAdding(false);
         }
     }
 
@@ -621,13 +564,13 @@ export default function ProductDetailPage() {
         toast.success("Đã thêm vào danh sách so sánh.");
     }
 
-    if (loading) return <PageLoading text="Đang tải sản phẩm..." />;
+    if (productQuery.isLoading) return <PageLoading text="Đang tải sản phẩm..." />;
 
-    if (error) {
+    if (productQuery.error) {
         return (
             <section className="mx-auto max-w-7xl px-4 py-10 md:px-6">
                 <div className="rounded-lg border bg-red-50 p-4 text-red-600">
-                    {error}
+                    {getErrorMessage(productQuery.error)}
                 </div>
             </section>
         );

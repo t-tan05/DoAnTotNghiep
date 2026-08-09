@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { cartService } from "@/services/cart.service";
-import { wishlistService } from "@/services/wishlist.service";
+import { useAddCartItemMutation } from "@/hooks/queries/useCartQueries";
+import { useToggleWishlistMutation } from "@/hooks/queries/useWishlistQueries";
 import type { PublicProductCardItem } from "@/types/product.type";
 import { isStaffUser } from "@/utils/authRole";
 import { getErrorMessage } from "@/utils/getErrorMessage";
@@ -43,8 +43,10 @@ export default function ProductCard({
     const saving = Math.max(originalPrice - price, 0);
     const isOutOfStock = Number(variant.quantity_in_stock) <= 0;
     const [isWishlisted, setIsWishlisted] = useState(initialIsWishlisted);
-    const [wishlistLoading, setWishlistLoading] = useState(false);
-    const [adding, setAdding] = useState(false);
+    const toggleWishlistMutation = useToggleWishlistMutation();
+    const addCartItemMutation = useAddCartItemMutation();
+    const wishlistLoading = toggleWishlistMutation.isPending;
+    const adding = addCartItemMutation.isPending;
 
     useEffect(() => {
         setIsWishlisted(initialIsWishlisted);
@@ -63,11 +65,10 @@ export default function ProductCard({
         }
 
         try {
-            setWishlistLoading(true);
-
-            const data = isWishlisted
-                ? await wishlistService.remove(variant.variant_id)
-                : await wishlistService.add(variant.variant_id);
+            const data = await toggleWishlistMutation.mutateAsync({
+                variantId: variant.variant_id,
+                isWishlisted,
+            });
 
             const nextIsWishlisted = Boolean(data?.isWishlisted);
             setIsWishlisted(nextIsWishlisted);
@@ -79,8 +80,6 @@ export default function ProductCard({
             );
         } catch(error) {
             toast.error(getErrorMessage(error));
-        } finally {
-            setWishlistLoading(false);
         }
     }
 
@@ -98,9 +97,7 @@ export default function ProductCard({
         }
 
         try {
-            setAdding(true);
-
-            await cartService.addItem({
+            await addCartItemMutation.mutateAsync({
                 variantId: variant.variant_id,
                 quantity: 1,
             });
@@ -108,8 +105,6 @@ export default function ProductCard({
             toast.success("Đã thêm sản phẩm vào giỏ hàng.");
         } catch(error) {
             toast.error(getErrorMessage(error));
-        } finally {
-            setAdding(false);
         }
     }
     

@@ -101,7 +101,7 @@ const getVnpayRefundState = (refundResult: any) => {
             orderPaymentStatus: ORDER_PAYMENT_REFUND_PENDING,
             paymentStatus: "REFUND_PENDING",
             message: "Yêu cầu hoàn tiền đã tồn tại và VNPay đang xử lý.",
-        };
+        };``
     }
 
     if(responseCode === "95" || transactionStatus === "09") {

@@ -5,6 +5,7 @@ import ProductSortButtons from "@/components/prod/ProductSortButtons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { queryKeys } from "@/lib/queryKeys";
 import { cmsService } from "@/services/cms.service";
 import { wishlistService } from "@/services/wishlist.service";
 import type { CmsCollection } from "@/types/cms.type";
@@ -14,6 +15,7 @@ import type {
     PublicProductFilterOption,
 } from "@/types/product.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
@@ -314,15 +316,6 @@ export default function ProductListPage() {
     const { isAuthenticated, user } = useAuth();
     const canUseWishlist = isAuthenticated && !isStaffUser(user);
 
-    const [products, setProducts] = useState<PublicProductCardItem[]>([]);
-    const [wishlistMap, setWishlistMap] = useState<Record<string, boolean>>({});
-    const [brands, setBrands] = useState<PublicProductFilterOption[]>([]);
-    const [categories, setCategories] = useState<PublicProductFilterOption[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalPages, setTotalPages] = useState(1);
-
     const page = Number(searchParams.get("page") || 1);
     const search = searchParams.get("search") || "";
     const brandId = searchParams.get("brandId") || "";
@@ -334,14 +327,29 @@ export default function ProductListPage() {
     const [draftSearch, setDraftSearch] = useState(search);
     const [draftMinPrice, setDraftMinPrice] = useState(minPrice);
     const [draftMaxPrice, setDraftMaxPrice] = useState(maxPrice);
-
-    const [maxAvailablePrice, setMaxAvailablePrice] = useState(0);
-    const [cmsCollection, setCmsCollection] = useState<CmsCollection | null>(null);
-    const [cmsLoading, setCmsLoading] = useState(false);
-    const [cmsNotFound, setCmsNotFound] = useState(false);
+    const [wishlistOverrides, setWishlistOverrides] = useState<Record<string, boolean>>({});
 
     const cmsSlug = normalizeCmsSlug(routeCmsSlug || "");
     const isCmsPage = Boolean(cmsSlug);
+    const emptyListData = {
+        products: [] as PublicProductCardItem[],
+        wishlistMap: {} as Record<string, boolean>,
+        brands: [] as PublicProductFilterOption[],
+        categories: [] as PublicProductFilterOption[],
+        totalItems: 0,
+        totalPages: 1,
+        maxAvailablePrice: 0,
+    };
+
+    const cmsCollectionQuery = useQuery({
+        queryKey: queryKeys.cms.publicCollection(cmsSlug),
+        queryFn: () => cmsService.getPublicCollection(cmsSlug),
+        enabled: isCmsPage,
+        retry: false,
+    });
+    const cmsCollection = cmsCollectionQuery.data ?? null;
+    const cmsLoading = cmsCollectionQuery.isLoading;
+    const cmsNotFound = Boolean(cmsCollectionQuery.error);
 
     useEffect(() => {
         setDraftSearch(search);
@@ -429,155 +437,129 @@ export default function ProductListPage() {
         setSearchParams(next);
     }
 
-    async function loadCmsCollection() {
-        if(!cmsSlug) {
-            setCmsCollection(null);
-            setCmsNotFound(true);
-            return;
-        }
+    const productListQuery = useQuery({
+        queryKey: queryKeys.cms.publicCollectionProducts(cmsSlug, {
+            page,
+            search,
+            brandId,
+            categoryId,
+            minPrice,
+            maxPrice,
+            sortBy,
+            canUseWishlist,
+        }),
+        queryFn: async() => {
+            if(!cmsCollection) return emptyListData;
 
-        try {
-            setCmsLoading(true);
-            setCmsNotFound(false);
-            const data = await cmsService.getPublicCollection(cmsSlug);
-            setCmsCollection(data);
-        }catch{
-            setCmsCollection(null);
-            setCmsNotFound(true);
-        }finally{
-            setCmsLoading(false);
-        }
-    }
+            const cmsGridProducts = getCmsProductGridProducts(cmsCollection);
 
-    async function loadProducts() {
-        try {
-            setLoading(true);
+            if(cmsGridProducts.length > 0) {
+                const filteredProducts = filterCmsGridProducts(cmsGridProducts, {
+                    search,
+                    brandId,
+                    categoryId,
+                    minPrice,
+                    maxPrice,
+                    sortBy,
+                });
+                const totalGridItems = filteredProducts.length;
+                const start = (page - 1) * 20;
+                const paginatedProducts = filteredProducts.slice(start, start + 20);
+                const maxGridPrice = cmsGridProducts.reduce(
+                    (maxPrice, product) => Math.max(maxPrice, getProductPrice(product)),
+                    0,
+                );
+                let wishlistMap: Record<string, boolean> = {};
 
-            if(!isCmsPage || cmsLoading || cmsNotFound || !cmsCollection) {
-                setProducts([]);
-                setBrands([]);
-                setCategories([]);
-                setTotalItems(0);
-                setTotalPages(1);
-                setWishlistMap({});
-                return;
-            }
-
-            if(isCmsPage) {
-                const cmsGridProducts = getCmsProductGridProducts(cmsCollection);
-
-                if(cmsGridProducts.length > 0) {
-                    const filteredProducts = filterCmsGridProducts(cmsGridProducts, {
-                        search,
-                        brandId,
-                        categoryId,
-                        minPrice,
-                        maxPrice,
-                        sortBy,
-                    });
-                    const totalGridItems = filteredProducts.length;
-                    const start = (page - 1) * 20;
-                    const paginatedProducts = filteredProducts.slice(start, start + 20);
-                    const maxGridPrice = cmsGridProducts.reduce(
-                        (maxPrice, product) => Math.max(maxPrice, getProductPrice(product)),
-                        0,
-                    );
-
-                    setMaxAvailablePrice(maxGridPrice);
-
-                    if(!searchParams.has("minPrice")) {
-                        setDraftMinPrice("0");
-                    }
-
-                    if(!searchParams.has("maxPrice")) {
-                        setDraftMaxPrice(String(maxGridPrice));
-                    }
-
-                    setProducts(paginatedProducts);
-                    setBrands(getUniqueFilterOptions(cmsGridProducts, "brand"));
-                    setCategories(getUniqueFilterOptions(cmsGridProducts, "category"));
-                    setTotalItems(totalGridItems);
-                    setTotalPages(Math.ceil(totalGridItems / 20));
-
-                    if(canUseWishlist && paginatedProducts.length > 0) {
-                        try {
-                            const variantIds = paginatedProducts.map((product) => product.variant.variant_id);
-                            const wishlistData = await wishlistService.checkMany(variantIds);
-
-                            setWishlistMap(wishlistData?.items ?? {});
-                        } catch {
-                            setWishlistMap({});
-                        }
-                    }else {
-                        setWishlistMap({});
-                    }
-
-                    return;
-                }
-
-                const [productData, filterData] = await Promise.all([
-                    cmsService.getPublicCollectionProducts(cmsSlug, {
-                        page,
-                        limit: 20,
-                        search: search || undefined,
-                        brandId: brandId || undefined,
-                        categoryId: categoryId || undefined,
-                        minPrice: minPrice ? Number(minPrice) : undefined,
-                        maxPrice: maxPrice ? Number(maxPrice) : undefined,
-                        sortBy,
-                    }),
-                    cmsService.getPublicCollectionFilters(cmsSlug),
-                ]);
-
-                setMaxAvailablePrice(Number(filterData.maxPrice ?? 0));
-
-                if(!searchParams.has("minPrice")) {
-                    setDraftMinPrice("0");
-                }
-
-                if(!searchParams.has("maxPrice")) {
-                    setDraftMaxPrice(String(Number(filterData.maxPrice ?? 0)));
-                }
-
-                setProducts(productData.items);
-                setBrands(filterData.brands);
-                setCategories(filterData.categories);
-                setTotalItems(productData.total);
-                setTotalPages(productData.totalPages);
-
-                if(canUseWishlist && productData.items.length > 0) {
+                if(canUseWishlist && paginatedProducts.length > 0) {
                     try {
-                        const variantIds = productData.items.map((product) => product.variant.variant_id);
+                        const variantIds = paginatedProducts.map((product) => product.variant.variant_id);
                         const wishlistData = await wishlistService.checkMany(variantIds);
-
-                        setWishlistMap(wishlistData?.items ?? {});
-                    } catch {
-                        setWishlistMap({});
+                        wishlistMap = wishlistData?.items ?? {};
+                    }catch{
+                        wishlistMap = {};
                     }
-                }else {
-                    setWishlistMap({});
                 }
 
-                return;
+                return {
+                    products: paginatedProducts,
+                    wishlistMap,
+                    brands: getUniqueFilterOptions(cmsGridProducts, "brand"),
+                    categories: getUniqueFilterOptions(cmsGridProducts, "category"),
+                    totalItems: totalGridItems,
+                    totalPages: Math.ceil(totalGridItems / 20),
+                    maxAvailablePrice: maxGridPrice,
+                };
             }
-        }catch(error) {
-            toast.error(getErrorMessage(error));
-        }finally{
-            setLoading(false);
+
+            const [productData, filterData] = await Promise.all([
+                cmsService.getPublicCollectionProducts(cmsSlug, {
+                    page,
+                    limit: 20,
+                    search: search || undefined,
+                    brandId: brandId || undefined,
+                    categoryId: categoryId || undefined,
+                    minPrice: minPrice ? Number(minPrice) : undefined,
+                    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+                    sortBy,
+                }),
+                cmsService.getPublicCollectionFilters(cmsSlug),
+            ]);
+            let wishlistMap: Record<string, boolean> = {};
+
+            if(canUseWishlist && productData.items.length > 0) {
+                try {
+                    const variantIds = productData.items.map((product) => product.variant.variant_id);
+                    const wishlistData = await wishlistService.checkMany(variantIds);
+                    wishlistMap = wishlistData?.items ?? {};
+                }catch{
+                    wishlistMap = {};
+                }
+            }
+
+            return {
+                products: productData.items,
+                wishlistMap,
+                brands: filterData.brands,
+                categories: filterData.categories,
+                totalItems: productData.total,
+                totalPages: productData.totalPages,
+                maxAvailablePrice: Number(filterData.maxPrice ?? 0),
+            };
+        },
+        enabled: isCmsPage && !cmsLoading && !cmsNotFound && Boolean(cmsCollection),
+    });
+
+    useEffect(() => {
+        if(productListQuery.error) {
+            toast.error(getErrorMessage(productListQuery.error));
         }
-    }
+    }, [productListQuery.error]);
+
+    const {
+        products,
+        wishlistMap,
+        brands,
+        categories,
+        totalItems,
+        totalPages,
+        maxAvailablePrice,
+    } = productListQuery.data ?? emptyListData;
+    const effectiveWishlistMap = {
+        ...wishlistMap,
+        ...wishlistOverrides,
+    };
+    const loading = productListQuery.isLoading || productListQuery.isFetching;
 
     useEffect(() => {
-        const timer = window.setTimeout(() => {
-            loadProducts();
-        }, 300);
+        if(!searchParams.has("minPrice")) {
+            setDraftMinPrice("0");
+        }
 
-        return () => window.clearTimeout(timer);
-    }, [searchParams, isAuthenticated, cmsSlug, isCmsPage, cmsCollection, cmsLoading, cmsNotFound]);
-
-    useEffect(() => {
-        loadCmsCollection();
-    }, [cmsSlug]);
+        if(!searchParams.has("maxPrice")) {
+            setDraftMaxPrice(String(maxAvailablePrice));
+        }
+    }, [maxAvailablePrice, searchParams]);
 
     const breadcrumbs = isCmsPage
         ? getCmsBreadcrumbs(cmsCollection, categories, brands)
@@ -714,9 +696,9 @@ export default function ProductListPage() {
                                     <ProductCard
                                         key={product.product_id + "-" + product.variant.variant_id}
                                         product={product}
-                                        isWishlisted={Boolean(wishlistMap[product.variant.variant_id])}
+                                        isWishlisted={Boolean(effectiveWishlistMap[product.variant.variant_id])}
                                         onWishlistChange={(variantId, isWishlisted) => {
-                                            setWishlistMap((current) => ({
+                                            setWishlistOverrides((current) => ({
                                                 ...current,
                                                 [variantId]: isWishlisted,
                                             }));

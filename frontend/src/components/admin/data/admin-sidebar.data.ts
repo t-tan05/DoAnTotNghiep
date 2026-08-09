@@ -9,7 +9,6 @@
   Package,
   PanelsTopLeft,
   Star,
-  Settings,
   ShieldCheck,
   SlidersHorizontal,
   Tags,

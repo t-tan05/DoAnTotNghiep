@@ -52,7 +52,7 @@ export default function Footer({ socialLinks }: FooterProps) {
             <li><Link to="/c/laptop">Laptop</Link></li>
             <li><Link to="/c/dien-thoai">Điện thoại</Link></li>
             <li><Link to="/c/thiet-bi-am-thanh">Thiết bị âm thanh</Link></li>
-            <li><Link to="/c/phu-kien">Phụ kiện máy tính</Link></li>
+            <li><Link to="/c/phu-kien-may-tinh">Phụ kiện máy tính</Link></li>
             <li><Link to="/tin-tuc">Tin tức</Link></li>
           </ul>
         </div>

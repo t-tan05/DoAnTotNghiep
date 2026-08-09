@@ -464,6 +464,7 @@ export const sortPublicProductCards = (products: any[], sortBy: PublicProductLis
     return products;
 };
 
+//Hàm lấy danh sách sản phẩm công khai
 export const getPublicProductsService = async(params: PublicProductListQuery) => {
     const { variants, totalItems } = await getPublicProductsPageWithQuery(params);
     const filterOptions = await getPublicProductFilterOptions();
@@ -507,6 +508,7 @@ export const getPublicProductsService = async(params: PublicProductListQuery) =>
     };
 };
 
+//Hàm lấy sản phẩm liên quan
 export const getRelatedProductsService = async(productId: string) => {
     const product = await findProductById(productId);
 

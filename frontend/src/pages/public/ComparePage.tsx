@@ -11,7 +11,7 @@ import {
     type CompareItem,
 } from "@/utils/compareStorage";
 import { getErrorMessage } from "@/utils/getErrorMessage";
-import { ChevronRight, Home, Trash2, X } from "lucide-react";
+import { ChevronRight, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";

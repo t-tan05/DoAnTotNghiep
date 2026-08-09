@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { reviewService } from "@/services/review.service";
-import type { ProductReview, ProductReviewSummary } from "@/types/review.type";
+import { useProductReviewsQuery } from "@/hooks/queries/useReviewQueries";
+import type { ProductReviewSummary } from "@/types/review.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Star } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -12,50 +12,36 @@ type Props = {
 };
 
 export default function ProductReviews({ productId, onSummaryChange }: Props) {
-    const [reviews, setReviews] = useState<ProductReview[]>([]);
-    const [summary, setSummary] = useState<ProductReviewSummary | null>(null);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [loading, setLoading] = useState(false);
     const [ratingFilter, setRatingFilter] = useState<number | "all">("all");
-
-    async function loadReviews(nextPage = 1) {
-        try {
-            setLoading(true);
-
-            const data = await reviewService.getByProduct(
-                productId, 
-                nextPage, 
-                5,
-                ratingFilter === "all" ? undefined : ratingFilter,
-            );
-
-            setReviews((current) =>
-                nextPage === 1 ? data.reviews : [...current, ...data.reviews]
-            );
-            setSummary(data.summary);
-            setTotalPages(data.meta.totalPages);
-            setPage(nextPage);
-            onSummaryChange?.(data.summary);
-        } catch (error) {
-            toast.error(getErrorMessage(error));
-        } finally {
-            setLoading(false);
-        }
-    }
+    const {
+        data,
+        error,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+    } = useProductReviewsQuery(productId, ratingFilter);
+    const reviews = data?.pages.flatMap((page) => page.reviews) ?? [];
+    const summary = data?.pages[0]?.summary ?? null;
 
     useEffect(() => {
-        if(productId) loadReviews(1);
-    }, [productId, ratingFilter]);
+        if(summary) {
+            onSummaryChange?.(summary);
+        }
+    }, [onSummaryChange, summary]);
 
-    if(!summary || summary.totalReviews === 0) {
+    useEffect(() => {
+        if(error) {
+            toast.error(getErrorMessage(error));
+        }
+    }, [error]);
+
+    if(isLoading || !summary || summary.totalReviews === 0) {
         return null;
     }
 
     function handleFilterChange(value: number | "all") {
         setRatingFilter(value);
-        setReviews([]);
-        setPage(1);
     }
 
     return (
@@ -188,16 +174,16 @@ export default function ProductReviews({ productId, onSummaryChange }: Props) {
                     </article>
                 ))}
 
-                {page < totalPages && (
+                {hasNextPage && (
                     <div className="flex justify-center">
                         <Button
                             type="button"
                             variant="outline"
-                            disabled={loading}
-                            onClick={() => loadReviews(page + 1)}
+                            disabled={isFetchingNextPage}
+                            onClick={() => fetchNextPage()}
                             className="cursor-pointer rounded-full"
                         >
-                            {loading ? "Đang tải..." : "Xem thêm đánh giá"}
+                            {isFetchingNextPage ? "Đang tải..." : "Xem thêm đánh giá"}
                         </Button>
                     </div>
                 )}

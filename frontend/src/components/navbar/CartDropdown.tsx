@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useMyCartQuery } from "@/hooks/queries/useCartQueries";
 import { cn } from "@/lib/utils";
-import { cartService } from "@/services/cart.service";
-import type { Cart, CartItem } from "@/types/cart.type";
+import type { CartItem } from "@/types/cart.type";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { ShoppingCart } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 
 const formatPrice = (value: number | string) => {
@@ -34,13 +34,13 @@ function getProductDetailUrl(item: CartItem) {
 
 export default function CartDropdown() {
     const { isAuthenticated } = useAuth();
-    const [cart, setCart] = useState<Cart | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const { data, error, isFetching, refetch } = useMyCartQuery(isAuthenticated);
 
+    const cart = data?.cart ?? null;
     const items = cart?.carts_items ?? [];
     const previewItems = items.slice(0, 5);
     const totalQuantity = cart?.totalQuantity ?? 0;
+    const errorMessage = error ? getErrorMessage(error) : "";
 
     const totalPrice = useMemo(() => {
         if (cart?.totalPrice !== undefined) return Number(cart.totalPrice);
@@ -50,32 +50,11 @@ export default function CartDropdown() {
         }, 0);
     }, [cart?.totalPrice, items]);
 
-    const loadCart = useCallback(async(options?: { silent?: boolean }) => {
-        if (!isAuthenticated) {
-            setCart(null);
-            return;
-        }
-
-        try {
-            if (!options?.silent) setLoading(true);
-            setError("");
-
-            const data = await cartService.getMyCart();
-            setCart(data?.cart ?? null);
-        } catch (error) {
-            setError(getErrorMessage(error));
-        } finally {
-            if (!options?.silent) setLoading(false);
-        }
-    }, [isAuthenticated]);
-
-    useEffect(() => {
-        loadCart();
-    }, [loadCart]);
-
     useEffect(() => {
         function handleCartChanged() {
-            loadCart({ silent: true });
+            if(isAuthenticated) {
+                refetch();
+            }
         }
 
         window.addEventListener("cart:changed", handleCartChanged);
@@ -83,13 +62,13 @@ export default function CartDropdown() {
         return () => {
             window.removeEventListener("cart:changed", handleCartChanged);
         };
-    }, [loadCart]);
+    }, [isAuthenticated, refetch]);
 
     return (
         <div
             className="group relative"
-            onMouseEnter={() => loadCart({ silent: true })}
-            onFocus={() => loadCart({ silent: true })}
+            onMouseEnter={() => isAuthenticated && refetch()}
+            onFocus={() => isAuthenticated && refetch()}
         >
             <Link to="/cart" className="relative flex min-w-14 flex-col items-center justify-center gap-1 text-muted-foreground hover:text-blue-700">
                 <div className="relative">
@@ -131,13 +110,13 @@ export default function CartDropdown() {
                             <Link to="/login">Đăng nhập</Link>
                         </Button>
                     </div>
-                ) : loading ? (
+                ) : isFetching && !cart ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">
                         Đang tải giỏ hàng...
                     </p>
-                ) : error ? (
+                ) : errorMessage ? (
                     <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-                        {error}
+                        {errorMessage}
                     </p>
                 ) : items.length === 0 ? (
                     <div className="rounded-lg border border-dashed p-4 text-center">
