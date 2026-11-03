@@ -13,6 +13,10 @@ export default function PublicLayout() {
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
         const path = `${location.pathname}${location.search}`;
+        const previousToken = typeof socket.auth === "object" && socket.auth !== null
+            ? (socket.auth as { token?: string }).token
+            : undefined;
+        const shouldReconnectWithNewAuth = socket.connected && previousToken !== (token || undefined);
 
         dashboardService.trackPageView(path).catch(() => undefined);
 
@@ -23,7 +27,10 @@ export default function PublicLayout() {
         socket.auth = token ? { token } : {};
         socket.on("connect", emitVisitorActive);
 
-        if(!socket.connected) {
+        if(shouldReconnectWithNewAuth) {
+            socket.disconnect();
+            socket.connect();
+        }else if(!socket.connected) {
             socket.connect();
         }else {
             emitVisitorActive();

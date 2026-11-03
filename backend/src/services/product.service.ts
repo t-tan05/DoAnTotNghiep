@@ -517,15 +517,31 @@ export const getRelatedProductsService = async(productId: string) => {
     const { variants } = await getRelatedProductVariants({
         productId: product.product_id,
         brandId: product.brands.brand_id,
+        categoryId: product.categories.category_id,
         lineId: product.line_id,
         limit: 20,
     });
 
     const groupedProducts = groupPublicVariants(variants);
+    const sortedProducts = [...groupedProducts].sort((a, b) => {
+        const aSameBrand = a.brand.brand_id === product.brands.brand_id;
+        const bSameBrand = b.brand.brand_id === product.brands.brand_id;
+        const aSameCategory = a.category.category_id === product.categories.category_id;
+        const bSameCategory = b.category.category_id === product.categories.category_id;
+
+        const getPriority = (sameBrand: boolean, sameCategory: boolean) => {
+            if(sameBrand && sameCategory) return 0;
+            if(sameCategory) return 1;
+            if(sameBrand) return 2;
+            return 3;
+        };
+
+        return getPriority(aSameBrand, aSameCategory) - getPriority(bSameBrand, bSameCategory);
+    });
 
     const uniqueByProduct = new Map<string, any>();
 
-    for(const item of groupedProducts) {
+    for(const item of sortedProducts) {
         if(!uniqueByProduct.has(item.product_id)) {
             uniqueByProduct.set(item.product_id, item);
         }

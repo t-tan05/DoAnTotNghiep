@@ -193,7 +193,7 @@ export default function AdminDashboardPage() {
                 <MetricCard label="Đơn hoàn thành hôm nay" value={formatNumber(summary.cards.completedOrdersToday)} sub="Tính theo thời điểm hoàn thành" icon={CheckCircle2} />
                 <MetricCard label="Đơn giao thất bại hôm nay" value={formatNumber(summary.cards.deliveryFailedToday ?? 0)} sub="Tính theo thời điểm thất bại" icon={Truck} />
                 <MetricCard label="Đơn đang chờ xử lý" value={formatNumber(summary.cards.pendingOrders ?? 0)} sub="Tất cả đơn PENDING" icon={Clock} />
-                <MetricCard label="Đơn đã hủy" value={formatNumber(summary.cards.cancelledOrders ?? 0)} sub={`${summary.cards.cancelledOrdersToday ?? 0} đơn hủy hôm nay`} icon={XCircle} />
+                <MetricCard label="Đơn đã hủy" value={formatNumber(summary.cards.cancelledOrdersToday ?? 0)} sub={`đơn hủy hôm nay`} icon={XCircle} />
                 <MetricCard label="Sản phẩm sắp hết hàng" value={formatNumber(summary.cards.lowStockCount)} sub={`Ngưỡng cảnh báo ${LOW_STOCK_THRESHOLD} sản phẩm`} icon={PackageSearch} />
                 <MetricCard label="Yêu cầu bảo hành hôm nay" value={formatNumber(summary.cards.warrantyRequestsToday ?? 0)} sub="Tính theo ngày tạo phiếu" icon={ShieldCheck} />
             </div>

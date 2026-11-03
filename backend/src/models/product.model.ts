@@ -576,6 +576,7 @@ export const getPublicProductFilterOptions = async() => {
 export const getRelatedProductVariants = async(params: {
     productId: string;
     brandId: string;
+    categoryId: string;
     lineId?: string | null;
     limit: number;
 }) => {
@@ -586,6 +587,7 @@ export const getRelatedProductVariants = async(params: {
             },
             OR: [
                 ...(params.lineId ? [{ line_id: params.lineId }] : []),
+                { category_id: params.categoryId },
                 { brand_id: params.brandId },
             ],
         },
